@@ -1,5 +1,5 @@
 {
-  "include": ["lib/**/*", "index.js", "utils/**/*", "config/**/*", "core/**/*", "common/**/*"],
+  "include": ["lib/**/*", "index.js", "utils/**/*", "config/**/*", "core/**/*", "common/**/*", "constants/**/*"],
   "compilerOptions": {
     "allowJs": true,
     "declaration": true,
