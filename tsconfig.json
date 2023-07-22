@@ -1,0 +1,9 @@
+{
+  "include": ["lib/**/*", "index.js", "utils/**/*", "config/**/*", "core/**/*", "common/**/*"],
+  "compilerOptions": {
+    "allowJs": true,
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "declarationMap": true
+  }
+}
