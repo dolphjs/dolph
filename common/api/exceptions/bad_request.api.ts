@@ -1,0 +1,9 @@
+import { HttpStatus } from '../HttpStatus.api';
+import { DefaultException } from './default_exception.api';
+
+class BadRequestException extends DefaultException {
+  statusCode: number = HttpStatus.BAD_REQUEST;
+  name: string = 'Bad Request';
+}
+
+export { BadRequestException };
