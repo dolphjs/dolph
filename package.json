@@ -23,6 +23,7 @@
     "node": ">= 18"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.2",
     "@types/cli-color": "^2.0.2",
     "@types/cors": "^2.8.13",
     "@types/express": "^4.17.17",
@@ -30,6 +31,8 @@
     "@types/node": "^20.3.2",
     "@typescript-eslint/eslint-plugin": "^5.60.1",
     "@typescript-eslint/parser": "^5.60.1",
+    "argon2": "^0.30.3",
+    "bcryptjs": "^2.4.3",
     "cli-color": "^2.0.3",
     "delete-empty": "^3.0.0",
     "eslint": "^8.43.0",

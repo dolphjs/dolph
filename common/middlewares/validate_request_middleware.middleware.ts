@@ -4,7 +4,7 @@ import { pick } from '../api';
 import Joi = require('joi');
 import { BadRequestException } from '../api/exceptions';
 
-const validateRequestMiddleware = DefaultMiddleware((schema: any) => (req: Request, res: Response, next: NextFunction) => {
+const validateRequestMiddleware = (schema: any) => (req: Request, res: Response, next: NextFunction) => {
   const acceptedSchema = pick(schema, ['param', 'body', 'query']);
   const object = pick(req, Object.keys(acceptedSchema));
   const { value, error } = Joi.compile(acceptedSchema)
@@ -18,6 +18,6 @@ const validateRequestMiddleware = DefaultMiddleware((schema: any) => (req: Reque
 
   Object.assign(req, value);
   return next();
-});
+};
 
 export { validateRequestMiddleware as reqValidatorMiddleware };

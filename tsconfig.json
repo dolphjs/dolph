@@ -1,5 +1,5 @@
 {
-  "include": ["lib/**/*", "index.js", "utils/**/*", "config/**/*", "common/**/*"],
+  "include": ["lib/**/*", "index.js", "utils/**/*", "config/**/*", "common/**/*", "samples/**/*"],
   "compilerOptions": {
     "allowJs": true,
     "declaration": true,
@@ -11,14 +11,8 @@
     "paths": {
       "@/*": ["*"],
       "@common/*": ["common/*"],
-      "@core/*": ["core/*"],
-      "@middlewares/*": ["middlewares/*"],
-      "@packages/*": ["packages/*"],
-      "@utilities/*": ["utilities/*"],
-      "@routers/*": ["routers/*"],
-      "@types/*": ["types/*"],
-      "@samples/*": ["samples/*"],
-      "@tools/*": ["tools/*"]
-    }
+      "@samples/*": ["samples/*"]
+    },
+    "moduleResolution": "nodenext"
   }
 }

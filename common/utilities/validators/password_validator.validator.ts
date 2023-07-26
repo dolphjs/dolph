@@ -1,5 +1,4 @@
-// import { DolphErrors } from '../../constants';
-import { DolphErrors } from '../../constants/error_constants.types';
+import { DolphErrors } from '../../constants';
 import { passwordStrength } from '../../types';
 
 const validatePassword = (level: passwordStrength, value: string, helpers: any) => {

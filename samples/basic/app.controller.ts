@@ -23,12 +23,7 @@ class AppController extends DolphControllerHandler<string> {
   public readonly createUser = TryCatchAsyncFn(async (req: Request, res: Response) => {
     const { body } = req;
     if (body.height < 1.7) throw new BadRequestException('sorry, you are too short for this program');
-    const data = {
-      name: body.name,
-      age: body.age,
-      height: `${body.height}m`,
-      occupation: body.work,
-    };
+    const data = this.appService()?.createUser(body);
     SuccessResponse({ res, body: data });
   });
 }

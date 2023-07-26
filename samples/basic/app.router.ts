@@ -1,5 +1,7 @@
 import { DolphRouteHandler } from '../../common/classes';
 import { AppController } from './app.controller';
+import { reqValidatorMiddleware } from '../../common/middlewares';
+import { createUser } from './app.validator';
 
 class AppRouter extends DolphRouteHandler<string> {
   constructor() {
@@ -12,7 +14,7 @@ class AppRouter extends DolphRouteHandler<string> {
 
   initRoutes() {
     this.router.post(`${this.path}`, this.controller.sendGreeting);
-    this.router.post(`${this.path}/user`, this.controller.createUser);
+    this.router.post(`${this.path}/user`, reqValidatorMiddleware(createUser), this.controller.createUser);
   }
 }
 
