@@ -13,7 +13,7 @@
 abstract class DolphServiceHandler<T extends string> {
   // sets the type of dolph service handler
   public name: string;
-  protected schema: any;
+  protected declare schema: any;
   constructor(name: T) {
     this.name = name;
   }

@@ -5,6 +5,20 @@
     "declaration": true,
     "emitDeclarationOnly": true,
     "declarationMap": true,
-    "target": "ES2022"
+    "target": "ES2022",
+    "baseUrl": "*",
+    "pretty": true,
+    "paths": {
+      "@/*": ["*"],
+      "@common/*": ["common/*"],
+      "@core/*": ["core/*"],
+      "@middlewares/*": ["middlewares/*"],
+      "@packages/*": ["packages/*"],
+      "@utilities/*": ["utilities/*"],
+      "@routers/*": ["routers/*"],
+      "@types/*": ["types/*"],
+      "@samples/*": ["samples/*"],
+      "@tools/*": ["tools/*"]
+    }
   }
 }

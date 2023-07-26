@@ -1,4 +1,4 @@
-import { Router } from '@dolphjs/core';
+import { Router } from '../../node_modules/@dolphjs/core/lib/Dolph';
 import { DolphControllerHandler } from './controller_classes.class';
 
 /**
@@ -10,7 +10,7 @@ import { DolphControllerHandler } from './controller_classes.class';
 abstract class DolphRouteHandler<T extends string> {
   abstract path: T;
   abstract initRoutes();
-  protected router = Router();
+  public router = Router();
   abstract controller: DolphControllerHandler<T>;
 }
 
