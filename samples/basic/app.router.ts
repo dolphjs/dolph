@@ -12,6 +12,7 @@ class AppRouter extends DolphRouteHandler<string> {
 
   initRoutes() {
     this.router.post(`${this.path}`, this.controller.sendGreeting);
+    this.router.post(`${this.path}/user`, this.controller.createUser);
   }
 }
 

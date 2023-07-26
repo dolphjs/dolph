@@ -4,14 +4,14 @@
  */
 
 /**
- * "DolphServiceHandler" takes a string generic
+ * Dolph's service handler
+ * - takes a string generic
  *
- * - `name` of the service which gets used by the controller
+ * - `name`  accepts a unique name for the each service which is used behind the scenes by the controller handler
  *
  * - `schema` takes the default database entitiy or schema to be used in this service
  */
 abstract class DolphServiceHandler<T extends string> {
-  // sets the type of dolph service handler
   public name: string;
   protected declare schema: any;
   constructor(name: T) {

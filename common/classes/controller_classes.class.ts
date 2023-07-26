@@ -13,7 +13,28 @@ import { DolphServiceHandler } from './service_classes.class';
  * - The `getHandler` method takes the name of the service and returns the service who's name matches the name param.
  */
 abstract class DolphControllerHandler<T extends string> {
+  /**
+   * an array of DolphServicehandlers which would be used by the controller
+   * ```js
+   *  serviceHandlers : DolphServiceHandler<string>[] = [new AppService()];
+   * ```
+   */
   abstract serviceHandlers: Array<DolphServiceHandler<T>>;
+  /**
+   * 
+   * @param name takes the name of the service specified in the DolphServiceHandler
+   * ```js
+   *  abstract class DolphServiceHandler<T extends string> {
+
+    public name: string;
+    protected declare schema: any;
+    constructor(name: T) {
+      this.name = name;
+    }
+}
+   * ````
+   * @returns the service who's name matches the  name param
+   */
   getHandler(name: string) {
     return this.serviceHandlers.find((handler) => handler.name === name);
   }

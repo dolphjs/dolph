@@ -1,0 +1,1 @@
+hide other fields except message field for exceptions
