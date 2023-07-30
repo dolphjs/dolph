@@ -13,6 +13,7 @@
       "@common/*": ["common/*"],
       "@samples/*": ["samples/*"]
     },
-    "moduleResolution": "nodenext"
+    "moduleResolution": "nodenext",
+    "module": "nodenext"
   }
 }

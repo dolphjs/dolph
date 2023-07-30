@@ -1,1 +1,1 @@
-export type dolphPort = string;
+export type dolphPort = number | string;
