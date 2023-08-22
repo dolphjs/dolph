@@ -8,5 +8,9 @@ dolph.enableCors();
 
 autoInitMongo({ url: 'mongodb://127.0.0.1:27017/dolphjs' });
 
+logger.info('This is an info message');
+logger.warn('This is a warning message');
+logger.debug('This is a debug message');
+logger.error('This is an error message');
+
 dolph.start();
-logger.warn(dolph.env);

@@ -1,32 +1,38 @@
 import winston from 'winston';
 import clc from 'cli-color';
 import DailyRotateFile from 'winston-daily-rotate-file';
+import moment from 'moment';
 
 const logger = winston.createLogger({
   levels: {
-    info: 0,
+    error: 0,
     warn: 1,
-    debug: 2,
-    error: 3,
+    info: 2,
+    debug: 3,
   },
   format: winston.format.combine(
     winston.format.timestamp(),
     winston.format.printf((info) => {
       const { timestamp, level, message, stack } = info;
-      const formattedTimestamp = clc.cyanBright(new Date(timestamp).toUTCString());
+      const formattedTimestamp = clc.white(moment(timestamp).format('YYYY-MM-DD HH:mm:ss'));
       let formattedLevel: string;
+
+      let newMessage: string = message;
 
       if (level === 'info') {
         formattedLevel = clc.blue(`[${level.toUpperCase()}]`);
       } else if (level === 'warn') {
         formattedLevel = clc.yellow(`[${level.toUpperCase()}]`);
+        newMessage = clc.yellowBright(message);
       } else if (level === 'debug') {
-        formattedLevel = clc.cyan(`[${level.toUpperCase()}]`);
+        formattedLevel = clc.green(`[${level.toUpperCase()}]`);
+        newMessage = clc.greenBright(message);
       } else if (level === 'error') {
         formattedLevel = clc.red(`[${level.toUpperCase()}]`);
+        newMessage = clc.redBright(message);
       }
 
-      let logMessage = `${formattedLevel}: ${formattedTimestamp} ${message}`;
+      let logMessage = `${formattedLevel}: ${formattedTimestamp} ${newMessage}`;
 
       if (stack) {
         logMessage += `\n${stack}`;
@@ -36,7 +42,7 @@ const logger = winston.createLogger({
     }),
   ),
   transports: [
-    new winston.transports.Console(),
+    new winston.transports.Console({ level: 'debug' }),
     new DailyRotateFile({
       level: 'debug',
       filename: `logs/%DATE%.log`,
