@@ -1,9 +1,10 @@
-import { Request, Response } from 'express';
-import { DolphControllerHandler, DolphServiceHandler } from '../../common/classes';
+import { NextFunction, Request, Response } from 'express';
+import { DolphControllerHandler, DolphServiceHandler, JwtAuthDec } from '../../common/classes';
 import { TryCatchAsyncFn, TryCatchFn } from '../../common/middlewares';
 import { AppService } from './app.service';
 import { BadRequestException, SuccessResponse } from '../../common/api';
-
+import { generateJWTwithHMAC } from '../../common/utilities/auth';
+import moment from 'moment';
 class AppController extends DolphControllerHandler<string> {
   serviceHandlers: DolphServiceHandler<string>[] = [new AppService()];
 
@@ -20,11 +21,25 @@ class AppController extends DolphControllerHandler<string> {
     SuccessResponse({ res, msg: response });
   });
 
-  public readonly createUser = TryCatchAsyncFn(async (req: Request, res: Response) => {
+  @(new JwtAuthDec().Verify('random_secret'))
+  async createUser(req: Request, res: Response) {
     const { body } = req;
     if (body.height < 1.7) throw new BadRequestException('sorry, you are too short for this program');
-    const data = this.appService()?.createUser(body);
+    const data = new AppController().appService()?.createUser(body);
     SuccessResponse({ res, body: data });
+  }
+
+  public register = TryCatchAsyncFn(async (req: Request, res: Response, next: NextFunction) => {
+    const { username } = req.body;
+    const token = generateJWTwithHMAC({
+      payload: {
+        exp: moment.duration(3000, 'seconds').asSeconds(),
+        iat: moment.duration(5000, 'seconds').asSeconds(),
+        sub: username,
+      },
+      secret: 'random_secret',
+    });
+    SuccessResponse({ res, body: token });
   });
 }
 
