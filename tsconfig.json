@@ -3,6 +3,9 @@
   "compilerOptions": {
     "allowJs": true,
     "declaration": true,
+    "experimentalDecorators": true,
+    "esModuleInterop": true,
+    "strictFunctionTypes": false,
     "emitDeclarationOnly": true,
     "declarationMap": true,
     "target": "ES2022",
