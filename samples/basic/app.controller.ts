@@ -5,6 +5,7 @@ import { AppService } from './app.service';
 import { BadRequestException, SuccessResponse } from '../../common/api';
 import { generateJWTwithHMAC } from '../../common/utilities/auth';
 import moment from 'moment';
+import { MediaParser } from '../../common';
 class AppController extends DolphControllerHandler<string> {
   serviceHandlers: DolphServiceHandler<string>[] = [new AppService()];
 
@@ -22,9 +23,11 @@ class AppController extends DolphControllerHandler<string> {
   });
 
   @JWTAuthVerifyDec('random_secret')
+  @MediaParser({ fieldname: 'upload', type: 'single' })
   @TryCatchAsyncDec
   public createUser(req: Request, res: Response) {
-    const { body } = req;
+    const { body, file } = req;
+    console.log(file);
     if (body.height < 1.7) throw new BadRequestException('sorry, you are too short for this program');
     const data = new AppController().appService()?.createUser(body);
     SuccessResponse({ res, body: data });
