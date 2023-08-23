@@ -58,6 +58,7 @@
   "dependencies": {
     "@dolphjs/core": "^0.0.5-beta",
     "cors": "^2.8.5",
+    "eventemitter3": "^5.0.1",
     "express": "^4.18.2",
     "joi": "^17.9.2",
     "moment": "^2.29.4",

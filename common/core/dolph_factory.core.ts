@@ -38,7 +38,9 @@ class DolphFactoryClass {
 
   public start() {
     const server = this.dolph.app.listen(this.port, () => {
-      logger.info(clc.blueBright(`DOLPH APP RUNNING ON PORT ${this.port} IN ${this.env.toUpperCase()} MODE`));
+      logger.info(
+        clc.blueBright(`DOLPH APP RUNNING ON PORT ${clc.white(`${this.port}`)} IN ${this.env.toUpperCase()} MODE`),
+      );
     });
     return server;
   }

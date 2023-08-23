@@ -1,7 +1,12 @@
+import { InjectMongo } from '../../common';
 import { DolphServiceHandler } from '../../common/classes';
+import { userModel } from './app.model';
+import { Model, Document } from 'mongoose';
 
+@InjectMongo('userModel', userModel)
 class AppService extends DolphServiceHandler<'app'> {
   protected schema: any;
+  userModel!: Model<Document>;
   constructor() {
     super('app');
   }
@@ -11,13 +16,8 @@ class AppService extends DolphServiceHandler<'app'> {
     return greeting;
   };
 
-  createUser = (body: any) => {
-    const data = {
-      name: body.name,
-      age: body.age,
-      height: `${body.height}m`,
-      occupation: body.work,
-    };
+  createUser = async (body: any) => {
+    const data = await this.userModel.create(body);
     return data;
   };
 }

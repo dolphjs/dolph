@@ -23,17 +23,16 @@ class AppController extends DolphControllerHandler<string> {
   });
 
   @JWTAuthVerifyDec('random_secret')
-  @MediaParser({ fieldname: 'upload', type: 'single' })
+  @MediaParser({ fieldname: 'upload', type: 'single', extensions: ['.png'] })
   @TryCatchAsyncDec
-  public createUser(req: Request, res: Response) {
+  public async createUser(req: Request, res: Response) {
     const { body, file } = req;
-    console.log(file);
     if (body.height < 1.7) throw new BadRequestException('sorry, you are too short for this program');
-    const data = new AppController().appService()?.createUser(body);
-    SuccessResponse({ res, body: data });
+    const data = await new AppController().appService()?.createUser(body);
+    SuccessResponse({ res, body: { data, filename: file.filename } });
   }
 
-  public register = TryCatchAsyncFn(async (req: Request, res: Response, next: NextFunction) => {
+  public readonly register = TryCatchAsyncFn(async (req: Request, res: Response, next: NextFunction) => {
     const { username } = req.body;
     const token = generateJWTwithHMAC({
       payload: {
