@@ -1,0 +1,6 @@
+database:
+  type: mongo
+  uri: mongodb://127.0.0.1:27017/dolphjs
+middlewares:
+  cors: activate
+port: 3030
