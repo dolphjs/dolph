@@ -5,7 +5,6 @@ import { Model, Document } from 'mongoose';
 
 @InjectMongo('userModel', userModel)
 class AppService extends DolphServiceHandler<'app'> {
-  protected schema: any;
   userModel!: Model<Document>;
   constructor() {
     super('app');

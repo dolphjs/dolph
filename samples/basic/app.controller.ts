@@ -5,20 +5,15 @@ import { AppService } from './app.service';
 import { BadRequestException, SuccessResponse } from '../../common/api';
 import { generateJWTwithHMAC } from '../../common/utilities/auth';
 import moment from 'moment';
-import { MediaParser } from '../../common';
-class AppController extends DolphControllerHandler<string> {
-  serviceHandlers: DolphServiceHandler<string>[] = [new AppService()];
+import { InjectServiceHandler, MediaParser } from '../../common';
 
-  protected readonly appService = () => {
-    const service = this.getHandler('app');
-    if (service instanceof AppService) {
-      return service;
-    }
-  };
+@InjectServiceHandler([{ serviceHandler: AppService, serviceName: 'appservice' }])
+class AppController extends DolphControllerHandler<string> {
+  appservice!: AppService;
 
   public readonly sendGreeting = TryCatchFn((req: Request, res: Response) => {
     const { body } = req;
-    const response = this.appService()?.greeting(body);
+    const response = this.appservice.greeting(body);
     SuccessResponse({ res, msg: response });
   });
 
@@ -28,7 +23,7 @@ class AppController extends DolphControllerHandler<string> {
   public async createUser(req: Request, res: Response) {
     const { body, file } = req;
     if (body.height < 1.7) throw new BadRequestException('sorry, you are too short for this program');
-    const data = await new AppController().appService()?.createUser(body);
+    const data = await new AppController().appservice.createUser(body);
     SuccessResponse({ res, body: { data, filename: file.filename } });
   }
 
