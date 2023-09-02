@@ -8,23 +8,31 @@ import moment from 'moment';
 import { InjectServiceHandler, MediaParser } from '../../common';
 
 @InjectServiceHandler([{ serviceHandler: AppService, serviceName: 'appservice' }])
-class AppController extends DolphControllerHandler<string> {
+class ControllerService {
   appservice!: AppService;
+}
+
+const controllerServices = new ControllerService();
+class AppController extends DolphControllerHandler<string> {
+  constructor() {
+    super();
+    this.createUser = this.createUser.bind(this);
+  }
 
   public readonly sendGreeting = TryCatchFn((req: Request, res: Response) => {
     const { body } = req;
-    const response = this.appservice.greeting(body);
+    const response = controllerServices.appservice.greeting(body);
     SuccessResponse({ res, msg: response });
   });
 
+  @TryCatchAsyncDec
   @JWTAuthVerifyDec('random_secret')
   @MediaParser({ fieldname: 'upload', type: 'single', extensions: ['.png'] })
-  @TryCatchAsyncDec
   public async createUser(req: Request, res: Response) {
     const { body, file } = req;
     if (body.height < 1.7) throw new BadRequestException('sorry, you are too short for this program');
-    const data = await new AppController().appservice.createUser(body);
-    SuccessResponse({ res, body: { data, filename: file.filename } });
+    const data = await controllerServices.appservice.createUser(body);
+    SuccessResponse({ res, body: { data, file: file } });
   }
 
   public readonly register = TryCatchAsyncFn(async (req: Request, res: Response, next: NextFunction) => {
@@ -40,5 +48,5 @@ class AppController extends DolphControllerHandler<string> {
     SuccessResponse({ res, body: token });
   });
 }
-
+// const appController = new AppController();
 export { AppController };

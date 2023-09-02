@@ -29,71 +29,74 @@ const arrayUpload = (
 function MediaParser(options: IMediaParserOptions) {
   return (_target: any, _propertyKey: string, desccriptor?: TypedPropertyDescriptor<any>) => {
     const originalMethod = desccriptor.value;
+    try {
+      desccriptor.value = async (req: Request, res: Response, next: NextFunction) => {
+        if (!req.headers['content-type'].startsWith('multipart/form-data')) {
+          return ErrorResponse({
+            res,
+            status: 400,
+            msg: 'The request body has no media file atached, epected `multipart/form-data`',
+          });
+        }
 
-    desccriptor.value = TryCatchAsyncFn(async (req: Request, res: Response, next: NextFunction) => {
-      if (!req.headers['content-type'].startsWith('multipart/form-data')) {
-        return ErrorResponse({
-          res,
-          status: 400,
-          msg: 'The request body has no media file atached, epected `multipart/form-data`',
-        });
-      }
+        const { fieldname, type, extensions, limit, storage } = options;
 
-      const { fieldname, type, extensions, limit, storage } = options;
+        let _extensions = defaultFileExtensions;
 
-      let _extensions = defaultFileExtensions;
+        if (extensions?.length) {
+          _extensions = extensions;
+        }
 
-      if (extensions?.length) {
-        _extensions = extensions;
-      }
+        const filter = (req: Request, file: Express.Multer.File, callback) => {
+          // if (!file) return ErrorResponse({ res, status: 400, msg: 'The request body has no media file atached' });
 
-      const filter = (req: Request, file: Express.Multer.File, callback) => {
-        // if (!file) return ErrorResponse({ res, status: 400, msg: 'The request body has no media file atached' });
+          const extensionCheck = _extensions.includes(path.extname(file.originalname).toLowerCase());
 
-        const extensionCheck = _extensions.includes(path.extname(file.originalname).toLowerCase());
+          if (!extensionCheck && file.originalname !== 'blob') {
+            callback(
+              ErrorResponse({
+                res,
+                status: 400,
+                msg: 'The media file you sent is not supported by this application',
+              }),
+              false,
+            );
+          } else {
+            callback(null, true);
+          }
+        };
 
-        if (!extensionCheck && file.originalname !== 'blob') {
-          callback(
-            ErrorResponse({
-              res,
-              status: 400,
-              msg: 'The media file you sent is not supported by this application',
-            }),
-            false,
-          );
+        if (type === 'single') {
+          const uploadMiddleware = singleUpload(storage || {}, filter, fieldname);
+          await new Promise<void>((resolve, reject) => {
+            uploadMiddleware(req, res, (err) => {
+              if (err) {
+                reject(err);
+              } else {
+                resolve();
+              }
+            });
+          });
+        }
+
+        if (type === 'array') {
+          const uploadMiddleware = arrayUpload(storage || {}, filter, fieldname, limit || 10);
+          await new Promise<void>((resolve, reject) => {
+            uploadMiddleware(req, res, (err) => {
+              if (err) {
+                reject(err);
+              } else {
+                resolve();
+              }
+            });
+          });
         } else {
-          callback(null, true);
+          return originalMethod.apply(this, [req, res, next]);
         }
       };
-
-      if (type === 'single') {
-        const uploadMiddleware = singleUpload(storage || {}, filter, fieldname);
-        await new Promise<void>((resolve, reject) => {
-          uploadMiddleware(req, res, (err) => {
-            if (err) {
-              reject(err);
-            } else {
-              resolve();
-            }
-          });
-        });
-      }
-
-      if (type === 'array') {
-        const uploadMiddleware = arrayUpload(storage || {}, filter, fieldname, limit || 10);
-        await new Promise<void>((resolve, reject) => {
-          uploadMiddleware(req, res, (err) => {
-            if (err) {
-              reject(err);
-            } else {
-              resolve();
-            }
-          });
-        });
-      } else {
-        return originalMethod.apply(this, [req, res, next]);
-      }
-    });
+    } catch (e) {
+      throw e;
+    }
   };
 }
 

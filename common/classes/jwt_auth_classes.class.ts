@@ -38,42 +38,47 @@ class JwtBasicAuth {
   });
 }
 
-function JWTAuthVerifyDec(tokenSecret: string) {
+const JWTAuthVerifyDec = (tokenSecret: string) => {
   return (_target: any, _propertyKey: string, descriptor?: TypedPropertyDescriptor<any>) => {
     const originalMethod = descriptor.value;
 
     // convert to normal func
-    descriptor.value = TryCatchAsyncFn(async (req: Request, res: Response, next: NextFunction) => {
-      let authToken: string | string[];
-      let authHeader: string;
+    descriptor.value = (req: Request, res: Response, next: NextFunction) => {
+      try {
+        const context = this;
+        let authToken: string | string[];
+        let authHeader: string;
 
-      if (req.headers[authHeaderName[0]]) {
-        authToken = req.headers[authHeaderName[0]];
-        authHeader = authHeaderName[0];
-      } else if (req.headers[authHeaderName[1]]) {
-        authToken = req.headers[authHeaderName[1]];
-        authHeader = authHeaderName[1];
-      }
+        if (req.headers[authHeaderName[0]]) {
+          authToken = req.headers[authHeaderName[0]];
+          authHeader = authHeaderName[0];
+        } else if (req.headers[authHeaderName[1]]) {
+          authToken = req.headers[authHeaderName[1]];
+          authHeader = authHeaderName[1];
+        }
 
-      if (authToken === '' || !authToken?.length)
-        return next(new ErrorException(httpStatus.UNAUTHORIZED, 'provide a valid token header'));
+        if (authToken === '' || !authToken?.length)
+          return next(new ErrorException(httpStatus.UNAUTHORIZED, 'provide a valid token header'));
 
-      let payload: IPayload;
-      if (authHeader === authHeaderName[1]) {
+        let payload: IPayload;
+        if (authHeader === authHeaderName[1]) {
+          //@ts-expect-error
+          payload = verifyJWTwithHMAC({ token: authToken, secret: tokenSecret });
+        } else if (authHeader === authHeaderName[0]) {
+          //@ts-expect-error
+          payload = verifyJWTwithRSA({ pathToPublicKey: tokenSecret, token: authToken });
+        }
         //@ts-expect-error
-        payload = verifyJWTwithHMAC({ token: authToken, secret: tokenSecret });
-      } else if (authHeader === authHeaderName[0]) {
-        //@ts-expect-error
-        payload = verifyJWTwithRSA({ pathToPublicKey: tokenSecret, token: authToken });
-      }
-      //@ts-expect-error
-      req.payload = payload;
+        req.payload = payload;
 
-      return originalMethod.apply(this, [req, res, next]);
-    });
+        return originalMethod.apply(context, [req, res, next]);
+      } catch (e) {
+        throw e;
+      }
+    };
 
     // return descriptor;
   };
-}
+};
 
 export { JwtBasicAuth, JWTAuthVerifyDec };
