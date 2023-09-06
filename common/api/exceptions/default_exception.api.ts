@@ -1,3 +1,6 @@
+/**
+ * @extends Error
+ */
 class DefaultException extends Error {
   statusCode: number;
   isOperational: boolean;

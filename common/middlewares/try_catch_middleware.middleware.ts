@@ -1,11 +1,25 @@
 import { Request, Response, NextFunction } from 'express';
 
+/**
+ *
+ * Creates an asynchronous function wrapped in a try-catch block
+ *
+ * This is the recommended function to be used for controllers and services that need try-catch
+ *
+ * @version 1.0.0
+ */
 const TryCatchAsyncFn =
   <TryCatchAsyncFn>(fn: (req: Request, res: Response, next: NextFunction) => Promise<TryCatchAsyncFn>) =>
   (req: Request, res: Response, next: NextFunction) => {
     Promise.resolve(fn(req, res, next)).catch((err) => next(err));
   };
 
+/**
+ *
+ * An asynchronous class-method decorator which wraps a method in a try-catch block
+ *
+ * Should be used as a top-most decorator
+ */
 const TryCatchAsyncDec = (target: any, propertyKey: string, descriptor: PropertyDescriptor) => {
   const originalMethod = descriptor.value;
 
@@ -23,6 +37,14 @@ const TryCatchAsyncDec = (target: any, propertyKey: string, descriptor: Property
   // return descriptor;
 };
 
+/**
+ *
+ * Creates a function wrapped in a try-catch block
+ *
+ * This is the recommended function to be used for controllers and services that  don't use try-catch blocks
+ *
+ * @version 1.0.0
+ */
 const TryCatchFn =
   (fn: (req: Request, res: Response, next: NextFunction) => void) => (req: Request, res: Response, next: NextFunction) => {
     Promise.resolve(fn(req, res, next)).catch((err) => next(err));

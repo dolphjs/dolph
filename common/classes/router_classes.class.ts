@@ -3,7 +3,7 @@ import { DolphControllerHandler } from './controller_classes.class';
 
 /**
  * Dolph's route handler
- * - The `path` method represents the api endpoint to be used as path for all routes unders this handler
+ * - The `path` method represents the api endpoint to be used as path for all routes under this handler
  *
  * - The `initRoutes` method takes in routes to be used by this handler
  * ```js
@@ -12,6 +12,7 @@ import { DolphControllerHandler } from './controller_classes.class';
   }
  * ```
  *
+ * @version 1.0.0
  */
 abstract class DolphRouteHandler<T extends string> {
   abstract path: T;

@@ -6,9 +6,10 @@
 import { DolphServiceHandler } from './service_classes.class';
 
 /**
- * ''DolphControllerHandler" takes a string generic.
+ * `DolphControllerHandler` takes a string generic.
  *
  */
+// Note: string generic would be useful in the future
 abstract class DolphControllerHandler<T extends string> {}
 
 export { DolphControllerHandler };

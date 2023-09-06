@@ -1,6 +1,12 @@
 import { DolphErrors } from '../../constants';
 import { passwordStrength } from '../../types';
 
+/**
+ *
+ * default dolphjs password validator
+ *
+ * checks for the level of strength of a password
+ */
 const validatePassword = (level: passwordStrength, value: string, helpers: any) => {
   if ((level = 'basic')) {
     if (value.length < 6) {

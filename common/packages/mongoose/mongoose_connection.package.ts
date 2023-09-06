@@ -7,6 +7,8 @@ import clc from 'cli-color';
  *
  * Used to initialize mongodb with mogoose ORM
  * @returns the mogoose promise
+ *
+ * @version 1.0.0
  */
 const initMongo = (config: MongooseConfig): Promise<typeof Dolph.mongoose> => {
   Dolph.mongoose.set('strictQuery', false);
@@ -15,7 +17,11 @@ const initMongo = (config: MongooseConfig): Promise<typeof Dolph.mongoose> => {
 
 /**
  *
- * Used to intiialize mongodb with mongoose ORM but the difference between it and `initMongo` is that it handles the promises on it's own
+ * Used to intiialize mongodb with mongoose ORM
+ *
+ * Unlike the `initMongo` function, it handles the promise by default
+ *
+ * @version 1.0.0
  */
 const autoInitMongo = (config: MongooseConfig): void => {
   initMongo(config)

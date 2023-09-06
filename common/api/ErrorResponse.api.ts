@@ -3,7 +3,7 @@ import { HttpStatus } from './HttpStatus.api';
 import { ResponseType } from '../types/response.type';
 
 /**
- *
+ * returns an error as response with the provided  parameters and a default `400` status code
  * @param {ResponseType} param takes in the `res` ,`status` , `msg` and `body` values
  */
 const ErrorResponse = (param: ResponseType): Response<any, Record<string, any>> => {

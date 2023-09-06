@@ -26,6 +26,11 @@ const arrayUpload = (
   return uploadFunc;
 };
 
+/**
+ *  dolphjs decorator  that processes media files
+ *
+ *  uses the `multer` library under the hood
+ */
 function MediaParser(options: IMediaParserOptions) {
   return (_target: any, _propertyKey: string, desccriptor?: TypedPropertyDescriptor<any>) => {
     const originalMethod = desccriptor.value;

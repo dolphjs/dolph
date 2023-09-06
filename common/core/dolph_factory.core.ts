@@ -12,6 +12,11 @@ import clc from 'cli-color';
 import { DolphConfig } from '../interfaces';
 d.config();
 
+/**
+ * The main engine for the dolph framework
+ *
+ * Uses the dolphjs library under the hood and acts like a wrapper
+ */
 class DolphFactoryClass {
   routes = [];
   port: dolphPort = 3030;
@@ -31,6 +36,8 @@ class DolphFactoryClass {
     const config: DolphConfig = yaml.load(configContents);
     this.configs = config;
 
+    console.log(config);
+
     if (!config) return;
 
     if (config.port) {
@@ -38,7 +45,7 @@ class DolphFactoryClass {
     }
 
     if (config.middlewares) {
-      if (config.middlewares.cors === 'activate') {
+      if (config.middlewares.cors.activate) {
         this.enableCors();
       }
     }

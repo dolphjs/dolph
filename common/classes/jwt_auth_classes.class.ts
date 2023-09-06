@@ -6,6 +6,11 @@ import { verifyJWTwithHMAC, verifyJWTwithRSA } from '../utilities/auth';
 
 const authHeaderName: Array<string> = ['x-auth-token', 'authorization'];
 
+/**
+ * Takes a `tokenSecret` parameter
+ *
+ * The Verify method is used to verify JWT token/ private key
+ */
 // Authorization - used when it's just secret used
 // x-auth-token - used when it's private and public keys being used
 class JwtBasicAuth {
@@ -38,6 +43,12 @@ class JwtBasicAuth {
   });
 }
 
+/**
+ *
+ * class-method decorator used for authorization based on the dolphjs default authentication and authorization design
+ *
+ * @version 1.0.0
+ */
 const JWTAuthVerifyDec = (tokenSecret: string) => {
   return (_target: any, _propertyKey: string, descriptor?: TypedPropertyDescriptor<any>) => {
     const originalMethod = descriptor.value;
