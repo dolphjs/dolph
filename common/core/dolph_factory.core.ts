@@ -36,8 +36,6 @@ class DolphFactoryClass {
     const config: DolphConfig = yaml.load(configContents);
     this.configs = config;
 
-    console.log(config);
-
     if (!config) return;
 
     if (config.port) {
