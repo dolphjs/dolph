@@ -1,6 +1,7 @@
 database:
-  type: mongo
-  uri: mongodb://127.0.0.1:27017/dolphjs
+  mongo:
+    url: mongodb://127.0.0.1:27017/dolphjs
+    options:
 middlewares:
   cors:
     activate: true

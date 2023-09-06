@@ -19,7 +19,7 @@ const initMongo = (config: MongooseConfig): Promise<typeof Dolph.mongoose> => {
  *
  * Used to intiialize mongodb with mongoose ORM
  *
- * Unlike the `initMongo` function, it handles the promise by default
+ * Unlike the `initMongo` function, it handles the promise
  *
  * @version 1.0.0
  */

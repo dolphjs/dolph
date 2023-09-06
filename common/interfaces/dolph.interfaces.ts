@@ -1,4 +1,6 @@
+import { mongoose } from '@dolphjs/core';
 import { DolphDbs, DolphMiddlewareOption, dolphPort } from '..';
+import { MongooseConfig } from '.';
 
 export interface DolphConfig {
   database?: DolphConfigDbOption;
@@ -8,8 +10,7 @@ export interface DolphConfig {
 }
 
 export interface DolphConfigDbOption {
-  type?: DolphDbs;
-  uri?: string;
+  mongo: MongooseConfig;
 }
 
 export interface DolphConfigMiddlewares {

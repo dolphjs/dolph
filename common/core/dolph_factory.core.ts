@@ -9,7 +9,8 @@ import { readFileSync } from 'fs';
 import yaml from 'js-yaml';
 import * as d from 'dotenv';
 import clc from 'cli-color';
-import { DolphConfig } from '../interfaces';
+import { DolphConfig, MongooseConfig } from '../interfaces';
+import { autoInitMongo } from '../packages';
 d.config();
 
 /**
@@ -44,7 +45,17 @@ class DolphFactoryClass {
 
     if (config.middlewares) {
       if (config.middlewares.cors.activate) {
-        this.enableCors();
+        const { optionsSuccessStatus, allowedHeaders, credentials, exposedHeaders, maxAge, origin, preflightContinue } =
+          config.middlewares.cors;
+        this.enableCors({
+          optionsSuccessStatus,
+          allowedHeaders,
+          exposedHeaders,
+          credentials,
+          maxAge,
+          origin,
+          preflightContinue,
+        });
       }
     }
     // console.log(config);
@@ -73,6 +84,9 @@ class DolphFactoryClass {
         clc.blueBright(`DOLPH APP RUNNING ON PORT ${clc.white(`${this.port}`)} IN ${this.env.toUpperCase()} MODE`),
       );
     });
+    if (this.configs.database?.mongo?.url.length > 1) {
+      autoInitMongo(this.configs.database.mongo);
+    }
     return server;
   }
 }

@@ -2,13 +2,13 @@ import { DolphConstructor } from '../interfaces';
 
 export type DolphDbs = 'mongo' | 'postgre' | 'mysql' | 'sqllite' | 'maria' | 'cassandra';
 export type DolphMiddlewareOption = {
-  activate?: Boolean | undefined;
+  activate?: boolean | undefined;
   origin?: string | undefined;
-  allowedHeaders?: Array<string> | undefined | null;
+  allowedHeaders?: string[] | undefined | null;
   maxAge?: number | undefined;
-  exposedHeaders?: Array<string> | null | undefined;
-  credentials?: Boolean | undefined;
-  preflightContinue?: Boolean | undefined;
+  exposedHeaders?: string[] | null | undefined;
+  credentials?: boolean | undefined;
+  preflightContinue?: boolean | undefined;
   optionsSuccessStatus: number | undefined;
 };
 
