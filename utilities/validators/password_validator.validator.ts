@@ -1,5 +1,5 @@
-import { DolphErrors } from '../../constants';
-import { passwordStrength } from '../../types';
+import { DolphErrors } from '../../common/constants';
+import { passwordStrength } from '../../common';
 
 /**
  *

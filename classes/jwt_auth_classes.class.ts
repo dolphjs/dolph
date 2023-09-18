@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from 'express';
-import { ErrorException, TryCatchAsyncFn } from '..';
+import { ErrorException, TryCatchAsyncFn } from '../common';
 import { httpStatus } from '@dolphjs/core';
-import { IPayload } from '../interfaces';
+import { IPayload } from '../common';
 import { verifyJWTwithHMAC, verifyJWTwithRSA } from '../utilities/auth';
 
 const authHeaderName: Array<string> = ['x-auth-token', 'authorization'];

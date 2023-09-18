@@ -1,4 +1,4 @@
-import { Router } from '../../node_modules/@dolphjs/core/lib/Dolph';
+import { Router } from '@dolphjs/core';
 import { DolphControllerHandler } from './controller_classes.class';
 
 /**

@@ -1,5 +1,5 @@
-import { DolphControllerHandler, DolphServiceMapping } from '../..';
-import { DolphConstructor } from '../../interfaces';
+import { DolphServiceMapping } from '../../common';
+import { DolphConstructor } from '../../common';
 
 /**
  *

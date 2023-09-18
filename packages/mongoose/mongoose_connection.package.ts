@@ -1,5 +1,5 @@
 import Dolph from '@dolphjs/core/lib/Dolph';
-import { MongooseConfig } from '../../interfaces/mongoose.interface';
+import { MongooseConfig } from '../../common';
 import { logger } from '../../utilities/logger.utilities';
 import clc from 'cli-color';
 

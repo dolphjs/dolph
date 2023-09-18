@@ -1,5 +1,5 @@
 import { hash, verify } from 'argon2';
-import { argonHahsParam, bcryptCompareParam } from '../..';
+import { argonHahsParam, bcryptCompareParam } from '../../common';
 
 /**
  *

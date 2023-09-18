@@ -1,5 +1,5 @@
 import clc from 'cli-color';
-import { logger } from '../../utilities/logger.utilities';
+import { logger } from '../../utilities';
 import { Sequelize } from 'sequelize';
 
 /**
