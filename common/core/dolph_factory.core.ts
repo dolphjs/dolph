@@ -10,7 +10,7 @@ import yaml from 'js-yaml';
 import * as d from 'dotenv';
 import clc from 'cli-color';
 import { DolphConfig, MongooseConfig } from '../interfaces';
-import { autoInitMongo } from '../packages';
+import { autoInitMongo, autoInitMySql } from '../packages';
 d.config();
 
 /**
@@ -87,6 +87,14 @@ class DolphFactoryClass {
     if (this.configs.database?.mongo?.url.length > 1) {
       autoInitMongo(this.configs.database.mongo);
     }
+    // if (this.configs.database?.mysql?.host.length > 1) {
+    //   autoInitMySql(
+    //     this.configs.database.mysql.database,
+    //     this.configs.database.mysql.user,
+    //     this.configs.database.mysql.pass,
+    //     this.configs.database.mysql.host,
+    //   );
+    // }
     return server;
   }
 }

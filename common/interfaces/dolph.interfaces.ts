@@ -11,6 +11,14 @@ export interface DolphConfig {
 
 export interface DolphConfigDbOption {
   mongo: MongooseConfig;
+  mysql: MySqlConfig;
+}
+
+export interface MySqlConfig {
+  host: string;
+  database: string;
+  user: string;
+  pass?: string | null;
 }
 
 export interface DolphConfigMiddlewares {

@@ -1,7 +1,9 @@
 import { DolphFactory } from '../../common/core';
 import { autoInitMySql } from '../../common/packages';
 import { routes } from './index.routes';
+import { mysql } from './sqlDb';
 
 const dolph = new DolphFactory(routes);
-autoInitMySql('dolph', 'root', 'Uduak15abasi%', 'http://localhost:3306');
+autoInitMySql(mysql);
+
 dolph.start();

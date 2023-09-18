@@ -1,3 +1,3 @@
 export * from './mongoose';
-export * from './internal_packages.ackages';
+export * from './internal_packages.packages';
 export * from './sequelize';

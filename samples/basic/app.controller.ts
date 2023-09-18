@@ -47,6 +47,14 @@ class AppController extends DolphControllerHandler<string> {
     });
     SuccessResponse({ res, body: token });
   });
+
+  @TryCatchAsyncDec
+  public async testMysql(req: Request, res: Response) {
+    const { username, age } = req.body;
+    console.log(username, age);
+    const result = await controllerServices.appservice.createSQLUser({ username, age });
+    SuccessResponse({ res, body: result });
+  }
 }
 // const appController = new AppController();
 export { AppController };

@@ -1,11 +1,16 @@
-import { InjectMongo } from '../../common';
+import { InjectMongo, InjectMySQL } from '../../common';
 import { DolphServiceHandler } from '../../common/classes';
 import { userModel } from './app.model';
 import { Model, Document } from 'mongoose';
+import { User } from './app.schema';
+import { ModelStatic, Model as SqlModel } from 'sequelize';
 
 @InjectMongo('userModel', userModel)
+@InjectMySQL('userMySqlModel', User)
 class AppService extends DolphServiceHandler<'app'> {
   userModel!: Model<Document>;
+  userMySqlModel!: ModelStatic<SqlModel<any, any>>;
+
   constructor() {
     super('app');
   }
@@ -18,6 +23,10 @@ class AppService extends DolphServiceHandler<'app'> {
   createUser = async (body: any) => {
     const data = await this.userModel.create(body);
     return data;
+  };
+
+  createSQLUser = async (body: { username: string; age: string }) => {
+    return this.userMySqlModel.create(body);
   };
 }
 
