@@ -1,16 +1,13 @@
 import { RequestHandler, Router } from 'express';
-import Dolph from '../../node_modules/@dolphjs/core/lib/Dolph';
-import { dolphEnv } from '../types/dolph_env.type';
-import { dolphPort } from '../types/dolph_port.type';
-import { DolphRouteHandler, TryCatchAsyncDec } from '..';
+import Dolph from '@dolphjs/core/lib/Dolph';
 import { CorsOptions } from 'cors';
-import { logger } from '../utilities/logger.utilities';
 import { readFileSync } from 'fs';
 import yaml from 'js-yaml';
 import * as d from 'dotenv';
 import clc from 'cli-color';
-import { DolphConfig, MongooseConfig } from '../interfaces';
-import { autoInitMongo, autoInitMySql } from '../packages';
+import { DolphConfig, TryCatchAsyncDec, dolphPort } from '@/common';
+import { logger } from '@/utilities';
+import { autoInitMongo } from '@/packages';
 d.config();
 
 /**

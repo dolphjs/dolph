@@ -1,6 +1,5 @@
-import { Router } from '../../node_modules/@dolphjs/core/lib/Dolph';
-import { DolphControllerHandler } from './controller_classes.class';
-
+import { Router } from '@dolphjs/core';
+import { DolphControllerHandler } from '.';
 /**
  * Dolph's route handler
  * - The `path` method represents the api endpoint to be used as path for all routes under this handler

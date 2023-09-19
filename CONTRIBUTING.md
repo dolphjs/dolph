@@ -30,6 +30,10 @@ DolphJS is strictly built with the OOP approach.
 
 In particular, you should prefer arrow functions `const myFunction = () => ...` to named `functions` for top-level functions.
 
+### Package Manager
+
+- Use only yarn
+
 ### Style
 
 - Use semicolons.

@@ -1,5 +1,5 @@
 import { genSalt, hashSync, compareSync } from 'bcryptjs';
-import { bcryptCompareParam, bcryptHashParam } from '../../types';
+import { bcryptCompareParam, bcryptHashParam } from '../../common';
 
 /**
  *

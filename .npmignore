@@ -1,0 +1,11 @@
+# source
+
+log
+
+# configuration
+yarn-error.log
+tslint.json
+tsconfig.json
+.prettierrc
+
+*.tsbuildinfo

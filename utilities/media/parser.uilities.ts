@@ -1,6 +1,6 @@
 import multer from 'multer';
-import { IMediaParserOptions } from '../../interfaces';
-import { ErrorResponse, TryCatchAsyncFn } from '../..';
+import { IMediaParserOptions } from '../../common';
+import { ErrorResponse } from '../../common';
 import { NextFunction, Request, Response } from 'express';
 import { defaultFileExtensions } from './file_extensions.utilities';
 import path from 'path';

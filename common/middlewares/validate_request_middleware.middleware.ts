@@ -1,8 +1,6 @@
 import { NextFunction, Request, Response } from 'express';
-import { DefaultMiddleware } from './default_middleware.middleware';
-import { pick } from '../api';
+import { BadRequestException, pick } from '../api';
 import Joi = require('joi');
-import { BadRequestException } from '../api/exceptions';
 
 /**
  *

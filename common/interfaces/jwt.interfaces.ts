@@ -1,5 +1,3 @@
-import moment, { Moment } from 'moment';
-
 export interface IPayload {
   sub: string | object | Buffer;
   iat: number;

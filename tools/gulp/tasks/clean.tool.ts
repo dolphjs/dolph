@@ -8,7 +8,8 @@ import * as deleteEmpty from 'delete-empty';
  */
 
 function cleanOutput() {
-  return src([`${source}/**/*.js`, `${source}/**/*.d.ts`, `${source}/**/*.js.map`, `${source}/**/*.d.ts.map`], {
+  // `${source}/**/*.d.ts`;
+  return src([`${source}/**/*.js`, `${source}/**/*.js.map`, `${source}/**/*.d.ts.map`], {
     read: false,
   }).pipe(clean());
 }

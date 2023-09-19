@@ -1,11 +1,12 @@
 import { NextFunction, Request, Response } from 'express';
-import { DolphControllerHandler, DolphServiceHandler, JWTAuthVerifyDec } from '../../common/classes';
+import { DolphControllerHandler, DolphServiceHandler, JWTAuthVerifyDec } from '../../classes';
 import { TryCatchAsyncDec, TryCatchAsyncFn, TryCatchFn } from '../../common/middlewares';
 import { AppService } from './app.service';
-import { BadRequestException, SuccessResponse } from '../../common/api';
-import { generateJWTwithHMAC } from '../../common/utilities/auth';
+import { BadRequestException, SuccessResponse } from '../../common';
+import { generateJWTwithHMAC } from '../../utilities';
 import moment from 'moment';
-import { InjectServiceHandler, MediaParser } from '../../common';
+import { MediaParser } from '../../utilities';
+import { InjectServiceHandler } from '../../decorators';
 
 @InjectServiceHandler([{ serviceHandler: AppService, serviceName: 'appservice' }])
 class ControllerService {

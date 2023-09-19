@@ -1,5 +1,5 @@
 import JWT from 'jsonwebtoken';
-import { IPayload } from '../../interfaces';
+import { IPayload } from '../../common';
 import { readFileSync } from 'fs';
 
 /**

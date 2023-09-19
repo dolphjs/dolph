@@ -1,5 +1,5 @@
-import { InjectMongo, InjectMySQL } from '../../common';
-import { DolphServiceHandler } from '../../common/classes';
+import { InjectMongo, InjectMySQL } from '../../decorators';
+import { DolphServiceHandler } from '../../classes';
 import { userModel } from './app.model';
 import { Model, Document } from 'mongoose';
 import { User } from './app.schema';

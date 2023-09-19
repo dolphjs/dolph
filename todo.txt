@@ -1,3 +1,4 @@
 hide other fields except message field for exceptions
 next version: inserting of routes via decorator
 expose mysql and mongo
+change name to @dolphjs

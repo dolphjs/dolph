@@ -1,5 +1,4 @@
-import { DolphControllerHandler, DolphServiceMapping } from '../..';
-import { DolphConstructor } from '../../interfaces';
+import { DolphConstructor, DolphServiceMapping } from '@/common';
 
 /**
  *
@@ -9,7 +8,7 @@ import { DolphConstructor } from '../../interfaces';
  * @version 1.0.0
  */
 function InjectServiceHandler<T>(serivceMappings: DolphServiceMapping<any>[]) {
-  return function <Base extends DolphConstructor>(BaseClass: Base) {
+  return function <Base extends DolphConstructor>(BaseClass: Base): Base {
     return class extends BaseClass {
       constructor(...args: any[]) {
         super(...args);

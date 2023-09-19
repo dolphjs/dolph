@@ -1,4 +1,4 @@
-import { DolphRouteHandler } from '../../common/classes';
+import { DolphRouteHandler } from '../../classes';
 import { AppController } from './app.controller';
 import { reqValidatorMiddleware } from '../../common/middlewares';
 import { createUser } from './app.validator';
