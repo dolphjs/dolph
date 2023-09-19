@@ -1,6 +1,6 @@
 {
   "name": "@dolphjs/main",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "New-Age, developer friendly node.js framework",
   "main": "index.js",
   "repository": "https://github.com/dolphjs/dolph",
@@ -31,7 +31,8 @@
     "copy:readme": "gulp copy:readme",
     "copy:license": "gulp copy:license",
     "copy:npm-ignore": "gulp copy:npm-ignore",
-    "copy:all": "npm run copy:package-json && npm run copy:readme && npm run copy:license && npm run copy:npm-ignore"
+    "copy:all": "npm run copy:package-json && npm run copy:readme && npm run copy:license && npm run copy:npm-ignore",
+    "pre:publish": "npm run build && npm run copy:all"
   },
   "lint-staged": {
     "**/*.ts": [

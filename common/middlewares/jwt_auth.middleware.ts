@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from 'express';
 import { TryCatchAsyncFn } from '.';
-import { JwtBasicAuth } from '@/classes';
+import { JwtBasicAuth } from '../../classes';
 
 /**
  *

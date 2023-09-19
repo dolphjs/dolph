@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from 'express';
 import { httpStatus } from '@dolphjs/core';
-import { ErrorException, IPayload, TryCatchAsyncFn } from '@/common';
+import { ErrorException, IPayload, TryCatchAsyncFn } from '../common';
 
 const authHeaderName: Array<string> = ['x-auth-token', 'authorization'];
 

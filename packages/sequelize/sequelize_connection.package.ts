@@ -1,4 +1,4 @@
-import { logger } from '@/utilities';
+import { logger } from '../../utilities';
 import clc from 'cli-color';
 import { Sequelize } from 'sequelize';
 
