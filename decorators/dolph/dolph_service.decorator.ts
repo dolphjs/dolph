@@ -8,7 +8,7 @@ import { DolphConstructor, DolphServiceMapping } from '@dolphjs/common';
  * @version 1.0.0
  */
 function InjectServiceHandler<T>(serivceMappings: DolphServiceMapping<any>[]) {
-  return function <Base extends DolphConstructor>(BaseClass: Base) {
+  return function <Base extends DolphConstructor>(BaseClass: Base): Base {
     return class extends BaseClass {
       constructor(...args: any[]) {
         super(...args);
