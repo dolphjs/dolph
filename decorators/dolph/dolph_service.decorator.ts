@@ -1,5 +1,4 @@
-import { DolphServiceMapping } from '../../common';
-import { DolphConstructor } from '../../common';
+import { DolphConstructor, DolphServiceMapping } from '@dolphjs/common';
 
 /**
  *

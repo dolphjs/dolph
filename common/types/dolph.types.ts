@@ -1,4 +1,4 @@
-import { DolphConstructor } from '../interfaces';
+import { DolphConstructor } from '..';
 
 export type DolphDbs = 'mongo' | 'postgre' | 'mysql' | 'sqllite' | 'maria' | 'cassandra';
 export type DolphMiddlewareOption = {

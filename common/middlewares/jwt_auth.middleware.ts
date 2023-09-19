@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from 'express';
 import { TryCatchAsyncFn } from '.';
-import { JwtBasicAuth } from '..';
+import { JwtBasicAuth } from '@dolphjs/classes';
 
 /**
  *

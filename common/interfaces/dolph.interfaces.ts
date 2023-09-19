@@ -1,4 +1,3 @@
-import { mongoose } from '@dolphjs/core';
 import { DolphDbs, DolphMiddlewareOption, dolphPort } from '..';
 import { MongooseConfig } from '.';
 

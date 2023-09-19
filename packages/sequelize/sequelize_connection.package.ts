@@ -1,5 +1,5 @@
+import { logger } from '@dolphjs/utilities';
 import clc from 'cli-color';
-import { logger } from '../../utilities';
 import { Sequelize } from 'sequelize';
 
 /**
