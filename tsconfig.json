@@ -1,13 +1,5 @@
 {
-  "include": [
-    "utilities/**/*",
-    "common/**/*",
-    "samples/**/*",
-    "core/**/*",
-    "decorators/**/*",
-    "packages/**/*",
-    "classes/**/*"
-  ],
+  "include": ["utilities/**/*", "common/**/*", "core/**/*", "decorators/**/*", "packages/**/*", "classes/**/*", "index.ts"],
   "exclude": ["node_modules"],
   "compilerOptions": {
     "allowJs": false,
@@ -19,26 +11,25 @@
     "strictFunctionTypes": false,
     "emitDeclarationOnly": false,
     "emitDecoratorMetadata": true,
-    "declarationMap": true,
+    "declarationMap": false,
     "target": "ES2022",
     "baseUrl": ".",
     "outDir": "dist",
     "pretty": true,
     "paths": {
-      "@dolphjs/common": ["./common"],
-      "@dolphjs/common/*": ["./common/*"],
-      "@dolphjs/main": ["core"],
-      "@dolphjs/main/*": ["core/*"],
-      "@dolphjs/classes": ["classes"],
-      "@dolphjs/classes/*": ["classes/*"],
-      "@dolphjs/decorators": ["decorators"],
-      "@dolphjs/decorators/*": ["decorators/*"],
-      "@dolphjs/packages": ["packages"],
-      "@dolphjs/packages/*": ["packages/*"],
-      "@dolphjs/utilities": ["utilities"],
-      "@dolphjs/utilities/*": ["utilities/*"]
+      "@/common": ["./common"],
+      "@/common/*": ["./common/*"],
+      "@/main": ["core"],
+      "@/main/*": ["core/*"],
+      "@/classes": ["classes"],
+      "@/classes/*": ["classes/*"],
+      "@/decorators": ["decorators"],
+      "@/decorators/*": ["decorators/*"],
+      "@/packages": ["packages"],
+      "@/packages/*": ["packages/*"],
+      "@/utilities": ["utilities"],
+      "@/utilities/*": ["utilities/*"]
     },
-    "moduleResolution": "nodenext",
-    "module": "nodenext"
+    "module": "commonjs"
   }
 }

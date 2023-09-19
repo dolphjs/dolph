@@ -1,6 +1,6 @@
 {
-  "name": "@dolphjs/dolph",
-  "version": "1.0.0",
+  "name": "@dolphjs/main",
+  "version": "1.0.5",
   "description": "New-Age, developer friendly node.js framework",
   "main": "index.js",
   "repository": "https://github.com/dolphjs/dolph",
@@ -10,14 +10,51 @@
     "access": "public"
   },
   "scripts": {
-    "build": "tsc -b -v common",
+    "build:shell": "./compile.sh",
+    "build:classes": "tsc -b classes",
+    "build:common": "tsc -b common",
+    "build:core": "tsc -b core",
+    "build:decorators": "tsc -b decorators",
+    "build:packages": "tsc -b packages",
+    "build:utilities": "tsc -b utilities",
+    "build:all": "npm run build:classes && npm run build:common && npm run build:core && npm run build:decorators && npm run build:packages && npm run build:utilities",
+    "build": "tsc -b -v .",
     "dev:start": "cross-env NODE_ENV=development nodemon",
-    "build:dev": "tsc -b -v common --watch",
+    "build:dev": "tsc -b -v . --watch",
     "prebuild:prod": "npm run clean",
     "build:prod": "tsc -b -v common",
     "build:sample": "tsc -b -v samples",
-    "clean": "tsc -b --clean packages",
-    "format": "prettier \"**/*.ts\" \"common/**/*.json\" --ignore-path ./.prettierignore --write && git status"
+    "clean": "npm run clean:all",
+    "clean:all": "tsc -b --clean classes common core decorators packages utilities",
+    "format": "prettier \"**/*.ts\" \"common/**/*.json\" --ignore-path ./.prettierignore --write && git status",
+    "copy:package-json": "gulp copy:package-json",
+    "copy:readme": "gulp copy:readme",
+    "copy:license": "gulp copy:license",
+    "copy:npm-ignore": "gulp copy:npm-ignore",
+    "copy:all": "npm run copy:package-json && npm run copy:readme && npm run copy:license && npm run copy:npm-ignore"
+  },
+  "lint-staged": {
+    "**/*.ts": [
+      "prettier --ignore-path ./.prettierignore --write"
+    ],
+    "core/**/*.json": [
+      "prettier --ignore-path ./.prettierignore --write"
+    ],
+    "common/**/*.json": [
+      "prettier --ignore-path ./.prettierignore --write"
+    ],
+    "classes/**/*.json": [
+      "prettier --ignore-path ./.prettierignore --write"
+    ],
+    "decorators/**/*.json": [
+      "prettier --ignore-path ./.prettierignore --write"
+    ],
+    "packages/**/*.json": [
+      "prettier --ignore-path ./.prettierignore --write"
+    ],
+    "utilities/**/*.json": [
+      "prettier --ignore-path ./.prettierignore --write"
+    ]
   },
   "engines": {
     "node": ">= 18"
@@ -36,11 +73,7 @@
     "@types/sequelize": "^4.28.15",
     "@typescript-eslint/eslint-plugin": "^5.60.1",
     "@typescript-eslint/parser": "^5.60.1",
-    "argon2": "^0.30.3",
-    "bcryptjs": "^2.4.3",
-    "cli-color": "^2.0.3",
     "delete-empty": "^3.0.0",
-    "dotenv": "^16.3.1",
     "eslint": "^8.43.0",
     "eslint-config-prettier": "^8.8.0",
     "eslint-plugin-import": "^2.27.5",
@@ -50,15 +83,9 @@
     "gulp-sourcemaps": "^3.0.0",
     "gulp-typescript": "^6.0.0-alpha.1",
     "gulp-watch": "^5.0.1",
-    "js-yaml": "^4.1.0",
-    "jsonwebtoken": "^9.0.1",
-    "multer": "^1.4.5-lts.1",
-    "mysql2": "^3.6.1",
     "nodemon": "^3.0.1",
-    "sequelize": "^6.33.0",
     "ts-node": "^10.9.1",
-    "typescript": "^5.1.5",
-    "winston-daily-rotate-file": "^4.7.1"
+    "typescript": "^5.1.5"
   },
   "dependencies": {
     "@dolphjs/core": "^0.0.5-beta",
@@ -67,6 +94,16 @@
     "express": "^4.18.2",
     "joi": "^17.9.2",
     "moment": "^2.29.4",
-    "winston": "^3.9.0"
+    "winston": "^3.9.0",
+    "winston-daily-rotate-file": "^4.7.1",
+    "sequelize": "^6.33.0",
+    "js-yaml": "^4.1.0",
+    "jsonwebtoken": "^9.0.1",
+    "multer": "^1.4.5-lts.1",
+    "mysql2": "^3.6.1",
+    "dotenv": "^16.3.1",
+    "argon2": "^0.30.3",
+    "bcryptjs": "^2.4.3",
+    "cli-color": "^2.0.3"
   }
 }

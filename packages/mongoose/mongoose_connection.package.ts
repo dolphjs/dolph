@@ -1,6 +1,6 @@
-import { MongooseConfig } from '@dolphjs/common';
+import { MongooseConfig } from '@/common';
 import Dolph from '@dolphjs/core/lib/Dolph';
-import { logger } from '@dolphjs/utilities';
+import { logger } from '@/utilities';
 import clc from 'cli-color';
 
 /**
