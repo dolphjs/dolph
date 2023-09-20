@@ -5,9 +5,9 @@ import { readFileSync } from 'fs';
 import yaml from 'js-yaml';
 import * as d from 'dotenv';
 import clc from 'cli-color';
-import { DolphConfig, TryCatchAsyncDec, dolphPort } from '@/common';
-import { logger } from '@/utilities';
-import { autoInitMongo } from '@/packages';
+import { DolphConfig, TryCatchAsyncDec, dolphPort } from '../common';
+import { logger } from '../utilities';
+import { autoInitMongo } from '../packages';
 d.config();
 
 /**

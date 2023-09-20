@@ -3,6 +3,7 @@
  * Example: [{'userService': new UserService()<string>}]
  */
 
+import { Dolph } from '../common';
 import { DolphServiceHandler } from './service_classes.class';
 
 /**
@@ -10,7 +11,7 @@ import { DolphServiceHandler } from './service_classes.class';
  *
  */
 // Note: string generic would be useful in the future
-abstract class DolphControllerHandler<T extends string> {}
+abstract class DolphControllerHandler<T extends Dolph> {}
 
 export { DolphControllerHandler };
 /**
