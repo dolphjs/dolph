@@ -4,10 +4,11 @@ import { userModel } from './app.model';
 import { Model, Document } from 'mongoose';
 import { User } from './app.schema';
 import { ModelStatic, Model as SqlModel } from 'sequelize';
+import { Dolph } from '../../common';
 
 @InjectMongo('userModel', userModel)
 @InjectMySQL('userMySqlModel', User)
-class AppService extends DolphServiceHandler<'app'> {
+class AppService extends DolphServiceHandler<Dolph> {
   userModel!: Model<Document>;
   userMySqlModel!: ModelStatic<SqlModel<any, any>>;
 

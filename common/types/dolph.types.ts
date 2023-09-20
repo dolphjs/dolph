@@ -16,3 +16,5 @@ export type DolphServiceMapping<T> = {
   serviceName: keyof T;
   serviceHandler: DolphConstructor<T>;
 };
+
+export type Dolph = string;

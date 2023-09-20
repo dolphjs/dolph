@@ -2,7 +2,7 @@ import { NextFunction, Request, Response } from 'express';
 import { DolphControllerHandler, DolphServiceHandler, JWTAuthVerifyDec } from '../../classes';
 import { TryCatchAsyncDec, TryCatchAsyncFn, TryCatchFn } from '../../common/middlewares';
 import { AppService } from './app.service';
-import { BadRequestException, SuccessResponse } from '../../common';
+import { BadRequestException, Dolph, SuccessResponse } from '../../common';
 import { generateJWTwithHMAC } from '../../utilities';
 import moment from 'moment';
 import { MediaParser } from '../../utilities';
@@ -14,7 +14,7 @@ class ControllerService {
 }
 
 const controllerServices = new ControllerService();
-class AppController extends DolphControllerHandler<string> {
+class AppController extends DolphControllerHandler<Dolph> {
   constructor() {
     super();
     this.createUser = this.createUser.bind(this);
@@ -38,6 +38,7 @@ class AppController extends DolphControllerHandler<string> {
 
   public readonly register = TryCatchAsyncFn(async (req: Request, res: Response, next: NextFunction) => {
     const { username } = req.body;
+    console.log(req.file);
     const token = generateJWTwithHMAC({
       payload: {
         exp: moment().add(30000, 'seconds').unix(),

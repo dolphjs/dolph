@@ -105,4 +105,48 @@ function MediaParser(options: IMediaParserOptions) {
   };
 }
 
+/**
+ * @dlphjs/core exports this function already
+ */
+
+// const mediaParser = (options: IMediaParserOptions) => {
+//   try {
+
+//       const { fieldname, type, extensions, limit, storage } = options;
+
+//       let _extensions = defaultFileExtensions;
+
+//       if (extensions?.length) {
+//         _extensions = extensions;
+//       }
+
+//       const filter = (req: Request, file: Express.Multer.File, callback) => {
+//               if (!req.headers['content-type'].startsWith('multipart/form-data')) {
+//                 throw new BadRequestException('The request body has no media file atached, epected `multipart/form-data`');
+//               }
+//         // if (!file) return ErrorResponse({ res, status: 400, msg: 'The request body has no media file atached' });
+
+//         const extensionCheck = _extensions.includes(path.extname(file.originalname).toLowerCase());
+
+//         if (!extensionCheck && file.originalname !== 'blob') {
+//           callback(new BadRequestException('The media file you sent is not supported by this application'), false);
+//         } else {
+//           callback(null, true);
+//         }
+//       };
+
+//       if (type === 'single') {
+//         return singleUpload(storage || {}, filter, fieldname);
+//       } else if (type === 'array') {
+//         return arrayUpload(storage || {}, filter, fieldname, limit || 10);
+//       } else {
+//         return function allowAll(req: Request, file: Express.Multer.File, cb) {
+//           cb(null, true);
+//         };
+//       }
+//   } catch (e) {
+//     throw(e);
+//   }
+// };
+
 export { MediaParser };

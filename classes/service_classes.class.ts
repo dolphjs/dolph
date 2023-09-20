@@ -3,6 +3,8 @@
  * UpperLevel classes are used to interact with controllers while lowerlevel are used for interactions with one another
  */
 
+import { Dolph } from '../common';
+
 /**
  * Dolph's service handler
  * - takes a string generic
@@ -11,7 +13,7 @@
  *
  * @version 1.0.0
  */
-abstract class DolphServiceHandler<T extends string> {
+abstract class DolphServiceHandler<T extends Dolph> {
   public name: string;
   constructor(name: T) {
     this.name = name;
