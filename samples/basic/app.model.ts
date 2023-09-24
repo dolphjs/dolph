@@ -1,4 +1,12 @@
-import mongoose, { Schema } from 'mongoose';
+import mongoose, { Schema, Document } from 'mongoose';
+
+export interface IUser extends Document {
+  name: string;
+  email: string;
+  age: string;
+  work: string;
+  height: string;
+}
 
 const userSchema = new Schema({
   name: String,
@@ -8,5 +16,5 @@ const userSchema = new Schema({
   height: String,
 });
 
-const userModel = mongoose.model('User', userSchema);
+const userModel = mongoose.model<IUser>('User', userSchema);
 export { userModel };

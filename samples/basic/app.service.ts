@@ -1,7 +1,7 @@
 import { InjectMongo, InjectMySQL } from '../../decorators';
 import { DolphServiceHandler } from '../../classes';
-import { userModel } from './app.model';
-import { Model, Document } from 'mongoose';
+import { IUser, userModel } from './app.model';
+import { Model } from 'mongoose';
 import { User } from './app.schema';
 import { ModelStatic, Model as SqlModel } from 'sequelize';
 import { Dolph } from '../../common';
@@ -9,7 +9,7 @@ import { Dolph } from '../../common';
 @InjectMongo('userModel', userModel)
 @InjectMySQL('userMySqlModel', User)
 class AppService extends DolphServiceHandler<Dolph> {
-  userModel!: Model<Document>;
+  userModel!: Model<IUser>;
   userMySqlModel!: ModelStatic<SqlModel<any, any>>;
 
   constructor() {
