@@ -1,3 +1,6 @@
+Looking for the `dolphjs/core` repo? here it is: https://github.com/dolphjs/core 
+Note: docs has not yet been updated to fit newest version, docs is only correct for version o.o.2-beta
+
 # dolph.js
 
 dolphjs is a typescript backend framework built to ease development time and shorten code while retaining simplicity.
