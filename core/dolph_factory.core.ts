@@ -20,9 +20,11 @@ class DolphFactoryClass {
   port: dolphPort = 3030;
   env = process.env.NODE_ENV || 'development';
   configs: DolphConfig;
+  externalMiddlewares: RequestHandler[];
   private dolph: Dolph;
-  constructor(routes: Array<{ path?: string; router: Router }>) {
+  constructor(routes: Array<{ path?: string; router: Router }>, middlewares?: RequestHandler[]) {
     this.routes = routes;
+    this.externalMiddlewares = middlewares;
     this.intiDolphEngine();
     this.readConfigFile();
   }
@@ -67,13 +69,15 @@ class DolphFactoryClass {
   }
 
   private intiDolphEngine() {
-    const dolph = new Dolph(this.routes, this.port, this.env, []);
+    const dolph = new Dolph(this.routes, this.port, this.env, this.externalMiddlewares || []);
     this.dolph = dolph;
   }
 
   public enableCors(options?: CorsOptions) {
     this.dolph.enableCors(options || { origin: '*' });
   }
+
+  public engine = () => this.dolph.app;
 
   public start() {
     const server = this.dolph.app.listen(this.port, () => {
