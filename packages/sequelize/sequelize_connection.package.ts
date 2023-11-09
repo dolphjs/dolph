@@ -33,7 +33,7 @@ const autoInitMySql = (sequelize: Sequelize) => {
       logger.info(clc.blueBright('MYSQL CONNECTED'));
     })
     .catch((err: any) => {
-      logger.error(err);
+      logger.error(clc.red(err));
     });
 };
 

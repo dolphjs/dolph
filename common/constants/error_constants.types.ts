@@ -7,6 +7,8 @@ const DolphErrors = {
     ` passsword must contain at least ${letter} letter and ${no} number ${
       symbols.length ? `and any of these symbols:${symbols.join(', ')}` : ''
     }`,
+  noDolphConfigFile:
+    'dolphjs engine cannot start without dolphjs_config.yaml file, please ensure to add it to root directory',
 };
 
 export { DolphErrors };

@@ -8,12 +8,15 @@ import clc from 'cli-color';
 import { DolphConfig, TryCatchAsyncDec, dolphPort } from '../common';
 import { logger } from '../utilities';
 import { autoInitMongo } from '../packages';
+import { DolphErrors } from '../common/constants';
 d.config();
 
 /**
  * The main engine for the dolph framework
  *
  * Uses the dolphjs library under the hood and acts like a wrapper
+ *
+ * @version 1.0.4
  */
 class DolphFactoryClass {
   routes = [];
@@ -29,33 +32,43 @@ class DolphFactoryClass {
     this.readConfigFile();
   }
 
-  @TryCatchAsyncDec
   private readConfigFile() {
-    const configContents = readFileSync('dolph_config.yaml', 'utf8');
+    try {
+      const configContents = readFileSync('dolph_config.yaml', 'utf8');
 
-    const config: DolphConfig = yaml.load(configContents);
-    this.configs = config;
+      const config: DolphConfig = yaml.load(configContents);
+      this.configs = config;
 
-    if (!config) return;
-
-    if (config.port) {
-      this.changePort((config.port = typeof 'string' ? +config.port : config.port));
-    }
-
-    if (config.middlewares) {
-      if (config.middlewares.cors.activate) {
-        const { optionsSuccessStatus, allowedHeaders, credentials, exposedHeaders, maxAge, origin, preflightContinue } =
-          config.middlewares.cors;
-        this.enableCors({
-          optionsSuccessStatus,
-          allowedHeaders,
-          exposedHeaders,
-          credentials,
-          maxAge,
-          origin,
-          preflightContinue,
-        });
+      if (config.port) {
+        this.changePort((config.port = typeof 'string' ? +config.port : config.port));
       }
+
+      if (config.env?.length) {
+        this.env = config.env;
+      }
+
+      if (this.configs.database?.mongo?.url.length > 1) {
+        autoInitMongo(this.configs.database.mongo);
+      }
+
+      if (config.middlewares) {
+        if (config.middlewares.cors.activate) {
+          const { optionsSuccessStatus, allowedHeaders, credentials, exposedHeaders, maxAge, origin, preflightContinue } =
+            config.middlewares.cors;
+          this.enableCors({
+            optionsSuccessStatus,
+            allowedHeaders,
+            exposedHeaders,
+            credentials,
+            maxAge,
+            origin,
+            preflightContinue,
+          });
+        }
+      }
+    } catch (e) {
+      logger.error(clc.red(DolphErrors.noDolphConfigFile));
+      throw e;
     }
     // console.log(config);
   }
@@ -79,15 +92,15 @@ class DolphFactoryClass {
 
   public engine = () => this.dolph.app;
 
+  /**
+   * Initializes and returns the dolphjs engine
+   */
   public start() {
     const server = this.dolph.app.listen(this.port, () => {
       logger.info(
         clc.blueBright(`DOLPH APP RUNNING ON PORT ${clc.white(`${this.port}`)} IN ${this.env.toUpperCase()} MODE`),
       );
     });
-    if (this.configs.database?.mongo?.url.length > 1) {
-      autoInitMongo(this.configs.database.mongo);
-    }
     // if (this.configs.database?.mysql?.host.length > 1) {
     //   autoInitMySql(
     //     this.configs.database.mysql.database,

@@ -20,3 +20,4 @@ middlewares:
 routing:
   base: '/v1'
 port: 3030
+# env: production

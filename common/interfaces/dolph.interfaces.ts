@@ -1,11 +1,13 @@
-import { DolphDbs, DolphMiddlewareOption, dolphPort } from '..';
-import { MongooseConfig } from '.';
+import { DolphDbs, DolphMiddlewareOption, dolphEnv, dolphPort } from '..';
+import { IPayload, MongooseConfig } from '.';
+import { NextFunction, Request, Response } from 'express';
 
 export interface DolphConfig {
   database?: DolphConfigDbOption;
   middlewares?: DolphConfigMiddlewares;
   port?: dolphPort;
   routing?: DolphConfigRouting;
+  env?: dolphEnv;
 }
 
 export interface DolphConfigDbOption {
@@ -32,3 +34,16 @@ export interface DolphConfigRouting {
 export interface DolphConstructor<T = any> {
   new (...args: any[]): T;
 }
+
+export interface DRequest extends Request {
+  /**
+   * stores the value of token payload
+   */
+  payload: IPayload;
+}
+
+export interface DResponse<T = any> extends Response {
+  body?: T;
+}
+
+export interface DNextFunc extends NextFunction {}

@@ -29,7 +29,7 @@ const autoInitMongo = (config: MongooseConfig): void => {
       logger.info(clc.blueBright('MONGODB CONNECTED'));
     })
     .catch((err) => {
-      logger.error(err);
+      logger.error(clc.red(err));
     });
 };
 
