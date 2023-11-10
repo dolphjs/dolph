@@ -1,12 +1,12 @@
-import { Response } from 'express';
 import { HttpStatus } from './HttpStatus.api';
 import { ResponseType } from '../types/response.type';
+import { DResponse } from '../interfaces';
 
 /**
  * returns a succes response with a default `200` status code
  * @param {ResponseType} param takes in the `res` ,`status` , `msg` and `body` values
  */
-const SuccessResponse = (param: ResponseType): Response<any, Record<string, any>> => {
+const SuccessResponse = <T = any>(param: ResponseType<T>): DResponse<T> => {
   const { res, status, body, msg } = param;
   if (body && msg) res.status(status || HttpStatus.OK).json({ ...body, message: msg });
   if (body) return res.status(status || HttpStatus.OK).json(body);

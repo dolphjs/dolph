@@ -1,10 +1,11 @@
 import { Response } from 'express';
+import { DResponse } from '../interfaces';
 
-type ResponseType = {
-  res: Response;
+type ResponseType<T = any> = {
+  res: DResponse | Response;
   status?: number;
   msg?: string;
-  body?: Object;
+  body?: T;
 };
 
 export { ResponseType };

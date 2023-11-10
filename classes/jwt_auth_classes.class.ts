@@ -1,7 +1,8 @@
-import { NextFunction, Request, Response } from 'express';
 import { httpStatus } from '@dolphjs/core';
-import { ErrorException, IPayload, TryCatchAsyncFn } from '../common';
+import { DNextFunc, DRequest, DResponse, ErrorException, IPayload, TryCatchAsyncFn } from '../common';
 import { verifyJWTwithHMAC, verifyJWTwithRSA } from '../utilities';
+import { config } from 'dotenv';
+config();
 
 const authHeaderName: Array<string> = ['x-auth-token', 'authorization'];
 
@@ -18,7 +19,7 @@ class JwtBasicAuth {
     this.tokenSecret = tokenSecret;
   }
 
-  Verify = TryCatchAsyncFn(async (req: Request, _res: Response, next: NextFunction) => {
+  Verify = TryCatchAsyncFn(async (req: DRequest, res: DResponse, next: DNextFunc) => {
     let authToken: string | string[];
     let authHeader: string;
     authHeaderName.forEach((headerName) => {
@@ -27,8 +28,9 @@ class JwtBasicAuth {
         authHeader = headerName;
       }
     });
-    if (authToken === '' || !authToken?.length)
+    if (authToken === '' || !authToken?.length) {
       return next(new ErrorException(httpStatus.UNAUTHORIZED, 'provide a valid token header'));
+    }
     let payload: IPayload;
     if (authHeader === 'Authorization') {
       //@ts-expect-error
@@ -44,16 +46,16 @@ class JwtBasicAuth {
 
 /**
  *
- * class-method decorator used for authorization based on the dolphjs default authentication and authorization design
+ * class-method decorator used for authorization based on the dolphjs default JWT authentication and authorization design
  *
- * @version 1.0.0
+ * @version 1.0.4
  */
 const JWTAuthVerifyDec = (tokenSecret: string) => {
   return (_target: any, _propertyKey: string, descriptor?: TypedPropertyDescriptor<any>) => {
     const originalMethod = descriptor.value;
 
     // convert to normal func
-    descriptor.value = (req: Request, res: Response, next: NextFunction) => {
+    descriptor.value = (req: DRequest, res: DResponse, next: DNextFunc) => {
       try {
         const context = this;
         let authToken: string | string[];
@@ -78,7 +80,6 @@ const JWTAuthVerifyDec = (tokenSecret: string) => {
           //@ts-expect-error
           payload = verifyJWTwithRSA({ pathToPublicKey: tokenSecret, token: authToken });
         }
-        //@ts-expect-error
         req.payload = payload;
 
         return originalMethod.apply(context, [req, res, next]);
