@@ -1,6 +1,6 @@
 import { DolphDbs, DolphMiddlewareOption, dolphEnv, dolphPort } from '..';
 import { IPayload, MongooseConfig } from '.';
-import { NextFunction, Request, Response } from 'express';
+import { NextFunction, Request, RequestHandler, Response } from 'express';
 
 export interface DolphConfig {
   database?: DolphConfigDbOption;
@@ -39,11 +39,12 @@ export interface DRequest extends Request {
   /**
    * stores the value of token payload
    */
-  payload: IPayload;
+  payload?: IPayload;
 }
 
 export interface DResponse<T = any> extends Response {
   body?: T;
 }
+export interface DRequestHandler extends RequestHandler {}
 
 export interface DNextFunc extends NextFunction {}

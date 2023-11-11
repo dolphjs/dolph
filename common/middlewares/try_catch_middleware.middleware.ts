@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import { DNextFunc, DRequest, DResponse } from '../interfaces';
 
 /**
  *
@@ -10,7 +11,7 @@ import { Request, Response, NextFunction } from 'express';
  */
 const TryCatchAsyncFn =
   <TryCatchAsyncFn>(fn: (req: Request, res: Response, next: NextFunction) => Promise<TryCatchAsyncFn>) =>
-  (req: Request, res: Response, next: NextFunction) => {
+  (req: DRequest, res: DResponse, next: DNextFunc) => {
     Promise.resolve(fn(req, res, next)).catch((err) => next(err));
   };
 
@@ -19,6 +20,7 @@ const TryCatchAsyncFn =
  * An asynchronous class-method decorator which wraps a method in a try-catch block
  *
  * Should be used as a top-most decorator
+ * @version 1.0.0
  */
 const TryCatchAsyncDec = (target: any, propertyKey: string, descriptor: PropertyDescriptor) => {
   const originalMethod = descriptor.value;
@@ -39,6 +41,31 @@ const TryCatchAsyncDec = (target: any, propertyKey: string, descriptor: Property
 
 /**
  *
+ * A class-method decorator which wraps a method in a try-catch block
+ *
+ * Should be used as a top-most decorator
+ *
+ * @version 1.0.4
+ */
+const TryCatchDec = (target: any, propertyKey: string, descriptor: PropertyDescriptor) => {
+  const originalMethod = descriptor.value;
+
+  descriptor.value = function (...args: any[]) {
+    const context = this;
+    // console.log(this);
+    const [req, res, next] = args;
+    try {
+      originalMethod.apply(context, args);
+    } catch (err) {
+      next(err);
+    }
+  };
+
+  // return descriptor;
+};
+
+/**
+ *
  * Creates a function wrapped in a try-catch block
  *
  * This is the recommended function to be used for controllers and services that  don't use try-catch blocks
@@ -46,8 +73,8 @@ const TryCatchAsyncDec = (target: any, propertyKey: string, descriptor: Property
  * @version 1.0.0
  */
 const TryCatchFn =
-  (fn: (req: Request, res: Response, next: NextFunction) => void) => (req: Request, res: Response, next: NextFunction) => {
+  (fn: (req: DRequest, res: DResponse, next: DNextFunc) => void) => (req: DRequest, res: DResponse, next: DNextFunc) => {
     Promise.resolve(fn(req, res, next)).catch((err) => next(err));
   };
 
-export { TryCatchAsyncFn, TryCatchFn, TryCatchAsyncDec };
+export { TryCatchAsyncFn, TryCatchFn, TryCatchAsyncDec, TryCatchDec };

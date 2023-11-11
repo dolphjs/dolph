@@ -1,5 +1,5 @@
 import multer from 'multer';
-import { IMediaParserOptions } from '../../common';
+import { DNextFunc, DRequest, DResponse, IMediaParserOptions } from '../../common';
 import { ErrorResponse } from '../../common';
 import { NextFunction, Request, Response } from 'express';
 import { defaultFileExtensions } from './file_extensions.utilities';
@@ -35,7 +35,7 @@ function MediaParser(options: IMediaParserOptions) {
   return (_target: any, _propertyKey: string, desccriptor?: TypedPropertyDescriptor<any>) => {
     const originalMethod = desccriptor.value;
     try {
-      desccriptor.value = async (req: Request, res: Response, next: NextFunction) => {
+      desccriptor.value = async (req: DRequest, res: DResponse, next: DNextFunc) => {
         if (!req.headers['content-type'].startsWith('multipart/form-data')) {
           return ErrorResponse({
             res,
@@ -52,7 +52,7 @@ function MediaParser(options: IMediaParserOptions) {
           _extensions = extensions;
         }
 
-        const filter = (req: Request, file: Express.Multer.File, callback) => {
+        const filter = (req: DRequest, file: Express.Multer.File, callback) => {
           // if (!file) return ErrorResponse({ res, status: 400, msg: 'The request body has no media file atached' });
 
           const extensionCheck = _extensions.includes(path.extname(file.originalname).toLowerCase());

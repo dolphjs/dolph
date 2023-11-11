@@ -1,3 +1,3 @@
-import { RequestHandler } from 'express';
+import { DRequestHandler } from '../interfaces';
 
-export type DolphMiddlewareFn = (middlewares: RequestHandler[]) => void;
+export type DolphMiddlewareFn = (middlewares: DRequestHandler[]) => void;
