@@ -1,8 +1,7 @@
-import { NextFunction, Request, Response } from 'express';
 import { DolphControllerHandler, DolphServiceHandler, JWTAuthVerifyDec } from '../../classes';
 import { TryCatchAsyncDec, TryCatchAsyncFn, TryCatchFn } from '../../common/middlewares';
 import { AppService } from './app.service';
-import { BadRequestException, Dolph, SuccessResponse } from '../../common';
+import { BadRequestException, DNextFunc, DRequest, DResponse, Dolph, SuccessResponse } from '../../common';
 import { generateJWTwithHMAC } from '../../utilities';
 import moment from 'moment';
 import { MediaParser } from '../../utilities';
@@ -20,7 +19,7 @@ class AppController extends DolphControllerHandler<Dolph> {
     this.createUser = this.createUser.bind(this);
   }
 
-  public readonly sendGreeting = TryCatchFn((req: Request, res: Response) => {
+  public readonly sendGreeting = TryCatchFn((req: DRequest, res: DResponse) => {
     const { body } = req;
     const response = controllerServices.appservice.greeting(body);
     SuccessResponse({ res, msg: response });
@@ -29,14 +28,14 @@ class AppController extends DolphControllerHandler<Dolph> {
   @TryCatchAsyncDec
   @JWTAuthVerifyDec('random_secret')
   @MediaParser({ fieldname: 'upload', type: 'single', extensions: ['.png'] })
-  public async createUser(req: Request, res: Response) {
+  public async createUser(req: DRequest, res: DResponse) {
     const { body, file } = req;
     if (body.height < 1.7) throw new BadRequestException('sorry, you are too short for this program');
     const data = await controllerServices.appservice.createUser(body);
-    SuccessResponse({ res, body: { data, file: file } });
+    SuccessResponse({ res, body: { data, file: file, payload: req.payload } });
   }
 
-  public readonly register = TryCatchAsyncFn(async (req: Request, res: Response, next: NextFunction) => {
+  public readonly register = TryCatchAsyncFn(async (req: DRequest, res: DResponse, next: DNextFunc) => {
     const { username } = req.body;
     console.log(req.file);
     const token = generateJWTwithHMAC({
@@ -51,7 +50,7 @@ class AppController extends DolphControllerHandler<Dolph> {
   });
 
   @TryCatchAsyncDec
-  public async testMysql(req: Request, res: Response) {
+  public async testMysql(req: DRequest, res: DResponse) {
     const { username, age } = req.body;
     console.log(username, age);
     const result = await controllerServices.appservice.createSQLUser({ username, age });

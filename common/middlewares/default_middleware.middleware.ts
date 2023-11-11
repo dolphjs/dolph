@@ -1,14 +1,15 @@
 import { NextFunction, Request, Response } from 'express';
+import { DNextFunc, DRequest, DResponse } from '../interfaces';
 
 const DolphAsyncMiddleware =
-  <DolphMiddleware>(fn: (req: Request, res: Response, next: NextFunction) => Promise<DolphMiddleware>) =>
-  (req: Request, res: Response, next: NextFunction) => {};
+  <DolphMiddleware>(fn: (req: DRequest, res: DResponse, next: DNextFunc) => Promise<DolphMiddleware>) =>
+  (req: DRequest, res: DResponse, next: DNextFunc) => {};
 
 /**
  *
  * Creates a function that can be used for as an express middleware function
  */
-const DefaultMiddleware = (fn: any) => (req: Request, res: Response, next: NextFunction) => {};
+const DefaultMiddleware = (fn: any) => (req: DRequest, res: DResponse, next: DNextFunc) => {};
 
 /**
  *

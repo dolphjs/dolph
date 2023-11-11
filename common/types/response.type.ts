@@ -1,8 +1,7 @@
-import { Response } from 'express';
 import { DResponse } from '../interfaces';
 
 type ResponseType<T = any> = {
-  res: DResponse | Response;
+  res: DResponse;
   status?: number;
   msg?: string;
   body?: T;

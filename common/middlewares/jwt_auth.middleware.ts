@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from 'express';
 import { TryCatchAsyncFn } from '.';
 import { JwtBasicAuth } from '../../classes';
+import { DNextFunc, DRequest, DResponse } from '../interfaces';
 
 /**
  *
@@ -10,7 +11,7 @@ import { JwtBasicAuth } from '../../classes';
  *  - see `IPayload` interface to see the design of the payload object
  */
 function JwtAuthMiddleware(jwtBasicAuthInstance: JwtBasicAuth) {
-  return TryCatchAsyncFn(async (req: Request, res: Response, next: NextFunction) => {
+  return TryCatchAsyncFn(async (req: DRequest, res: DResponse, next: DNextFunc) => {
     const payload = await jwtBasicAuthInstance.Verify(req, res, next);
     //@ts-expect-error
     req.payload = payload;
