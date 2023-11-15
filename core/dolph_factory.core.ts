@@ -84,11 +84,7 @@ class DolphFactoryClass {
 
   private intiDolphEngine() {
     const dolph = new Dolph(this.routes, this.port, this.env, this.externalMiddlewares || []);
-    if (this.enableCors().origin) {
-      // dolph.enableCors(this.enableCors());
-      // OR
-      dolph.app.use(cors(this.enableCors()));
-    }
+    dolph.app.use(cors({ origin: '*' })); // TODO: fix this error
     this.dolph = dolph;
   }
 
