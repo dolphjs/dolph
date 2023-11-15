@@ -1,6 +1,6 @@
 {
   "name": "@dolphjs/dolph",
-  "version": "1.0.6",
+  "version": "1.0.8",
   "description": "New-Age, developer friendly node.js framework",
   "main": "index.js",
   "repository": "https://github.com/dolphjs/dolph",
@@ -93,7 +93,6 @@
     "argon2": "^0.31.2",
     "bcryptjs": "^2.4.3",
     "cli-color": "^2.0.3",
-    "cors": "^2.8.5",
     "dotenv": "^16.3.1",
     "eventemitter3": "^5.0.1",
     "express": "^4.18.2",

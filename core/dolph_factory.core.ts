@@ -4,7 +4,6 @@ import { CorsOptions } from 'cors';
 import { readFileSync } from 'fs';
 import yaml from 'js-yaml';
 import * as d from 'dotenv';
-import cors from 'cors';
 import clc from 'cli-color';
 import { DolphConfig, TryCatchAsyncDec, dolphPort } from '../common';
 import { logger } from '../utilities';
@@ -84,7 +83,7 @@ class DolphFactoryClass {
 
   private intiDolphEngine() {
     const dolph = new Dolph(this.routes, this.port, this.env, this.externalMiddlewares || []);
-    dolph.app.use(cors({ origin: '*' })); // TODO: fix this error
+    // dolph.app.use(cors({ origin: '*' })); // TODO: fix this error
     this.dolph = dolph;
   }
 
