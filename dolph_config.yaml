@@ -19,5 +19,5 @@ middlewares:
     allowedHeaders:
 routing:
   base: '/v1'
-port: 3030
+port: 3030z
 # env: production

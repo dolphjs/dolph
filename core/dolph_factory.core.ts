@@ -4,6 +4,7 @@ import { CorsOptions } from 'cors';
 import { readFileSync } from 'fs';
 import yaml from 'js-yaml';
 import * as d from 'dotenv';
+import cors from 'cors';
 import clc from 'cli-color';
 import { DolphConfig, TryCatchAsyncDec, dolphPort } from '../common';
 import { logger } from '../utilities';
@@ -16,7 +17,7 @@ d.config();
  *
  * Uses the dolphjs library under the hood and acts like a wrapper
  *
- * @version 1.0.4
+ * @version 1.0.6
  */
 class DolphFactoryClass {
   routes = [];
@@ -61,7 +62,7 @@ class DolphFactoryClass {
             exposedHeaders,
             credentials,
             maxAge,
-            origin,
+            origin: origin || '*',
             preflightContinue,
           });
         }
@@ -83,11 +84,16 @@ class DolphFactoryClass {
 
   private intiDolphEngine() {
     const dolph = new Dolph(this.routes, this.port, this.env, this.externalMiddlewares || []);
+    if (this.enableCors().origin) {
+      // dolph.enableCors(this.enableCors());
+      // OR
+      dolph.app.use(cors(this.enableCors()));
+    }
     this.dolph = dolph;
   }
 
   public enableCors(options?: CorsOptions) {
-    this.dolph.enableCors(options || { origin: '*' });
+    return options;
   }
 
   public engine = () => this.dolph.app;
