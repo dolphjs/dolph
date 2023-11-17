@@ -145,6 +145,10 @@ class DolphFactoryClass {
         } else {
           this.jsonLimit = config.jsonLimit;
         }
+      } else {
+        logger.warn(
+          clc.yellow("jsonLimit value should be added to `dolph_config` file else default value of '50mb' would be used "),
+        );
       }
 
       if (this.configs.database?.mongo?.url.length > 1) {
