@@ -1,5 +1,4 @@
-import { httpStatus } from '@dolphjs/core';
-import { DNextFunc, DRequest, DResponse, ErrorException, IPayload, TryCatchAsyncFn } from '../common';
+import { DNextFunc, DRequest, DResponse, ErrorException, HttpStatus, IPayload, TryCatchAsyncFn } from '../common';
 import { verifyJWTwithHMAC, verifyJWTwithRSA } from '../utilities';
 import { config } from 'dotenv';
 config();
@@ -29,7 +28,7 @@ class JwtBasicAuth {
       }
     });
     if (authToken === '' || !authToken?.length) {
-      return next(new ErrorException(httpStatus.UNAUTHORIZED, 'provide a valid token header'));
+      return next(new ErrorException('provide a valid token header', HttpStatus.UNAUTHORIZED));
     }
     let payload: IPayload;
     if (authHeader === 'Authorization') {
@@ -70,7 +69,7 @@ const JWTAuthVerifyDec = (tokenSecret: string) => {
         }
 
         if (authToken === '' || !authToken?.length)
-          return next(new ErrorException(httpStatus.UNAUTHORIZED, 'provide a valid token header'));
+          return next(new ErrorException('provide a valid token header', HttpStatus.UNAUTHORIZED));
 
         let payload: IPayload;
         if (authHeader === authHeaderName[1]) {

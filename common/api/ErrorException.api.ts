@@ -1,10 +1,9 @@
-import { AppRes } from '@dolphjs/core';
+import { DefaultException } from './exceptions/default_exception.api';
 
 /**
  * throws a new error exception including the stack, error and message
- * similar to `AppRes` from the `dolphjs@core` package
+ * similar to `DefaultException`
  *
- *  see [https://github.com/dolphjs/core]
  */
-class ErrorException extends AppRes {}
+class ErrorException extends DefaultException {}
 export { ErrorException };

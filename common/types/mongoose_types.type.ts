@@ -1,4 +1,4 @@
-import { mongoose } from '@dolphjs/core';
+import mongoose from 'mongoose';
 
 type mongooseUrl = string;
 type mongooseConnectionOptions = mongoose.ConnectOptions;

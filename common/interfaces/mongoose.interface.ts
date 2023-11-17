@@ -1,4 +1,4 @@
-import { mongoose } from '@dolphjs/core';
+import mongoose from 'mongoose';
 
 interface MongooseConfig {
   url: string;

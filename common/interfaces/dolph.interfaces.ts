@@ -8,6 +8,7 @@ export interface DolphConfig {
   port?: dolphPort;
   routing?: DolphConfigRouting;
   env?: dolphEnv;
+  jsonLimit?: string;
 }
 
 export interface DolphConfigDbOption {

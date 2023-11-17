@@ -1,4 +1,3 @@
-import { Request, Response, NextFunction } from 'express';
 import { DNextFunc, DRequest, DResponse } from '../interfaces';
 
 /**
@@ -10,7 +9,7 @@ import { DNextFunc, DRequest, DResponse } from '../interfaces';
  * @version 1.0.0
  */
 const TryCatchAsyncFn =
-  <TryCatchAsyncFn>(fn: (req: Request, res: Response, next: NextFunction) => Promise<TryCatchAsyncFn>) =>
+  <TryCatchAsyncFn>(fn: (req: DRequest, res: DResponse, next: DNextFunc) => Promise<TryCatchAsyncFn>) =>
   (req: DRequest, res: DResponse, next: DNextFunc) => {
     Promise.resolve(fn(req, res, next)).catch((err) => next(err));
   };
