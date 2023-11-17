@@ -18,12 +18,12 @@ export const CookieAuthVerifyDec = (tokenSecret: string) => {
         const context = this;
 
         if (!req.cookies)
-          return next(new ErrorException(HttpStatus.UNAUTHORIZED, 'user not authorized, login and try again'));
+          return next(new ErrorException('user not authorized, login and try again', HttpStatus.UNAUTHORIZED));
 
         const { xAuthToken } = req.cookies;
 
         if (!xAuthToken)
-          return next(new ErrorException(HttpStatus.UNAUTHORIZED, 'user not authorized, login and try again'));
+          return next(new ErrorException('user not authorized, login and try again', HttpStatus.UNAUTHORIZED));
 
         let payload: IPayload;
 
