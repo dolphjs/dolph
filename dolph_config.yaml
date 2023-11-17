@@ -19,5 +19,6 @@ middlewares:
     allowedHeaders:
 routing:
   base: '/v1'
-port: 3030z
+port: 3030
+jsonLimit: 20mb
 # env: production

@@ -1,22 +1,109 @@
 import { RequestHandler, Router } from 'express';
-import Dolph from '@dolphjs/core/lib/Dolph';
 import { CorsOptions } from 'cors';
 import { readFileSync } from 'fs';
 import yaml from 'js-yaml';
-import * as d from 'dotenv';
 import clc from 'cli-color';
-import { DolphConfig, TryCatchAsyncDec, dolphPort } from '../common';
+import { DRequest, DRequestHandler, DResponse, DolphConfig, ErrorResponse, TryCatchAsyncDec, dolphPort } from '../common';
 import { logger } from '../utilities';
 import { autoInitMongo } from '../packages';
 import { DolphErrors } from '../common/constants';
-d.config();
+import express from 'express';
+import cors from 'cors';
+import { configLoader, configs } from './config.core';
+import { morganErrorHandler, successHandler } from './morgan.core';
+import helmet from 'helmet';
+import { errorConverter, errorHandler } from './error.core';
+import { IncomingMessage, Server, ServerResponse } from 'http';
+import xss from 'xss';
+
+const engine = express();
+let env = configs.NODE_ENV;
+let port = configs.PORT;
+let server: Server<typeof IncomingMessage, typeof ServerResponse>;
+
+const enableCorsFunc = (corsOptions: CorsOptions) => {
+  engine.use(cors(corsOptions));
+};
+
+const initializaRoutes = (routes: Array<{ path?: string; router: import('express').Router }>) => {
+  routes.forEach((route) => {
+    engine.use('/', route.router);
+  });
+};
+
+const incrementHandlers = () => {
+  process.setMaxListeners(15);
+};
+
+const initializeMiddlewares = ({ jsonLimit }) => {
+  if (env === 'development') {
+    engine.use(successHandler);
+    engine.use(morganErrorHandler);
+  }
+
+  engine.use(express.json({ limit: jsonLimit }));
+  engine.use(express.urlencoded({ extended: true }));
+  engine.use(helmet());
+  xss('<script>alert("xss");</script>');
+};
+
+const initExternalMiddlewares = (middlewares: DRequestHandler[]) => {
+  if (middlewares?.length) {
+    middlewares.forEach((middleware) => {
+      engine.use(middleware);
+    });
+  }
+};
+
+const initNotFoundError = () => {
+  engine.use('/', (req: DRequest, res: DResponse) => {
+    ErrorResponse({ res, status: 404, body: { message: 'end-point not found' } });
+  });
+};
+
+const initializeConfigLoader = () => {
+  configLoader();
+};
+
+const initializeErrorHandlers = () => {
+  engine.use(errorConverter);
+  engine.use(errorHandler);
+};
+
+const exitHandler = () => {
+  if (server) {
+    server.close(() => {
+      logger.error(clc.red(DolphErrors.serverClosed));
+      process.exit(1);
+    });
+  } else {
+    process.exit(1);
+  }
+};
+
+const unexpectedErrorHandler = (error: Error) => {
+  logger.error(clc.red(error));
+  exitHandler();
+};
+
+const initClosureHandler = () => {
+  process.on('uncaughtException', unexpectedErrorHandler);
+  process.on('unhandledRejection', unexpectedErrorHandler);
+
+  process.on('SIGTERM', () => {
+    logger.error(clc.red(DolphErrors.sigtermReceived));
+    if (server) {
+      server.close();
+    }
+  });
+};
 
 /**
  * The main engine for the dolph framework
  *
  * Uses the dolphjs library under the hood and acts like a wrapper
  *
- * @version 1.0.6
+ * @version 1.1.0
  */
 class DolphFactoryClass {
   routes = [];
@@ -24,12 +111,13 @@ class DolphFactoryClass {
   env = process.env.NODE_ENV || 'development';
   configs: DolphConfig;
   externalMiddlewares: RequestHandler[];
-  private dolph: Dolph;
+  jsonLimit = '50mb';
+  private dolph: typeof engine;
   constructor(routes: Array<{ path?: string; router: Router }>, middlewares?: RequestHandler[]) {
     this.routes = routes;
     this.externalMiddlewares = middlewares;
-    this.intiDolphEngine();
     this.readConfigFile();
+    this.intiDolphEngine();
   }
 
   private readConfigFile() {
@@ -45,6 +133,18 @@ class DolphFactoryClass {
 
       if (config.env?.length) {
         this.env = config.env;
+      }
+
+      if (config.jsonLimit?.length) {
+        if (!config.jsonLimit.includes('mb')) {
+          logger.warn(
+            clc.yellow(
+              "jsonLimit value in `dolph_config` file must be in format 'number + mb' e.g '20mb'. using default value of '50mb' ",
+            ),
+          );
+        } else {
+          this.jsonLimit = config.jsonLimit;
+        }
       }
 
       if (this.configs.database?.mongo?.url.length > 1) {
@@ -78,26 +178,36 @@ class DolphFactoryClass {
   }
 
   public middlewares(middlewares?: RequestHandler[]) {
-    this.dolph.initExternalMiddleWares(middlewares);
+    initExternalMiddlewares(middlewares);
   }
 
+  // TODO: josnLimit should be passed through the  dolph_config file
+
   private intiDolphEngine() {
-    const dolph = new Dolph(this.routes, this.port, this.env, this.externalMiddlewares || []);
-    // dolph.app.use(cors({ origin: '*' })); // TODO: fix this error
-    this.dolph = dolph;
+    this.dolph = engine;
+    initializeConfigLoader();
+    incrementHandlers();
+    initializeMiddlewares({ jsonLimit: this.jsonLimit });
+    initExternalMiddlewares(this.externalMiddlewares || []);
+    initializaRoutes(this.routes);
+    initializeErrorHandlers();
+    initNotFoundError();
+
+    port = +this.port;
+    env = this.env;
   }
 
   public enableCors(options?: CorsOptions) {
-    return options;
+    enableCorsFunc(options || { origin: '*', methods: ['POST', 'GET', 'PUT', 'DELETE', 'PATCH'] });
   }
 
-  public engine = () => this.dolph.app;
+  public engine = () => this.dolph;
 
   /**
    * Initializes and returns the dolphjs engine
    */
   public start() {
-    const server = this.dolph.app.listen(this.port, () => {
+    server = this.dolph.listen(port, () => {
       logger.info(
         clc.blueBright(`DOLPH APP RUNNING ON PORT ${clc.white(`${this.port}`)} IN ${this.env.toUpperCase()} MODE`),
       );
@@ -110,6 +220,8 @@ class DolphFactoryClass {
     //     this.configs.database.mysql.host,
     //   );
     // }
+
+    initClosureHandler();
     return server;
   }
 }

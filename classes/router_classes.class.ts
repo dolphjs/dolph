@@ -1,4 +1,4 @@
-import { Router } from '@dolphjs/core';
+import { Router } from 'express';
 import { DolphControllerHandler } from '.';
 import { Dolph } from '../common';
 /**
@@ -12,7 +12,7 @@ import { Dolph } from '../common';
   }
  * ```
  *
- * @version 1.0.0
+ * @version 1.0.9
  */
 abstract class DolphRouteHandler<T extends Dolph> {
   abstract path: T;

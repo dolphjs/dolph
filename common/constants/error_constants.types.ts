@@ -2,6 +2,8 @@ const DolphErrors = {
   serverError: 'internal server error',
   deprc: (value: string) => `${value} is depreciated`,
   notAllowed: (value: string) => `${value} is not allowed`,
+  serverClosed: 'dolphjs server closed',
+  sigtermReceived: 'SIGTREM received',
   passwordShort: (char: number | string) => `password must be at least ${char} characters`,
   passwordMustContain: (letter: number | string, no: number | string, symbols?: Array<string>) =>
     ` passsword must contain at least ${letter} letter and ${no} number ${

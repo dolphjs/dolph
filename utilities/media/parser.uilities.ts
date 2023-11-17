@@ -1,7 +1,6 @@
 import multer from 'multer';
 import { DNextFunc, DRequest, DResponse, IMediaParserOptions } from '../../common';
 import { ErrorResponse } from '../../common';
-import { NextFunction, Request, Response } from 'express';
 import { defaultFileExtensions } from './file_extensions.utilities';
 import path from 'path';
 

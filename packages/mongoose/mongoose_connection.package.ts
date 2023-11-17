@@ -1,5 +1,5 @@
 import { MongooseConfig } from '../../common';
-import Dolph from '@dolphjs/core/lib/Dolph';
+import mongoose from 'mongoose';
 import { logger } from '../../utilities';
 import clc from 'cli-color';
 
@@ -10,9 +10,9 @@ import clc from 'cli-color';
  *
  * @version 1.0.0
  */
-const initMongo = (config: MongooseConfig): Promise<typeof Dolph.mongoose> => {
-  Dolph.mongoose.set('strictQuery', false);
-  return Dolph.mongoose.connect(config.url, config.options);
+const initMongo = (config: MongooseConfig): Promise<typeof mongoose> => {
+  mongoose.set('strictQuery', false);
+  return mongoose.connect(config.url, config.options);
 };
 
 /**
