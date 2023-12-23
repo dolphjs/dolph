@@ -428,3 +428,89 @@ This is how a sample basic flow looks like. We'll discuss later on the foreign f
 
 ## Decorators
 
+Decorators are used to make things easier when building with typescript. There are a couple of decorators provided by dolphjs for specific use cases which would be discussed in details below:
+
+- TryCatchAsyncDec - this decorator is used to wrap the method with try-catch and handles exceptions. It should be used as a top level decorator which means that if there are more than one decorator attached to a method, it should be the on top of the others. Here is an example:
+
+  ```typescript
+  @TryCatchAsyncDec
+  @JWTAuthVerifyDec('random_secret')
+  @MediaParser({ fieldname: 'upload', type: 'single', extensions: ['.png'] })
+  ```
+
+  there are three decorators abpve but it is placed on top of the three.
+
+  The equivalent of this decorator in the javascript environment is the `TryCatchAsyncFn` which is called as a function which wraps the method as seen below:
+
+  ```typescript
+   register = TryCatchAsyncFn(async (req, res, next) => {
+      const { username } = req.body;
+      SuccessResponse({ res, body: username });
+    });
+  ```
+
+- TryCatchDec - work like the `TryCatchAsyncDec` but unlike it, this decorator is used for synchronous code, it doesn't handle asynchronous code. The javascript equivalent can be seen below:
+
+  ```javascript
+   register = TryCatchDec((req, res, next) => {
+      const { username } = req.body;
+      SuccessResponse({ res, body: username });
+    });
+  ```
+
+- JWTAuthVerifyDec -  this decorator handles JWT authorization and sets the payload object to the payload object provided by DRequest. It takes one parameter which is the secret or path to private key depending on the method of authentication used. This is how it works:
+
+  ```typescript
+   @JWTAuthVerifyDec('random_secret')
+   public async createUser(req: DRequest, res: DResponse) {
+     const { body, file } = req;
+     if (body.height < 1.7) throw new BadRequestException('sorry, you are too short for   this program');
+     SuccessResponse({ res, body: { body, payload: req.payload } });
+   }
+  ```
+
+  the `req.payload` holds the payload object that wa enctypted to the JWT secret.
+
+  The javascript equivalent of this is the `JwtAuthMiddleware` function. It would be called as a middleware function on thr route by calling the `Verify` method on the `JwtBasicAuth` class which is passed as a parameter to it. Like this:
+
+  ```javascript
+  router.post("/user", JwtAuthMiddleware(new JwtBasicAuth("secret")), controller);
+  ```
+
+- CookieAuthVerifyDec -  this works like the JwtAuthVerifyDec but it is used when cookies are used for authorization not tokens. In order to use this decorator, the cookie name has to be "xAuthToken". It also accepts a parameter of the secret used for the cookie. An example:
+
+  ```typescript
+  @CookieAuthVerifyDec('random_secret')
+  public async createUser(req: DRequest, res: DResponse) {
+    const { body, file } = req;
+    if (body.height < 1.7) throw new BadRequestException('sorry, you are too short for   this program');
+    SuccessResponse({ res, body: { body, payload: req.payload } });
+   }
+  ```
+
+  currently, there is no javascript equivalent for this decorator.
+
+- InjectMySQL -  this is a very important decorator which is used for injecting the MySQL model instance into the service class. Here is an example:
+
+  ```typescript
+  @InjectMySQL('userModel', User)
+  class AppService extends DolphServiceHandler<Dolph> {
+    userModel!: ModelStatic<SqlModel<any, any>>;
+  
+    constructor() {
+      super('app');
+    }
+    
+    createUser = async (body: any) => {
+      const data = await this.userModel.create(body);
+      return data;
+    };
+  }
+  ```
+
+  
+
+It accepts two parameters: the name of the instance and the mySQL model. Note: the name (firs paremter) should be the exact name used to attribute it's type else dolphjs wouldn't be able to set typings.
+
+- InjectMongo -  works like the `InjectMySQL` decorator but for mogodb databases.
+- InjectServiceHandler - 
