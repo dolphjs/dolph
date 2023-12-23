@@ -17,14 +17,18 @@ import { IncomingMessage, Server, ServerResponse } from 'http';
 import xss from 'xss';
 
 const engine = express();
+
+// declare core variables
 let env = configs.NODE_ENV;
 let port = configs.PORT;
 let server: Server<typeof IncomingMessage, typeof ServerResponse>;
 
+// function add cors middleware to express
 const enableCorsFunc = (corsOptions: CorsOptions) => {
   engine.use(cors(corsOptions));
 };
 
+// responsible for registering api routes
 const initializaRoutes = (routes: Array<{ path?: string; router: import('express').Router }>) => {
   routes.forEach((route) => {
     engine.use('/', route.router);
@@ -47,6 +51,7 @@ const initializeMiddlewares = ({ jsonLimit }) => {
   xss('<script>alert("xss");</script>');
 };
 
+// registers middlewares defined by user
 const initExternalMiddlewares = (middlewares: DRequestHandler[]) => {
   if (middlewares?.length) {
     middlewares.forEach((middleware) => {
@@ -61,6 +66,7 @@ const initNotFoundError = () => {
   });
 };
 
+// loads configs from env
 const initializeConfigLoader = () => {
   configLoader();
 };
@@ -184,8 +190,6 @@ class DolphFactoryClass {
   public middlewares(middlewares?: RequestHandler[]) {
     initExternalMiddlewares(middlewares);
   }
-
-  // TODO: josnLimit should be passed through the  dolph_config file
 
   private intiDolphEngine() {
     this.dolph = engine;

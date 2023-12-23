@@ -1,4 +1,4 @@
 hide other fields except message field for exceptions
 next version: inserting of routes via decorator
-expose mysql and mongo
-change name to @dolphjs
+create functionality that reads envs passed to the dolph_config file.
+change the config file naming to be same as CLI

@@ -1,6 +1,6 @@
 import { DolphDbs, DolphMiddlewareOption, dolphEnv, dolphPort } from '..';
 import { IPayload, MongooseConfig } from '.';
-import { NextFunction, Request, RequestHandler, Response } from 'express';
+import { NextFunction, Request, RequestHandler, Response, Router } from 'express';
 
 export interface DolphConfig {
   database?: DolphConfigDbOption;
@@ -49,3 +49,5 @@ export interface DResponse<T = any> extends Response {
 export interface DRequestHandler extends RequestHandler {}
 
 export interface DNextFunc extends NextFunction {}
+
+export interface DRouter extends Router {}

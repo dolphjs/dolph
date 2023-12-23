@@ -431,3 +431,437 @@ This is how a sample basic flow looks like. We'll discuss later on the foreign f
 
 ## Decorators
 
+Decorators are used to make things easier when building with typescript. There are a couple of decorators provided by dolphjs for specific use cases which would be discussed in details below:
+
+- TryCatchAsyncDec - this decorator is used to wrap the method with try-catch and handles exceptions. It should be used as a top level decorator which means that if there are more than one decorator attached to a method, it should be the on top of the others. Here is an example:
+
+  ```typescript
+  @TryCatchAsyncDec
+  @JWTAuthVerifyDec('random_secret')
+  @MediaParser({ fieldname: 'upload', type: 'single', extensions: ['.png'] })
+  ```
+
+  there are three decorators abpve but it is placed on top of the three.
+
+  The equivalent of this decorator in the javascript environment is the `TryCatchAsyncFn` which is called as a function which wraps the method as seen below:
+
+  ```typescript
+   register = TryCatchAsyncFn(async (req, res, next) => {
+      const { username } = req.body;
+      SuccessResponse({ res, body: username });
+    });
+  ```
+
+- TryCatchDec - work like the `TryCatchAsyncDec` but unlike it, this decorator is used for synchronous code, it doesn't handle asynchronous code. The javascript equivalent can be seen below:
+
+  ```javascript
+   register = TryCatchDec((req, res, next) => {
+      const { username } = req.body;
+      SuccessResponse({ res, body: username });
+    });
+  ```
+
+- JWTAuthVerifyDec -  this decorator handles JWT authorization and sets the payload object to the payload object provided by DRequest. It takes one parameter which is the secret or path to private key depending on the method of authentication used. This is how it works:
+
+  ```typescript
+   @JWTAuthVerifyDec('random_secret')
+   public async createUser(req: DRequest, res: DResponse) {
+     const { body, file } = req;
+     if (body.height < 1.7) throw new BadRequestException('sorry, you are too short for   this program');
+     SuccessResponse({ res, body: { body, payload: req.payload } });
+   }
+  ```
+
+  the `req.payload` holds the payload object that wa enctypted to the JWT secret.
+
+  The javascript equivalent of this is the `JwtAuthMiddleware` function. It would be called as a middleware function on thr route by calling the `Verify` method on the `JwtBasicAuth` class which is passed as a parameter to it. Like this:
+
+  ```javascript
+  router.post("/user", JwtAuthMiddleware(new JwtBasicAuth("secret")), controller);
+  ```
+
+- CookieAuthVerifyDec -  this works like the JwtAuthVerifyDec but it is used when cookies are used for authorization not tokens. In order to use this decorator, the cookie name has to be "xAuthToken". It also accepts a parameter of the secret used for the cookie. An example:
+
+  ```typescript
+  @CookieAuthVerifyDec('random_secret')
+  public async createUser(req: DRequest, res: DResponse) {
+    const { body, file } = req;
+    if (body.height < 1.7) throw new BadRequestException('sorry, you are too short for   this program');
+    SuccessResponse({ res, body: { body, payload: req.payload } });
+   }
+  ```
+
+  currently, there is no javascript equivalent for this decorator.
+
+- InjectMySQL -  this is a very important decorator which is used for injecting the MySQL model instance into the service class. Here is an example:
+
+  ```typescript
+  @InjectMySQL('userModel', User)
+  class AppService extends DolphServiceHandler<Dolph> {
+    userModel!: ModelStatic<SqlModel<any, any>>;
+  
+    constructor() {
+      super('app');
+    }
+    
+    createUser = async (body: any) => {
+      const data = await this.userModel.create(body);
+      return data;
+    };
+  }
+  ```
+
+  
+
+It accepts two parameters: the name of the instance and the mySQL model. Note: the name (firs paremter) should be the exact name used to attribute it's type else dolphjs wouldn't be able to set typings.
+
+- InjectMongo -  works like the `InjectMySQL` decorator but for mogodb databases.
+
+- InjectServiceHandler -  this decorator is used for injecting dolphjs service handlers into a class, it takes a parameter or type `DolphServicemapping` which looks like this: 
+
+  ```typescript
+  type DolphServiceMapping<T> = {
+    serviceName: keyof T;
+    serviceHandler: DolphConstructor<T>;
+  };
+  ```
+
+  this is how it is being used:
+
+  ```typescript
+  @InjectServiceHandler([{ serviceHandler: AppService, serviceName: 'appservice' }])
+  class Service {
+    appservice!: AppService;
+  }
+  ```
+
+  
+
+where `AppService` is a class which extends `DolphServiceHandler`.
+
+- MediaParser - this is a very useful decorator which is used for processing files, it uses the **multer** library behind the scene to handle file processing. It accepts a parameter of type `IMediaParserOptions`. Here is an example of it's use case:
+
+  ```typescript
+   @TryCatchAsyncDec
+    @JWTAuthVerifyDec('random_secret')
+    @MediaParser({ fieldname: 'upload', type: 'single', extensions: ['.png'] })
+    public async createUser(req: DRequest, res: DResponse) {
+      const { body, file } = req;
+      if (body.height < 1.7) throw new BadRequestException('sorry, you are too short for this program');
+      const data = await controllerServices.appservice.createUser(body);
+      SuccessResponse({ res, body: { data, file: file, payload: req.payload } });
+    }
+  ```
+
+
+
+## Interfaces & Types
+
+There are a several interfaces and types which would be needful when writing code with dolphjs.
+
+- DolphConfig - 
+
+  ```typescript
+   interface DolphConfig {
+    database?: DolphConfigDbOption;
+    middlewares?: DolphConfigMiddlewares;
+    port?: dolphPort;
+    routing?: DolphConfigRouting;
+    env?: dolphEnv;
+    jsonLimit?: string;
+  }
+  ```
+
+  this is the interface for the `dolph_config` file. Where `jsonLimit` takes the limit for json request in this form: "5mb"
+
+- DolphConfigDbOption - 
+
+  ```typescript
+   interface DolphConfigDbOption {
+    mongo: MongooseConfig;
+    mysql: MySqlConfig;
+  }
+  ```
+
+- MySqlConfig - 
+
+  ```typescript
+  interface MySqlConfig {
+    host: string;
+    database: string;
+    user: string;
+    pass?: string | null;
+  }
+  ```
+
+- DolphConfigMiddleware - 
+
+  ```typescript
+  interface DolphConfigMiddlewares {
+    cors?: DolphMiddlewareOption;
+  }
+  ```
+
+- IPayload -
+
+  ```typescript
+  interface IPayload {
+    sub: string | object | Buffer;
+    iat: number;
+    exp: number;
+    info?: string | object | Array<any>;
+  }
+  ```
+
+- IMediaParserOptions -
+
+  ```typescript
+  interface IMediaParserOptions {
+    extensions?: string[];
+    type: mediaType;
+    storage?: multer.DiskStorageOptions;
+    fieldname: string;
+    limit?: number;
+  }
+  ```
+
+- MongooseConfig - 
+
+  ```typescript
+  interface MongooseConfig {
+    url: string;
+    options?: mongoose.ConnectOptions;
+  }
+  ```
+
+- DolphMiddlewareOption - 
+
+  ```typescript
+  type DolphMiddlewareOption = {
+    activate?: boolean | undefined;
+    origin?: string | undefined;
+    allowedHeaders?: string[] | undefined | null;
+    maxAge?: number | undefined;
+    exposedHeaders?: string[] | null | undefined;
+    credentials?: boolean | undefined;
+    preflightContinue?: boolean | undefined;
+    optionsSuccessStatus: number | undefined;
+  };
+  ```
+
+- DolphServiceMapping - 
+
+  ```typescript
+  type DolphServiceMapping<T> = {
+    serviceName: keyof T;
+    serviceHandler: DolphConstructor<T>;
+  };
+  ```
+
+- argonHashParam -
+
+  ```typescript
+  type argonHahsParam = {
+    pureString: string;
+    timeCost?: number;
+    memoryCost?: number;
+    parallelism?: number;
+    type?: 0 | 1 | 2;
+    version?: number;
+    salt?: Buffer;
+    saltLength?: number;
+    raw?: true;
+    secret?: Buffer;
+  };
+  ```
+
+- ResponseType - 
+
+  ```typescript
+  type ResponseType<T = any> = {
+    res: DResponse;
+    status?: number;
+    msg?: string;
+    body?: T;
+  };
+  ```
+
+## Logger
+
+Dolphjs has a custom built logger which has three levels:
+
+- error - this is used to log an error to the console
+
+- warn - this is used to log a warning to the console
+
+- info - this is used to log an info to the console
+
+- debug - this is used to log a debug message to the console
+
+  ```typescript
+  logger.info();
+  logger.error();
+  logger.warn();
+  logger.debug();
+  ```
+
+## Validation
+
+Dolphjs offers out of the box support for request valions.
+
+* Request Validation: dolphjs provides a middleware function which can be used with Joi [https://github.com/joi] to perform request validation. This function is the `reqValidatorMiddleware` function which can be used i this way to check a request param, body or query satisfies the requirements before it passes to the controller:
+
+  ```typescript
+  this.router.post(`${this.path}/user`, reqValidatorMiddleware(createUser), this.controller.createUser);
+  ```
+
+  and to setup the Joi object which is passed as a param to `reqValidatorMiddleware` as seen above, we have:
+
+  ```typescript
+  import Joi from 'joi';
+  
+  const createUser = {
+    body: Joi.object().keys({
+      name: Joi.string().required(),
+      age: Joi.number().required().min(15),
+      work: Joi.string().required(),
+      height: Joi.number().required(),
+    }),
+  };
+  ```
+
+  as we can see, the request validation is checking for the json body that's why body is the key. If it were query then we would have:
+
+  ```typescript
+  import Joi from 'joi';
+  
+  const createUser = {
+    query: Joi.object().keys({
+      name: Joi.string().required(),
+      age: Joi.number().required().min(15),
+      work: Joi.string().required(),
+      height: Joi.number().required(),
+    }),
+  };
+  ```
+
+  and for param:
+
+  ```typescript
+  import Joi from 'joi';
+  
+  const createUser = {
+    param: Joi.object().keys({
+      name: Joi.string().required(),
+      age: Joi.number().required().min(15),
+      work: Joi.string().required(),
+      height: Joi.number().required(),
+    }),
+  };
+  ```
+
+## Exceptions
+
+Exceptions are thrown when there is an error. The dolphjs engine handles exceptions in two ways and this depends on the environment. When application is in development environment, dolphjs add the stack to the error sent to the client and logs the stack alongside error messages to the console but when in production environment, dolphjs omits the stack and only send error message, code and any other relevant info needed and logs only the error message to console.
+
+There are pre-defined exception classes for each major http status code and a general exception for errors.
+
+- **ErrorException** - accepts two parameters: message and status code
+- **BadGatewayException** - accepts only the message and sends a 502 status code
+- **BadRequestException** - accepts only the message and sends a 400 status code
+- **ConflictException** - accepts only the message and sends a 409 status code
+- **ForbiddenException** - accepts only the message and sends a 403 status code
+- **GoneException** - accepts only the message and sends a 410 status code
+- **HttpVersionUnSupportedException** - accepts only the message and sends a 505 status code
+- **ImTeaPotException** - accepts only the message and sends a 418 status code
+- **InternalServerErrorException** - accepts only the message and sends a 500 status code
+- **MethodNotAllowedException** - accepts only the message and sends a 405 status code
+- **MisDirectedException** - accepts only the message and sends a 421 status code
+- **NotAcceptableException** - accepts the message and sends a 406 status code
+- **NotFoundException** - accepts the message and sends a 404 status code
+- **NotImplementedException** - accepts the message and sends a 501 status code
+- **NotModifiedException** - accepts the message and sends a 304 status code
+- **PaymentRequiredException** - accepts the message and sends a 402 status code
+- **ServiceUnavaliableException** -  accepts the message and sends a 503 status code
+- **TimeOutException** -  accepts the message and sends a 504 status code
+- **UnauthorizedException** - accepts the message and sends a 401 status code
+- **UnSupportedMediaException** - accepts the message and sends a 415 status code
+
+## Responses
+
+In dolphjs, a response is just a function which executes something similar to `res.status().send()`. However, there are two types of responses: the **ErrorResponse** and **SuccessResponse**.
+
+* **ErrorResponse** - takes a parameter of type `ResponseType`
+* **SuccessResponse** - takes a parameter of type `ResponseType`
+
+## Utilities
+
+- **pick** -  the pick util is used for creating objects from choosing fields in another object. 
+
+  ```typescript
+  const filter = pick(req.query, ['limit', 'page']);
+  ```
+
+  The code snippet above creates a filter object by pciking the `limit` and `page` fields of the `req.query` object.
+
+- hashWithBcrypt - used for hashing strings (mostly passwords) using bcryptjs. It takes a parameter of `bcryptHashParam`.
+
+  ```typescript
+  const hashedPassword = await hashWithBcrypt({pureString: "password", salt: 10});
+  ```
+
+- compareWithBcryptHash - compares a hashed string against a pure string. Accepts a parameter of type `bcryptCompareParam`. It returns a boolean.
+
+  ```typescript
+  const isSame = compareWithBcryptHash({pureString: "password", hashString: "xxxx"});
+  ```
+
+- hashWithArgon - used for hashing strings (mostly passwords) using argon2. It takes a parameter of type `argonHahsParam`.
+
+- verifyArgonHash -  compares a hashed string against a pure string. Accepts a parameter of type `bcryptCompareParam`. It returns a boolean.
+
+- uniqueFiveDigitsCode - a function which implements the `generateRandomCode` function and returns 5 random digits code. Can be used for otp generation.
+
+- uniqueSixDigitsCode - a function which implements the `generateRandomCode` function and returns 6 random digits code. Can be used for otp generation.
+
+- uniqueSevenDigitsCode - a function which implements the `generateRandomCode` function and returns 7 random digits code. Can be used for otp generation.
+
+- generateJWTwithHMAC - a function that accepts the payload of type `IPayload` and secret of type `string` . It generates and returns a  JWT token using the **HMAC** algorithm.
+
+- verifyJWTwithHMAC - a function that accepts the token of type `string` and secret of type `string` . It verifies a JWT token and returns an error or the payload using the **HMAC** algorithm.
+
+- generateJWTwithRSA -  a function that accepts the  private key path of type **string** and payload of type **IPayload** . It  generates and returns a JWT token using the **RSA** algorithm.
+
+- verifyJWTwithRSA - a function that accepts the public key path of type **string** and token of type **string**. It verifies a JWT token and returns an error or the payload using the **RSA** algorithm.
+
+- toJSON - a function that transforms all mongoose documents a collection. It replaces the **_id** field with **id** and removes the **__v** field when returning to user. Pass it as a plugin to your mongoose schema in order to use:
+
+  ```typescript
+  const userSchema = new Schema({
+    name: String,
+    email: String,
+    age: Number,
+    work: String,
+    height: String,
+  });
+  
+  userSchema.plugin(toJSON)
+  ```
+
+## How To Configure A JWT Payload
+
+In dolphjs, JWT payloads of type `IPayload` can be generated only by using **moment**. Here is an example:
+
+```typescript
+const token = generateJWTwithHMAC({
+   payload: {
+     exp: moment().add(30000, 'seconds').unix(),
+     iat: moment().unix(),
+     sub: username,
+   },
+   secret: 'random_secret',
+});
+```
+
+
+
