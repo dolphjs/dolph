@@ -158,6 +158,9 @@ class DolphFactoryClass {
       }
 
       if (this.configs.database?.mongo?.url.length > 1) {
+        if (this.configs.database.mongo.url === 'sensitive') {
+          this.configs.database.mongo.url = configs.MONGO_URL;
+        }
         autoInitMongo(this.configs.database.mongo);
       }
 
