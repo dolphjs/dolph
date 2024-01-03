@@ -1,8 +1,9 @@
 import multer from 'multer';
-import { DNextFunc, DRequest, DResponse, IMediaParserOptions } from '../../common';
+import { BadRequestException, DNextFunc, DRequest, DResponse, IMediaParserOptions } from '../../common';
 import { ErrorResponse } from '../../common';
 import { defaultFileExtensions } from './file_extensions.utilities';
 import path from 'path';
+import { Request } from 'express';
 
 const singleUpload = (storage: multer.DiskStorageOptions, fileFilter: multer.Options['fileFilter'], fieldName: string) => {
   const uploadFunc = multer({
@@ -104,48 +105,43 @@ function MediaParser(options: IMediaParserOptions) {
   };
 }
 
-/**
- * @dlphjs/core exports this function already
- */
+const mediaParser = (options: IMediaParserOptions) => {
+  try {
+    const { fieldname, type, extensions, limit, storage } = options;
 
-// const mediaParser = (options: IMediaParserOptions) => {
-//   try {
+    let _extensions = defaultFileExtensions;
 
-//       const { fieldname, type, extensions, limit, storage } = options;
+    if (extensions?.length) {
+      _extensions = extensions;
+    }
 
-//       let _extensions = defaultFileExtensions;
+    const filter = (req: Request | DRequest, file: Express.Multer.File, callback) => {
+      if (!req.headers['content-type'].startsWith('multipart/form-data')) {
+        throw new BadRequestException('The request body has no media file atached, epected `multipart/form-data`');
+      }
+      // if (!file) return ErrorResponse({ res, status: 400, msg: 'The request body has no media file atached' });
 
-//       if (extensions?.length) {
-//         _extensions = extensions;
-//       }
+      const extensionCheck = _extensions.includes(path.extname(file.originalname).toLowerCase());
 
-//       const filter = (req: Request, file: Express.Multer.File, callback) => {
-//               if (!req.headers['content-type'].startsWith('multipart/form-data')) {
-//                 throw new BadRequestException('The request body has no media file atached, epected `multipart/form-data`');
-//               }
-//         // if (!file) return ErrorResponse({ res, status: 400, msg: 'The request body has no media file atached' });
+      if (!extensionCheck && file.originalname !== 'blob') {
+        callback(new BadRequestException('The media file you sent is not supported by this application'), false);
+      } else {
+        callback(null, true);
+      }
+    };
 
-//         const extensionCheck = _extensions.includes(path.extname(file.originalname).toLowerCase());
+    if (type === 'single') {
+      return singleUpload(storage || {}, filter, fieldname);
+    } else if (type === 'array') {
+      return arrayUpload(storage || {}, filter, fieldname, limit || 10);
+    } else {
+      return function allowAll(req: Request, file: Express.Multer.File, cb) {
+        cb(null, true);
+      };
+    }
+  } catch (e) {
+    throw e;
+  }
+};
 
-//         if (!extensionCheck && file.originalname !== 'blob') {
-//           callback(new BadRequestException('The media file you sent is not supported by this application'), false);
-//         } else {
-//           callback(null, true);
-//         }
-//       };
-
-//       if (type === 'single') {
-//         return singleUpload(storage || {}, filter, fieldname);
-//       } else if (type === 'array') {
-//         return arrayUpload(storage || {}, filter, fieldname, limit || 10);
-//       } else {
-//         return function allowAll(req: Request, file: Express.Multer.File, cb) {
-//           cb(null, true);
-//         };
-//       }
-//   } catch (e) {
-//     throw(e);
-//   }
-// };
-
-export { MediaParser };
+export { MediaParser, mediaParser };

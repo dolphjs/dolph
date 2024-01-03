@@ -2,3 +2,6 @@ hide other fields except message field for exceptions
 next version: inserting of routes via decorator
 create functionality that reads envs passed to the dolph_config file.
 change the config file naming to be same as CLI
+test cookie creation functions
+create equivalent for cookie verification decorator
+test function for media parser
