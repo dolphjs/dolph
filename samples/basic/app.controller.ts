@@ -2,7 +2,7 @@ import { DolphControllerHandler, DolphServiceHandler, JWTAuthVerifyDec } from '.
 import { TryCatchAsyncDec, TryCatchAsyncFn, TryCatchFn } from '../../common/middlewares';
 import { AppService } from './app.service';
 import { BadRequestException, DNextFunc, DRequest, DResponse, Dolph, SuccessResponse } from '../../common';
-import { generateJWTwithHMAC } from '../../utilities';
+import { generateJWTwithHMAC, newAuthCookie } from '../../utilities';
 import moment from 'moment';
 import { MediaParser } from '../../utilities';
 import { InjectServiceHandler } from '../../decorators';
@@ -55,6 +55,18 @@ class AppController extends DolphControllerHandler<Dolph> {
     console.log(username, age);
     const result = await controllerServices.appservice.createSQLUser({ username, age });
     SuccessResponse({ res, body: result });
+  }
+
+  @TryCatchAsyncDec
+  public async testCookieFn(req: DRequest, res: DResponse) {
+    const cookieValue = newAuthCookie('user_id_00', 100000, 'random_secret', { info: 'yeah' });
+    res.cookie(cookieValue.name, cookieValue.value, {
+      expires: cookieValue.expires,
+      secure: cookieValue.secure,
+      httpOnly: cookieValue.httpOnly,
+    });
+
+    res.send('done');
   }
 }
 // const appController = new AppController();

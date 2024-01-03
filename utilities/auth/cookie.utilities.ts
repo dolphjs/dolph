@@ -6,7 +6,7 @@ import moment from 'moment';
 /**
  *
  * @param sub holds value for the principal data used in hashing the token
- * @param exp expiration time in numbers, i.e 1000 for 1000 milliseconds
+ * @param exp expiration time in milliseconds, i.e 1000 for 1 seconds
  * @param secret token seccret used for authorization
  * @param info option parameter used to store data that might be useful
  *
@@ -22,7 +22,7 @@ export const newAuthCookie = (sub: sub, exp: number, secret: string, info?: stri
   const token = generateJWTwithHMAC({ payload, secret });
 
   const options = {
-    expires: new Date(new Date().getTime() + exp * 60),
+    expires: new Date(new Date().getTime() + exp * 60 * 30),
     httpOnly: false,
     secure: false,
   };
@@ -35,7 +35,7 @@ export const newAuthCookie = (sub: sub, exp: number, secret: string, info?: stri
   return {
     name: 'xAuthToken',
     value: token,
-    maxAge: options.expires,
+    expires: options.expires,
     httpOnly: options.httpOnly,
     secure: options.secure,
   };

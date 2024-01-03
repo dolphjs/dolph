@@ -3,7 +3,7 @@ export type sub = string | object | Buffer;
 export type cookieContent = {
   name: string;
   value: string;
-  maxAge: Date;
+  expires: Date;
   httpOnly: boolean;
   secure: boolean;
 };
