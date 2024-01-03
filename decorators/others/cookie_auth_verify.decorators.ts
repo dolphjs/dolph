@@ -1,11 +1,11 @@
 import { DNextFunc, DRequest, DResponse, ErrorException, HttpStatus, IPayload } from '../../common';
 import { verifyJWTwithHMAC } from '../../utilities';
 
-//TODO: duplicate as function so it'll be available for javasctipt
-
 /**
  *
- * class-method decorator used for authorization based on the dolphjs default cookie authentication and authorization design
+ * class-method decorator used for authorization based on the dolphjs default cookie authentication and authorization pattern
+ *
+ * @version 1.0
  */
 export const CookieAuthVerifyDec = (tokenSecret: string) => {
   return (_target: any, _propertyKey: string, descriptor?: TypedPropertyDescriptor<any>) => {
