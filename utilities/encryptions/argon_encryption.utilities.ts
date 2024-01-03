@@ -1,5 +1,5 @@
 import { hash, verify } from 'argon2';
-import { argonHahsParam, bcryptCompareParam } from '../../common';
+import { argonHashParam, bcryptCompareParam } from '../../common';
 
 /**
  *
@@ -16,7 +16,7 @@ const hashWithArgon = async ({
   raw,
   type,
   timeCost,
-}: argonHahsParam) => {
+}: argonHashParam) => {
   return hash(pureString, { salt, memoryCost, secret, version, parallelism, raw, type, timeCost });
 };
 

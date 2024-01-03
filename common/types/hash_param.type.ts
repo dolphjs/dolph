@@ -1,6 +1,6 @@
 type bcryptHashParam = { salt: number; pureString: string };
 type bcryptCompareParam = { pureString: string; hashString: string };
-type argonHahsParam = {
+type argonHashParam = {
   pureString: string;
   timeCost?: number;
   memoryCost?: number;
@@ -13,4 +13,4 @@ type argonHahsParam = {
   secret?: Buffer;
 };
 
-export { bcryptHashParam, bcryptCompareParam, argonHahsParam };
+export { bcryptHashParam, bcryptCompareParam, argonHashParam };
