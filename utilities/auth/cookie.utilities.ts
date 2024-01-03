@@ -61,7 +61,5 @@ export const cookieAuthVerify = (tokenSecret: string) => (req: DRequest, _res: D
   payload = verifyJWTwithHMAC({ token: xAuthToken, secret: tokenSecret });
 
   req.payload = payload;
-  req.payload.info = xAuthToken.info ? xAuthToken.info : null;
-
   next();
 };

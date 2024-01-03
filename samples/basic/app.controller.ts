@@ -68,6 +68,13 @@ class AppController extends DolphControllerHandler<Dolph> {
 
     res.send('done');
   }
+
+  @TryCatchAsyncDec
+  public async testCookieVerify(req: DRequest, res: DResponse) {
+    const payload = req.payload;
+
+    res.json(payload);
+  }
 }
 // const appController = new AppController();
 export { AppController };

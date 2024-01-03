@@ -15,6 +15,7 @@ import helmet from 'helmet';
 import { errorConverter, errorHandler } from './error.core';
 import { IncomingMessage, Server, ServerResponse } from 'http';
 import xss from 'xss';
+import cookieParser from 'cookie-parser';
 
 const engine = express();
 
@@ -48,6 +49,7 @@ const initializeMiddlewares = ({ jsonLimit }) => {
   engine.use(express.json({ limit: jsonLimit }));
   engine.use(express.urlencoded({ extended: true }));
   engine.use(helmet());
+  engine.use(cookieParser());
   xss('<script>alert("xss");</script>');
 };
 
