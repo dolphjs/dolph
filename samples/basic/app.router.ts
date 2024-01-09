@@ -20,7 +20,8 @@ class AppRouter extends DolphRouteHandler<Dolph> {
     this.router.post(`${this.path}/register`, this.controller.register);
     this.router.post(`${this.path}/sql`, this.controller.testMysql);
     this.router.get(`${this.path}/cookie`, this.controller.testCookieFn);
-    this.router.get(`${this.path}/cookie-validation`, cookieAuthVerify('random_secret'), this.controller.testCookieVerify);
+    // this.router.get(`${this.path}/cookie-validation`, cookieAuthVerify('random_secret'), this.controller.testCookieVerify);
+    this.router.get(`${this.path}/cookie-validation`, this.controller.testCookieVerify);
   }
 }
 

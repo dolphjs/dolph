@@ -1,11 +1,12 @@
-import { DolphControllerHandler, DolphServiceHandler, JWTAuthVerifyDec } from '../../classes';
+import { DolphControllerHandler, DolphServiceHandler, JWTAuthVerifyDec, JWTAuthorizeDec } from '../../classes';
 import { TryCatchAsyncDec, TryCatchAsyncFn, TryCatchFn } from '../../common/middlewares';
 import { AppService } from './app.service';
 import { BadRequestException, DNextFunc, DRequest, DResponse, Dolph, SuccessResponse } from '../../common';
 import { generateJWTwithHMAC, newAuthCookie } from '../../utilities';
 import moment from 'moment';
 import { MediaParser } from '../../utilities';
-import { InjectServiceHandler } from '../../decorators';
+import { CookieAuthVerifyDec, InjectServiceHandler } from '../../decorators';
+import { authFunc } from './app.auth_function';
 
 @InjectServiceHandler([{ serviceHandler: AppService, serviceName: 'appservice' }])
 class ControllerService {
@@ -27,6 +28,7 @@ class AppController extends DolphControllerHandler<Dolph> {
 
   @TryCatchAsyncDec
   @JWTAuthVerifyDec('random_secret')
+  // @JWTAuthorizeDec('random_secret', authFunc)
   @MediaParser({ fieldname: 'upload', type: 'single', extensions: ['.png'] })
   public async createUser(req: DRequest, res: DResponse) {
     const { body, file } = req;
@@ -70,6 +72,7 @@ class AppController extends DolphControllerHandler<Dolph> {
   }
 
   @TryCatchAsyncDec
+  @CookieAuthVerifyDec('random_secret')
   public async testCookieVerify(req: DRequest, res: DResponse) {
     const payload = req.payload;
 
