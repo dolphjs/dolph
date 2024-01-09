@@ -4,3 +4,7 @@ export interface IPayload {
   exp: number;
   info?: string | object | Array<any>;
 }
+
+export interface AuthorizationFunction {
+  (payload: IPayload): Promise<boolean> | boolean;
+}

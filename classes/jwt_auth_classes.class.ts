@@ -1,4 +1,13 @@
-import { DNextFunc, DRequest, DResponse, ErrorException, HttpStatus, IPayload, TryCatchAsyncFn } from '../common';
+import {
+  AuthorizationFunction,
+  DNextFunc,
+  DRequest,
+  DResponse,
+  ErrorException,
+  HttpStatus,
+  IPayload,
+  TryCatchAsyncFn,
+} from '../common';
 import { verifyJWTwithHMAC, verifyJWTwithRSA } from '../utilities';
 import { config } from 'dotenv';
 config();
@@ -91,4 +100,51 @@ const JWTAuthVerifyDec = (tokenSecret: string) => {
   };
 };
 
-export { JwtBasicAuth, JWTAuthVerifyDec };
+const JWTAuthorizeDec = (tokenSecret: string, authorize?: AuthorizationFunction) => {
+  return (_target: any, _propertyKey: string, descriptor?: TypedPropertyDescriptor<any>) => {
+    const originalMethod = descriptor.value;
+
+    descriptor.value = async (req: DRequest, res: DResponse, next: DNextFunc) => {
+      try {
+        const context = this;
+        let authToken: string | string[];
+        let authHeader: string;
+
+        if (req.headers[authHeaderName[0]]) {
+          authToken = req.headers[authHeaderName[0]];
+          authHeader = authHeaderName[0];
+        } else if (req.headers[authHeaderName[1]]) {
+          authToken = req.headers[authHeaderName[1]];
+          authHeader = authHeaderName[1];
+        }
+
+        if (authToken === '' || !authToken?.length)
+          return next(new ErrorException('provide a valid token header', HttpStatus.UNAUTHORIZED));
+
+        let payload: IPayload;
+        if (authHeader === authHeaderName[1]) {
+          //@ts-expect-error
+          payload = verifyJWTwithHMAC({ token: authToken, secret: tokenSecret });
+        } else if (authHeader === authHeaderName[0]) {
+          //@ts-expect-error
+          payload = verifyJWTwithRSA({ pathToPublicKey: tokenSecret, token: authToken });
+        }
+        req.payload = payload;
+
+        // Check if authorization function is provided
+        if (authorize) {
+          const isAuthorized = await authorize(payload);
+          if (!isAuthorized) {
+            return next(new ErrorException('Access denied', HttpStatus.FORBIDDEN));
+          }
+        }
+
+        return originalMethod.apply(context, [req, res, next]);
+      } catch (e) {
+        throw e;
+      }
+    };
+  };
+};
+
+export { JwtBasicAuth, JWTAuthVerifyDec, JWTAuthorizeDec };
