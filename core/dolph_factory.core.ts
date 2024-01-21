@@ -1,9 +1,20 @@
+import 'reflect-metadata';
 import { RequestHandler, Router } from 'express';
 import { CorsOptions } from 'cors';
 import { readFileSync } from 'fs';
 import yaml from 'js-yaml';
 import clc from 'cli-color';
-import { DRequest, DRequestHandler, DResponse, DolphConfig, ErrorResponse, TryCatchAsyncDec, dolphPort } from '../common';
+import {
+  DNextFunc,
+  DRequest,
+  DRequestHandler,
+  DResponse,
+  Dolph,
+  DolphConfig,
+  ErrorResponse,
+  TryCatchAsyncDec,
+  dolphPort,
+} from '../common';
 import { logger } from '../utilities';
 import { autoInitMongo } from '../packages';
 import { DolphErrors } from '../common/constants';
@@ -16,6 +27,8 @@ import { errorConverter, errorHandler } from './error.core';
 import { IncomingMessage, Server, ServerResponse } from 'http';
 import xss from 'xss';
 import cookieParser from 'cookie-parser';
+import { normalizePath } from '../utilities/normalize_path.utilities';
+import { DolphControllerHandler } from 'classes';
 
 const engine = express();
 
@@ -33,6 +46,44 @@ const enableCorsFunc = (corsOptions: CorsOptions) => {
 const initializaRoutes = (routes: Array<{ path?: string; router: import('express').Router }>) => {
   routes.forEach((route) => {
     engine.use('/', route.router);
+  });
+};
+
+const initializeControllersAsRouter = <T extends Dolph>(controllers: Array<{ new (): DolphControllerHandler<T> }>) => {
+  controllers.forEach((Controller) => {
+    const controllerInstance = new Controller();
+    const classPath = Reflect.getMetadata('basePath', controllerInstance) || '';
+    const basePath = classPath.startsWith('/') ? classPath : `/${classPath}`;
+    const router = Router();
+
+    // register each controller method
+    Object.getOwnPropertyNames(Object.getPrototypeOf(controllerInstance)).forEach((methodName) => {
+      const method = Reflect.getMetadata('method', controllerInstance[methodName]);
+      const path = Reflect.getMetadata('path', controllerInstance[methodName]);
+
+      if (method && path) {
+        const fullPath = normalizePath(basePath + path);
+        console.log('-----factory', fullPath);
+        // const handler = controllerInstance[methodName].bind(controllerInstance);
+        // switch (method) {
+        //   case 'get':
+        //     engine.get(fullPath, handler);
+        //   case 'post':
+        //     engine.post(fullPath, handler);
+        //   case 'patch':
+        //     engine.patch(fullPath, handler);
+        //   case 'put':
+        //     engine.put(fullPath, handler);
+        //   case 'delete':
+        //     engine.delete(fullPath, handler);
+        //   default:
+        //     engine.use(fullPath, handler);
+        // }
+        const handler = (req: DRequest, res: DResponse, next: DNextFunc) => controllerInstance[methodName](req, res, next);
+        router[method](fullPath, handler);
+      }
+    });
+    engine.use(basePath, router);
   });
 };
 
@@ -109,20 +160,34 @@ const initClosureHandler = () => {
 /**
  * The main engine for the dolph framework
  *
- * Uses the dolphjs library under the hood and acts like a wrapper
  *
  * @version 1.1.0
  */
-class DolphFactoryClass {
+class DolphFactoryClass<T extends DolphControllerHandler<Dolph>> {
   routes = [];
+  // controllers = Array<{
+  //   method: string;
+  //   path: string;
+  //   handler: (req: Request, res: Response, next: NextFunction) => void;
+  // }> = [];
+  controllers = [];
+
   port: dolphPort = 3030;
   env = process.env.NODE_ENV || 'development';
   configs: DolphConfig;
   externalMiddlewares: RequestHandler[];
   jsonLimit = '50mb';
   private dolph: typeof engine;
-  constructor(routes: Array<{ path?: string; router: Router }>, middlewares?: RequestHandler[]) {
-    this.routes = routes;
+  constructor(routes: Array<{ path?: string; router: Router }> | Array<{ new (): T }>, middlewares?: RequestHandler[]) {
+    if (
+      Array.isArray(routes) &&
+      routes.every((item) => typeof item === 'function' && item.prototype instanceof DolphControllerHandler)
+    ) {
+      this.controllers = routes as Array<{ new (): T }>;
+    } else {
+      this.routes = routes as Array<{ path?: string; router: Router }>;
+    }
+
     this.externalMiddlewares = middlewares;
     this.readConfigFile();
     this.intiDolphEngine();
@@ -203,6 +268,7 @@ class DolphFactoryClass {
     initializeMiddlewares({ jsonLimit: this.jsonLimit });
     initExternalMiddlewares(this.externalMiddlewares || []);
     initializaRoutes(this.routes);
+    initializeControllersAsRouter(this.controllers);
     initializeErrorHandlers();
     initNotFoundError();
 
