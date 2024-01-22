@@ -8,3 +8,4 @@ export * from './mongoose_types.type';
 export * from './media_types.type';
 export * from './dolph.types';
 export * from './auth.type';
+export * from './spring.types';
