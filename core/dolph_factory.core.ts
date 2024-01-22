@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import { NextFunction, Request, RequestHandler, Response, Router } from 'express';
+import { RequestHandler, Router } from 'express';
 import { CorsOptions } from 'cors';
 import { readFileSync } from 'fs';
 import yaml from 'js-yaml';
@@ -13,7 +13,6 @@ import {
   DolphConfig,
   ErrorResponse,
   Middleware,
-  TryCatchAsyncDec,
   dolphPort,
 } from '../common';
 import { logger } from '../utilities';
@@ -182,11 +181,6 @@ const initClosureHandler = () => {
  */
 class DolphFactoryClass<T extends DolphControllerHandler<Dolph>> {
   routes = [];
-  // controllers = Array<{
-  //   method: string;
-  //   path: string;
-  //   handler: (req: Request, res: Response, next: NextFunction) => void;
-  // }> = [];
   controllers = [];
 
   port: dolphPort = 3030;
@@ -195,6 +189,7 @@ class DolphFactoryClass<T extends DolphControllerHandler<Dolph>> {
   externalMiddlewares: RequestHandler[];
   jsonLimit = '50mb';
   private dolph: typeof engine;
+
   constructor(routes: Array<{ path?: string; router: Router }> | Array<{ new (): T }>, middlewares?: RequestHandler[]) {
     if (
       Array.isArray(routes) &&
@@ -323,19 +318,3 @@ class DolphFactoryClass<T extends DolphControllerHandler<Dolph>> {
 }
 
 export { DolphFactoryClass as DolphFactory };
-
-// const handler = controllerInstance[methodName].bind(controllerInstance);
-// switch (method) {
-//   case 'get':
-//     engine.get(fullPath, handler);
-//   case 'post':
-//     engine.post(fullPath, handler);
-//   case 'patch':
-//     engine.patch(fullPath, handler);
-//   case 'put':
-//     engine.put(fullPath, handler);
-//   case 'delete':
-//     engine.delete(fullPath, handler);
-//   default:
-//     engine.use(fullPath, handler);
-// }
