@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import { RequestHandler, Router } from 'express';
+import { NextFunction, Request, RequestHandler, Response, Router } from 'express';
 import { CorsOptions } from 'cors';
 import { readFileSync } from 'fs';
 import yaml from 'js-yaml';
@@ -12,6 +12,7 @@ import {
   Dolph,
   DolphConfig,
   ErrorResponse,
+  Middleware,
   TryCatchAsyncDec,
   dolphPort,
 } from '../common';
@@ -51,39 +52,55 @@ const initializaRoutes = (routes: Array<{ path?: string; router: import('express
 
 const initializeControllersAsRouter = <T extends Dolph>(controllers: Array<{ new (): DolphControllerHandler<T> }>) => {
   controllers.forEach((Controller) => {
-    const controllerInstance = new Controller();
-    const classPath = Reflect.getMetadata('basePath', controllerInstance) || '';
-    const basePath = classPath.startsWith('/') ? classPath : `/${classPath}`;
-    const router = Router();
+    try {
+      const controllerInstance = new Controller();
+      const classPath = Reflect.getMetadata('basePath', controllerInstance.constructor.prototype) || '';
+      const basePath = classPath.startsWith('/') ? classPath : `/${classPath}`;
+      const router = Router();
 
-    // register each controller method
-    Object.getOwnPropertyNames(Object.getPrototypeOf(controllerInstance)).forEach((methodName) => {
-      const method = Reflect.getMetadata('method', controllerInstance[methodName]);
-      const path = Reflect.getMetadata('path', controllerInstance[methodName]);
+      // register each controller method
+      Object.getOwnPropertyNames(Object.getPrototypeOf(controllerInstance)).forEach((methodName) => {
+        if (methodName !== 'constructor') {
+          const method = Reflect.getMetadata('method', controllerInstance.constructor.prototype[methodName]);
+          const path = Reflect.getMetadata('path', controllerInstance.constructor.prototype[methodName]);
+          const middlewareList: Middleware[] =
+            Reflect.getMetadata('middleware', controllerInstance.constructor.prototype[methodName]) || [];
 
-      if (method && path) {
-        const fullPath = normalizePath(basePath + path);
-        console.log('-----factory', fullPath);
-        // const handler = controllerInstance[methodName].bind(controllerInstance);
-        // switch (method) {
-        //   case 'get':
-        //     engine.get(fullPath, handler);
-        //   case 'post':
-        //     engine.post(fullPath, handler);
-        //   case 'patch':
-        //     engine.patch(fullPath, handler);
-        //   case 'put':
-        //     engine.put(fullPath, handler);
-        //   case 'delete':
-        //     engine.delete(fullPath, handler);
-        //   default:
-        //     engine.use(fullPath, handler);
-        // }
-        const handler = (req: DRequest, res: DResponse, next: DNextFunc) => controllerInstance[methodName](req, res, next);
-        router[method](fullPath, handler);
-      }
-    });
-    engine.use(basePath, router);
+          if (method && path) {
+            const fullPath = normalizePath(basePath + path);
+
+            const handler = async (req: DRequest, res: DResponse, next: DNextFunc) => {
+              try {
+                // Apply middleware
+                for (const middleware of middlewareList) {
+                  await new Promise<void>((resolve, reject) => {
+                    middleware(req, res, (err?: any) => {
+                      if (err) {
+                        reject(err);
+                      } else {
+                        resolve();
+                      }
+                    });
+                  });
+                }
+
+                // Invoke the controller method
+                await controllerInstance.constructor.prototype[methodName](req, res, next);
+              } catch (error) {
+                next(error);
+              }
+            };
+
+            router[method](fullPath, handler);
+          } else {
+            logger.error(clc.red(`Missing metadata for method ${methodName} in controller ${Controller.name}`));
+          }
+        }
+      });
+      engine.use('/', router);
+    } catch (e) {
+      logger.error(clc.red(`Error initializing controller ${Controller.name}: ${e.message}`));
+    }
   });
 };
 
@@ -306,3 +323,19 @@ class DolphFactoryClass<T extends DolphControllerHandler<Dolph>> {
 }
 
 export { DolphFactoryClass as DolphFactory };
+
+// const handler = controllerInstance[methodName].bind(controllerInstance);
+// switch (method) {
+//   case 'get':
+//     engine.get(fullPath, handler);
+//   case 'post':
+//     engine.post(fullPath, handler);
+//   case 'patch':
+//     engine.patch(fullPath, handler);
+//   case 'put':
+//     engine.put(fullPath, handler);
+//   case 'delete':
+//     engine.delete(fullPath, handler);
+//   default:
+//     engine.use(fullPath, handler);
+// }

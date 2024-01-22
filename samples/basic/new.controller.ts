@@ -8,7 +8,7 @@ export class NewController extends DolphControllerHandler<Dolph> {
     super();
   }
 
-  @Post()
+  @Post('app')
   async testNewController(req: DRequest, res: DResponse) {
     SuccessResponse({ res, body: { ...req.body } });
   }
