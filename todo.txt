@@ -1,7 +1,4 @@
 hide other fields except message field for exceptions
-next version: inserting of routes via decorator
-create equivalent for cookie verification decorator
-test function for media parser
 fix bug with argon
 
 
