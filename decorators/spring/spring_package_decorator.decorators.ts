@@ -1,6 +1,9 @@
 import 'reflect-metadata';
 import { normalizePath } from '../../utilities/normalize_path.utilities';
-import { Middleware } from '../../common';
+import { ComponentParams, Dolph, Middleware } from '../../common';
+import { DolphControllerHandler } from 'classes';
+import clc from 'cli-color';
+import { logger } from 'utilities';
 
 export const Route = (path: string = ''): ClassDecorator => {
   return (target: any) => {
@@ -54,4 +57,26 @@ export const Delete = (path: string = ''): MethodDecorator => {
     Reflect.defineMetadata('method', 'delete', descriptor.value);
     Reflect.defineMetadata('path', normalizePath(classPath + path), descriptor.value);
   };
+};
+
+export const Component = <T extends Dolph>({ controllers }: ComponentParams<T>): ClassDecorator => {
+  if (
+    Array.isArray(controllers) &&
+    controllers.every((item) => {
+      const isFunction = typeof item === 'function';
+      const isInstanceOfDolphControllerHandler = item.prototype instanceof DolphControllerHandler;
+
+      if (!isFunction || !isInstanceOfDolphControllerHandler) {
+        logger.error(clc.red('Invalid controller:', item));
+      }
+
+      return isFunction && isInstanceOfDolphControllerHandler;
+    })
+  ) {
+    return (target: any) => {
+      Reflect.defineMetadata('controllers', controllers, target.prototype);
+    };
+  } else {
+    logger.error(clc.red('Provide an array of controllers with type `new (): T` '));
+  }
 };

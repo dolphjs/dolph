@@ -10,6 +10,7 @@ import {
   DRequestHandler,
   DResponse,
   Dolph,
+  DolphComponent,
   DolphConfig,
   ErrorResponse,
   Middleware,
@@ -29,6 +30,8 @@ import xss from 'xss';
 import cookieParser from 'cookie-parser';
 import { normalizePath } from '../utilities/normalize_path.utilities';
 import { DolphControllerHandler } from 'classes';
+import { isComponentClass } from '../utilities/is_component.utilities';
+import { getControllersFromMetadata } from '../utilities/get_controllers_from_component';
 
 const engine = express();
 
@@ -177,7 +180,7 @@ const initClosureHandler = () => {
  * The main engine for the dolph framework
  *
  *
- * @version 1.1.0
+ * @version 1.2.0
  */
 class DolphFactoryClass<T extends DolphControllerHandler<Dolph>> {
   routes = [];
@@ -190,19 +193,28 @@ class DolphFactoryClass<T extends DolphControllerHandler<Dolph>> {
   jsonLimit = '50mb';
   private dolph: typeof engine;
 
-  constructor(routes: Array<{ path?: string; router: Router }> | Array<{ new (): T }>, middlewares?: RequestHandler[]) {
-    if (
-      Array.isArray(routes) &&
-      routes.every((item) => typeof item === 'function' && item.prototype instanceof DolphControllerHandler)
-    ) {
-      this.controllers = routes as Array<{ new (): T }>;
-    } else {
-      this.routes = routes as Array<{ path?: string; router: Router }>;
-    }
+  constructor(routes: Array<{ new (): any } | { path?: string; router: Router }> = [], middlewares?: RequestHandler[]) {
+    routes.forEach((item) => {
+      if ('router' in item) {
+        this.routes.push(item);
+      } else {
+        this.controllers.push(item);
+      }
+    });
 
     this.externalMiddlewares = middlewares;
+    this.extractControllersFromComponent();
     this.readConfigFile();
     this.intiDolphEngine();
+  }
+
+  private extractControllersFromComponent() {
+    this.controllers.forEach((componentClass) => {
+      const extractedControllers = getControllersFromMetadata(componentClass);
+      if (extractedControllers?.length) {
+        this.controllers.push(...extractedControllers);
+      }
+    });
   }
 
   private readConfigFile() {
