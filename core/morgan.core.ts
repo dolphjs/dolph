@@ -1,4 +1,4 @@
-import { DRequest, DResponse } from '@/common';
+import { DRequest, DResponse } from '../common';
 import morgan from 'morgan';
 import { configs } from './config.core';
 import { logger } from '../utilities';

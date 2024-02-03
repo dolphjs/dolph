@@ -1,9 +1,9 @@
 import 'reflect-metadata';
 import { normalizePath } from '../../utilities/normalize_path.utilities';
 import { ComponentParams, Dolph, Middleware } from '../../common';
-import { DolphControllerHandler } from 'classes';
+import { DolphControllerHandler } from '../../classes';
 import clc from 'cli-color';
-import { logger } from 'utilities';
+import { logger } from '../../utilities';
 
 export const Route = (path: string = ''): ClassDecorator => {
   return (target: any) => {
