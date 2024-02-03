@@ -1,6 +1,6 @@
 {
   "name": "@dolphjs/dolph",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "New-Age, developer friendly node.js framework",
   "main": "index.js",
   "repository": "https://github.com/dolphjs/dolph",
