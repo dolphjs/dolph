@@ -1,8 +1,9 @@
 import { DolphControllerHandler } from '../../classes';
 import { DRequest, DResponse, Dolph, SuccessResponse } from '../../common';
-import { Get, Post, Route, UseMiddlware } from '../../decorators';
+import { Get, Post, Route, Shield, UseMiddlware } from '../../decorators';
 import { testMiddleware } from './app.middleware';
 
+@Shield([testMiddleware])
 @Route('app')
 export class NewController extends DolphControllerHandler<Dolph> {
   constructor() {

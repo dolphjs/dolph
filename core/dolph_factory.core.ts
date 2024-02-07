@@ -18,7 +18,7 @@ import {
 } from '../common';
 import { logger } from '../utilities';
 import { autoInitMongo } from '../packages';
-import { DolphErrors } from '../common/constants';
+import { DolphErrors, dolphMessages } from '../common/constants';
 import express from 'express';
 import cors from 'cors';
 import { configLoader, configs } from './config.core';
@@ -29,9 +29,9 @@ import { IncomingMessage, Server, ServerResponse } from 'http';
 import xss from 'xss';
 import cookieParser from 'cookie-parser';
 import { normalizePath } from '../utilities/normalize_path.utilities';
-import { DolphControllerHandler } from 'classes';
-import { isComponentClass } from '../utilities/is_component.utilities';
+import { DolphControllerHandler } from '../classes';
 import { getControllersFromMetadata } from '../utilities/get_controllers_from_component';
+import { getShieldMiddlewares } from '../utilities/spring_helpers.utilities';
 
 const engine = express();
 
@@ -52,6 +52,9 @@ const initializaRoutes = (routes: Array<{ path?: string; router: import('express
   });
 };
 
+/**
+ * Initializer is responsible for registering all spring controllers as routers and detaching each method from the controller classes and registering them as handler functions.
+ */
 const initializeControllersAsRouter = <T extends Dolph>(controllers: Array<{ new (): DolphControllerHandler<T> }>) => {
   controllers.forEach((Controller) => {
     try {
@@ -60,13 +63,38 @@ const initializeControllersAsRouter = <T extends Dolph>(controllers: Array<{ new
       const basePath = classPath.startsWith('/') ? classPath : `/${classPath}`;
       const router = Router();
 
-      // register each controller method
+      /**
+       * Retrieve shield middleware if present
+       */
+
+      const shieldMiddleware = getShieldMiddlewares(Controller);
+
+      /**
+       * register each controller method
+       */
+
       Object.getOwnPropertyNames(Object.getPrototypeOf(controllerInstance)).forEach((methodName) => {
         if (methodName !== 'constructor') {
           const method = Reflect.getMetadata('method', controllerInstance.constructor.prototype[methodName]);
           const path = Reflect.getMetadata('path', controllerInstance.constructor.prototype[methodName]);
           const middlewareList: Middleware[] =
             Reflect.getMetadata('middleware', controllerInstance.constructor.prototype[methodName]) || [];
+
+          /**
+           * Append any present shield middleware into the middlewares list
+           */
+
+          if (shieldMiddleware.length) {
+            middlewareList.unshift(...shieldMiddleware);
+            shieldMiddleware.forEach((middleware: Middleware) => {
+              console.log(
+                dolphMessages.coreUtilMessage(
+                  'REGISTRAR',
+                  `has registered ${middleware.name} ${clc.green('shield')} for ${Controller.name}`,
+                ),
+              );
+            });
+          }
 
           if (method && path) {
             const fullPath = normalizePath(basePath + path);
@@ -94,6 +122,7 @@ const initializeControllersAsRouter = <T extends Dolph>(controllers: Array<{ new
             };
 
             router[method](fullPath, handler);
+            console.log(dolphMessages.coreUtilMessage('REGISTRAR', `has registered ${Controller.name} for (${fullPath})`));
           } else {
             logger.error(clc.red(`Missing metadata for method ${methodName} in controller ${Controller.name}`));
           }
