@@ -84,6 +84,7 @@ const initializeControllersAsRouter = <T extends Dolph>(controllers: Array<{ new
            * Append any present shield middleware into the middlewares list
            */
 
+          console.log(middlewareList.length, shieldMiddleware.length);
           if (shieldMiddleware.length) {
             middlewareList.unshift(...shieldMiddleware);
             shieldMiddleware.forEach((middleware: Middleware) => {
@@ -122,7 +123,7 @@ const initializeControllersAsRouter = <T extends Dolph>(controllers: Array<{ new
             };
 
             router[method](fullPath, handler);
-            console.log(dolphMessages.coreUtilMessage('REGISTRAR', `has registered ${Controller.name} for (${fullPath})`));
+            console.log(dolphMessages.coreUtilMessage('REGISTRAR', `has registered ${Controller.name} for {${fullPath}}`));
           } else {
             logger.error(clc.red(`Missing metadata for method ${methodName} in controller ${Controller.name}`));
           }
@@ -227,8 +228,13 @@ class DolphFactoryClass<T extends DolphControllerHandler<Dolph>> {
       if ('router' in item) {
         this.routes.push(item);
       } else {
-        this.controllers.push(item);
+        if (!this.controllers.some((c) => c === item)) {
+          this.controllers.push(item);
+        }
       }
+
+      //TODO:
+      // this.controllers = Array.from(new Set(this.controllers));
     });
 
     this.externalMiddlewares = middlewares;
@@ -238,12 +244,16 @@ class DolphFactoryClass<T extends DolphControllerHandler<Dolph>> {
   }
 
   private extractControllersFromComponent() {
+    const newControllers: Array<{ new (): DolphControllerHandler<Dolph> }> = [];
+
     this.controllers.forEach((componentClass) => {
       const extractedControllers = getControllersFromMetadata(componentClass);
       if (extractedControllers?.length) {
-        this.controllers.push(...extractedControllers);
+        newControllers.push(...extractedControllers);
       }
     });
+
+    this.controllers = [...newControllers];
   }
 
   private readConfigFile() {
