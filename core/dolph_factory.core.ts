@@ -84,7 +84,6 @@ const initializeControllersAsRouter = <T extends Dolph>(controllers: Array<{ new
            * Append any present shield middleware into the middlewares list
            */
 
-          console.log(middlewareList.length, shieldMiddleware.length);
           if (shieldMiddleware.length) {
             middlewareList.unshift(...shieldMiddleware);
             shieldMiddleware.forEach((middleware: Middleware) => {
@@ -123,7 +122,14 @@ const initializeControllersAsRouter = <T extends Dolph>(controllers: Array<{ new
             };
 
             router[method](fullPath, handler);
-            console.log(dolphMessages.coreUtilMessage('REGISTRAR', `has registered ${Controller.name} for {${fullPath}}`));
+            console.log(
+              dolphMessages.coreUtilMessage(
+                'REGISTRAR',
+                `has registered ${clc.bold(clc.green(Controller.name))} for method ${clc.bold(
+                  clc.green(methodName),
+                )} at {${fullPath}} --> ${method.toUpperCase()} REQUEST`,
+              ),
+            );
           } else {
             logger.error(clc.red(`Missing metadata for method ${methodName} in controller ${Controller.name}`));
           }
