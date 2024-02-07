@@ -4,6 +4,7 @@ import { ComponentParams, Dolph, Middleware } from '../../common';
 import { DolphControllerHandler } from '../../classes';
 import clc from 'cli-color';
 import { logger } from '../../utilities';
+import { SHIELD_METADATA_KEY } from './meta_data_keys.decorators';
 
 export const Route = (path: string = ''): ClassDecorator => {
   return (target: any) => {
@@ -11,6 +12,11 @@ export const Route = (path: string = ''): ClassDecorator => {
   };
 };
 
+export const Shield = (middlewares: Middleware[]): ClassDecorator => {
+  return (target: any) => {
+    Reflect.defineMetadata(SHIELD_METADATA_KEY, middlewares, target.prototype);
+  };
+};
 export const UseMiddlware = (middleware: Middleware): MethodDecorator => {
   return (target: any, propertyKey: string, descriptor: PropertyDescriptor) => {
     const existingMiddleware: Middleware[] = Reflect.getMetadata('middleware', descriptor.value) || [];
