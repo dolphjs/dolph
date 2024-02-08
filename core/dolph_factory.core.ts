@@ -56,6 +56,8 @@ const initializaRoutes = (routes: Array<{ path?: string; router: import('express
  * Initializer is responsible for registering all spring controllers as routers and detaching each method from the controller classes and registering them as handler functions.
  */
 const initializeControllersAsRouter = <T extends Dolph>(controllers: Array<{ new (): DolphControllerHandler<T> }>) => {
+  const registeredShields: string[] = [];
+
   controllers.forEach((Controller) => {
     try {
       const controllerInstance = new Controller();
@@ -87,12 +89,15 @@ const initializeControllersAsRouter = <T extends Dolph>(controllers: Array<{ new
           if (shieldMiddleware.length) {
             middlewareList.unshift(...shieldMiddleware);
             shieldMiddleware.forEach((middleware: Middleware) => {
-              console.log(
-                dolphMessages.coreUtilMessage(
-                  'REGISTRAR',
-                  `has registered ${middleware.name} ${clc.green('shield')} for ${Controller.name}`,
-                ),
-              );
+              if (!registeredShields.includes(middleware.name)) {
+                console.log(
+                  dolphMessages.coreUtilMessage(
+                    'REGISTRAR',
+                    `has registered ${middleware.name} ${clc.green('shield')} for ${Controller.name}`,
+                  ),
+                );
+                registeredShields.push(middleware.name);
+              }
             });
           }
 
@@ -135,6 +140,7 @@ const initializeControllersAsRouter = <T extends Dolph>(controllers: Array<{ new
           }
         }
       });
+      registeredShields.length = 0;
       engine.use('/', router);
     } catch (e) {
       logger.error(clc.red(`Error initializing controller ${Controller.name}: ${e.message}`));
