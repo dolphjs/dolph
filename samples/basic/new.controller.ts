@@ -3,7 +3,7 @@ import { DRequest, DResponse, Dolph, SuccessResponse } from '../../common';
 import { Get, Post, Route, Shield, UseMiddlware } from '../../decorators';
 import { testMiddleware } from './app.middleware';
 
-@Shield([testMiddleware])
+@Shield(testMiddleware)
 @Route('app')
 export class NewController extends DolphControllerHandler<Dolph> {
   constructor() {
