@@ -56,6 +56,8 @@ const initializaRoutes = (routes: Array<{ path?: string; router: import('express
  * Initializer is responsible for registering all spring controllers as routers and detaching each method from the controller classes and registering them as handler functions.
  */
 const initializeControllersAsRouter = <T extends Dolph>(controllers: Array<{ new (): DolphControllerHandler<T> }>) => {
+  const registeredShields: string[] = [];
+
   controllers.forEach((Controller) => {
     try {
       const controllerInstance = new Controller();
@@ -87,12 +89,15 @@ const initializeControllersAsRouter = <T extends Dolph>(controllers: Array<{ new
           if (shieldMiddleware.length) {
             middlewareList.unshift(...shieldMiddleware);
             shieldMiddleware.forEach((middleware: Middleware) => {
-              console.log(
-                dolphMessages.coreUtilMessage(
-                  'REGISTRAR',
-                  `has registered ${middleware.name} ${clc.green('shield')} for ${Controller.name}`,
-                ),
-              );
+              if (!registeredShields.includes(middleware.name)) {
+                console.log(
+                  dolphMessages.coreUtilMessage(
+                    'REGISTRAR',
+                    `has registered ${middleware.name} ${clc.green('shield')} for ${Controller.name}`,
+                  ),
+                );
+                registeredShields.push(middleware.name);
+              }
             });
           }
 
@@ -135,6 +140,7 @@ const initializeControllersAsRouter = <T extends Dolph>(controllers: Array<{ new
           }
         }
       });
+      registeredShields.length = 0;
       engine.use('/', router);
     } catch (e) {
       logger.error(clc.red(`Error initializing controller ${Controller.name}: ${e.message}`));
@@ -230,6 +236,12 @@ class DolphFactoryClass<T extends DolphControllerHandler<Dolph>> {
   private dolph: typeof engine;
 
   constructor(routes: Array<{ new (): any } | { path?: string; router: Router }> = [], middlewares?: RequestHandler[]) {
+    /**
+     * Time the initialization time
+     */
+
+    const startTime = process.hrtime();
+
     routes.forEach((item) => {
       if ('router' in item) {
         this.routes.push(item);
@@ -246,7 +258,7 @@ class DolphFactoryClass<T extends DolphControllerHandler<Dolph>> {
     this.externalMiddlewares = middlewares;
     this.extractControllersFromComponent();
     this.readConfigFile();
-    this.intiDolphEngine();
+    this.intiDolphEngine(startTime);
   }
 
   private extractControllersFromComponent() {
@@ -330,7 +342,7 @@ class DolphFactoryClass<T extends DolphControllerHandler<Dolph>> {
     initExternalMiddlewares(middlewares);
   }
 
-  private intiDolphEngine() {
+  private intiDolphEngine(startTime: [number, number]) {
     this.dolph = engine;
     initializeConfigLoader();
     incrementHandlers();
@@ -343,6 +355,15 @@ class DolphFactoryClass<T extends DolphControllerHandler<Dolph>> {
 
     port = +this.port;
     env = this.env;
+
+    /**
+     * End the time recording and obtain duration
+     */
+    const endTime = process.hrtime(startTime);
+
+    const durationInMilliseconds = Math.round(endTime[0] * 1000 + endTime[1] / 1e6);
+
+    logger.info(`${clc.blueBright('initialized application in')} ${clc.white(` ${durationInMilliseconds}ms`)}`);
   }
 
   public enableCors(options?: CorsOptions) {

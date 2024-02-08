@@ -12,11 +12,20 @@ export const Route = (path: string = ''): ClassDecorator => {
   };
 };
 
-export const Shield = (middlewares: Middleware[]): ClassDecorator => {
+export const Shield = (middlewares: Middleware | Middleware[]): ClassDecorator => {
   return (target: any) => {
-    Reflect.defineMetadata(SHIELD_METADATA_KEY, middlewares, target.prototype);
+    let middlewareList: Middleware[] = [];
+
+    if (Array.isArray(middlewares)) {
+      middlewareList = middlewares;
+    } else if (middlewares) {
+      middlewareList = [middlewares];
+    }
+
+    Reflect.defineMetadata(SHIELD_METADATA_KEY, middlewareList, target.prototype);
   };
 };
+
 export const UseMiddlware = (middleware: Middleware): MethodDecorator => {
   return (target: any, propertyKey: string, descriptor: PropertyDescriptor) => {
     const existingMiddleware: Middleware[] = Reflect.getMetadata('middleware', descriptor.value) || [];
