@@ -51,3 +51,12 @@ export interface DRequestHandler extends RequestHandler {}
 export interface DNextFunc extends NextFunction {}
 
 export interface DRouter extends Router {}
+
+export interface OtherParams {
+  passportConfigs?: passportConfigs;
+}
+
+export interface passportConfigs {
+  passportStrategy?: any;
+  passportSerializer?: any;
+}
