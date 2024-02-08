@@ -86,10 +86,10 @@ const initializeControllersAsRouter = <T extends Dolph>(controllers: Array<{ new
            * Append any present shield middleware into the middlewares list
            */
 
-          if (shieldMiddleware.length) {
+          if (shieldMiddleware?.length) {
             middlewareList.unshift(...shieldMiddleware);
             shieldMiddleware.forEach((middleware: Middleware) => {
-              if (!registeredShields.includes(middleware.name)) {
+              if (!registeredShields?.includes(middleware.name)) {
                 console.log(
                   dolphMessages.coreUtilMessage(
                     'REGISTRAR',
