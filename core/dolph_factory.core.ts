@@ -236,6 +236,12 @@ class DolphFactoryClass<T extends DolphControllerHandler<Dolph>> {
   private dolph: typeof engine;
 
   constructor(routes: Array<{ new (): any } | { path?: string; router: Router }> = [], middlewares?: RequestHandler[]) {
+    /**
+     * Time the initialization time
+     */
+
+    const startTime = process.hrtime();
+
     routes.forEach((item) => {
       if ('router' in item) {
         this.routes.push(item);
@@ -252,7 +258,7 @@ class DolphFactoryClass<T extends DolphControllerHandler<Dolph>> {
     this.externalMiddlewares = middlewares;
     this.extractControllersFromComponent();
     this.readConfigFile();
-    this.intiDolphEngine();
+    this.intiDolphEngine(startTime);
   }
 
   private extractControllersFromComponent() {
@@ -336,7 +342,7 @@ class DolphFactoryClass<T extends DolphControllerHandler<Dolph>> {
     initExternalMiddlewares(middlewares);
   }
 
-  private intiDolphEngine() {
+  private intiDolphEngine(startTime: [number, number]) {
     this.dolph = engine;
     initializeConfigLoader();
     incrementHandlers();
@@ -349,6 +355,15 @@ class DolphFactoryClass<T extends DolphControllerHandler<Dolph>> {
 
     port = +this.port;
     env = this.env;
+
+    /**
+     * End the time recording and obtain duration
+     */
+    const endTime = process.hrtime(startTime);
+
+    const durationInMilliseconds = Math.round(endTime[0] * 1000 + endTime[1] / 1e6);
+
+    logger.info(`${clc.blueBright('initialized application in')} ${clc.white(` ${durationInMilliseconds}ms`)}`);
   }
 
   public enableCors(options?: CorsOptions) {
