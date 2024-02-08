@@ -8,8 +8,6 @@ export type ComponentParams<T extends Dolph> = {
   controllers: Array<{ new (): DolphControllerHandler<T> }>;
 };
 
-export type ShieldParams<T extends Dolph> = {};
-
 export type DolphComponent<T extends DolphControllerHandler<Dolph>> = {
   controllers: Array<{ new (): T }>;
 };
