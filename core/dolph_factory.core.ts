@@ -14,6 +14,7 @@ import {
   DolphConfig,
   ErrorResponse,
   Middleware,
+  OtherParams,
   dolphPort,
 } from '../common';
 import { logger } from '../utilities';
@@ -86,10 +87,10 @@ const initializeControllersAsRouter = <T extends Dolph>(controllers: Array<{ new
            * Append any present shield middleware into the middlewares list
            */
 
-          if (shieldMiddleware.length) {
+          if (shieldMiddleware?.length) {
             middlewareList.unshift(...shieldMiddleware);
             shieldMiddleware.forEach((middleware: Middleware) => {
-              if (!registeredShields.includes(middleware.name)) {
+              if (!registeredShields?.includes(middleware.name)) {
                 console.log(
                   dolphMessages.coreUtilMessage(
                     'REGISTRAR',
@@ -225,8 +226,10 @@ const initClosureHandler = () => {
  * @version 1.2.0
  */
 class DolphFactoryClass<T extends DolphControllerHandler<Dolph>> {
-  routes = [];
-  controllers = [];
+  private routes = [];
+  private controllers = [];
+  private passportStrategy: any;
+  private passportSerializer: any;
 
   port: dolphPort = 3030;
   env = process.env.NODE_ENV || 'development';
@@ -235,7 +238,11 @@ class DolphFactoryClass<T extends DolphControllerHandler<Dolph>> {
   jsonLimit = '50mb';
   private dolph: typeof engine;
 
-  constructor(routes: Array<{ new (): any } | { path?: string; router: Router }> = [], middlewares?: RequestHandler[]) {
+  constructor(
+    routes: Array<{ new (): any } | { path?: string; router: Router }> = [],
+    middlewares?: RequestHandler[],
+    { passportConfigs }: OtherParams = {},
+  ) {
     /**
      * Time the initialization time
      */
@@ -256,6 +263,7 @@ class DolphFactoryClass<T extends DolphControllerHandler<Dolph>> {
     });
 
     this.externalMiddlewares = middlewares;
+    this.initializePassport(passportConfigs.passportStrategy, this.passportSerializer);
     this.extractControllersFromComponent();
     this.readConfigFile();
     this.intiDolphEngine(startTime);
@@ -332,6 +340,17 @@ class DolphFactoryClass<T extends DolphControllerHandler<Dolph>> {
       throw e;
     }
     // console.log(config);
+  }
+
+  private initializePassport(passportStrategy: any, passportSerializer: any) {
+    if (passportSerializer && passportStrategy) {
+      this.passportSerializer = passportSerializer;
+      this.passportStrategy = passportStrategy;
+    }
+
+    const strategyInstance = new this.passportStrategy();
+    const serializerInstance = new this.passportSerializer();
+    strategyInstance.initPassport();
   }
 
   private changePort(port: dolphPort) {
