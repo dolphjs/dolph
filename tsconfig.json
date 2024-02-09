@@ -13,7 +13,7 @@
     "emitDecoratorMetadata": true,
     "declarationMap": false,
     "target": "ES2022",
-    "baseUrl": ".",
+    "rootDir": ".",
     "outDir": "dist",
     "pretty": true,
     // "paths": {
