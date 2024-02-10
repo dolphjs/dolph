@@ -14,6 +14,7 @@ import {
   DolphConfig,
   ErrorResponse,
   Middleware,
+  OtherParams,
   dolphPort,
 } from '../common';
 import { logger } from '../utilities';
@@ -86,10 +87,10 @@ const initializeControllersAsRouter = <T extends Dolph>(controllers: Array<{ new
            * Append any present shield middleware into the middlewares list
            */
 
-          if (shieldMiddleware.length) {
+          if (shieldMiddleware?.length) {
             middlewareList.unshift(...shieldMiddleware);
             shieldMiddleware.forEach((middleware: Middleware) => {
-              if (!registeredShields.includes(middleware.name)) {
+              if (!registeredShields?.includes(middleware.name)) {
                 console.log(
                   dolphMessages.coreUtilMessage(
                     'REGISTRAR',
@@ -225,8 +226,8 @@ const initClosureHandler = () => {
  * @version 1.2.0
  */
 class DolphFactoryClass<T extends DolphControllerHandler<Dolph>> {
-  routes = [];
-  controllers = [];
+  private routes = [];
+  private controllers = [];
 
   port: dolphPort = 3030;
   env = process.env.NODE_ENV || 'development';
