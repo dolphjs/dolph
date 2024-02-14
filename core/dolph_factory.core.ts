@@ -10,11 +10,9 @@ import {
   DRequestHandler,
   DResponse,
   Dolph,
-  DolphComponent,
   DolphConfig,
   ErrorResponse,
   Middleware,
-  OtherParams,
   dolphPort,
 } from '../common';
 import { logger } from '../utilities';
@@ -46,7 +44,9 @@ const enableCorsFunc = (corsOptions: CorsOptions) => {
   engine.use(cors(corsOptions));
 };
 
-// responsible for registering api routes
+/**
+ * Function is used to register express router handlers using the **express routing** architecture
+ */
 const initializaRoutes = (routes: Array<{ path?: string; router: import('express').Router }>) => {
   routes.forEach((route) => {
     engine.use('/', route.router);
@@ -69,13 +69,11 @@ const initializeControllersAsRouter = <T extends Dolph>(controllers: Array<{ new
       /**
        * Retrieve shield middleware if present
        */
-
       const shieldMiddleware = getShieldMiddlewares(Controller);
 
       /**
        * register each controller method
        */
-
       Object.getOwnPropertyNames(Object.getPrototypeOf(controllerInstance)).forEach((methodName) => {
         if (methodName !== 'constructor') {
           const method = Reflect.getMetadata('method', controllerInstance.constructor.prototype[methodName]);
@@ -94,7 +92,7 @@ const initializeControllersAsRouter = <T extends Dolph>(controllers: Array<{ new
                 console.log(
                   dolphMessages.coreUtilMessage(
                     'REGISTRAR',
-                    `has registered ${middleware.name} ${clc.green('shield')} for ${Controller.name}`,
+                    `registered ${middleware.name} ${clc.green('shield')} for ${Controller.name}`,
                   ),
                 );
                 registeredShields.push(middleware.name);
@@ -127,12 +125,14 @@ const initializeControllersAsRouter = <T extends Dolph>(controllers: Array<{ new
               }
             };
 
+            // parse the handler function together with full path to the express router object
             router[method](fullPath, handler);
+
             console.log(
               dolphMessages.coreUtilMessage(
                 'REGISTRAR',
-                `has registered ${clc.bold(clc.green(Controller.name))} for method ${clc.bold(
-                  clc.green(methodName),
+                `registered ${clc.bold(clc.green(methodName))} from ${clc.bold(
+                  clc.green(Controller.name),
                 )} at {${fullPath}} --> ${method.toUpperCase()} REQUEST`,
               ),
             );
@@ -142,6 +142,8 @@ const initializeControllersAsRouter = <T extends Dolph>(controllers: Array<{ new
         }
       });
       registeredShields.length = 0;
+
+      // register the router object in the express engine
       engine.use('/', router);
     } catch (e) {
       logger.error(clc.red(`Error initializing controller ${Controller.name}: ${e.message}`));
@@ -149,10 +151,12 @@ const initializeControllersAsRouter = <T extends Dolph>(controllers: Array<{ new
   });
 };
 
+// used to incrment the limit of listeners for express engine
 const incrementHandlers = () => {
   process.setMaxListeners(15);
 };
 
+// initializes middlewares used by dolphjs
 const initializeMiddlewares = ({ jsonLimit }) => {
   if (env === 'development') {
     engine.use(successHandler);
@@ -175,6 +179,7 @@ const initExternalMiddlewares = (middlewares: DRequestHandler[]) => {
   }
 };
 
+// default not found endpoint
 const initNotFoundError = () => {
   engine.use('/', (req: DRequest, res: DResponse) => {
     ErrorResponse({ res, status: 404, body: { message: 'end-point not found' } });
@@ -186,11 +191,13 @@ const initializeConfigLoader = () => {
   configLoader();
 };
 
+// initializes error handlers and converters
 const initializeErrorHandlers = () => {
   engine.use(errorConverter);
   engine.use(errorHandler);
 };
 
+// exist handler
 const exitHandler = () => {
   if (server) {
     server.close(() => {
@@ -238,9 +245,8 @@ class DolphFactoryClass<T extends DolphControllerHandler<Dolph>> {
 
   constructor(routes: Array<{ new (): any } | { path?: string; router: Router }> = [], middlewares?: RequestHandler[]) {
     /**
-     * Time the initialization time
+     * Start dolphjs initialization time
      */
-
     const startTime = process.hrtime();
 
     routes.forEach((item) => {
@@ -252,7 +258,9 @@ class DolphFactoryClass<T extends DolphControllerHandler<Dolph>> {
         }
       }
 
-      //TODO:
+      /**
+       * Uncomment this line of code if the controllers are duplicated
+       */
       // this.controllers = Array.from(new Set(this.controllers));
     });
 
@@ -262,6 +270,9 @@ class DolphFactoryClass<T extends DolphControllerHandler<Dolph>> {
     this.intiDolphEngine(startTime);
   }
 
+  /**
+   * Methiod responsible for reading the controllers from components and registering them in the controllers array
+   */
   private extractControllersFromComponent() {
     const newControllers: Array<{ new (): DolphControllerHandler<Dolph> }> = [];
 
@@ -275,6 +286,9 @@ class DolphFactoryClass<T extends DolphControllerHandler<Dolph>> {
     this.controllers = [...newControllers];
   }
 
+  /**
+   * Reads the [dolph_config.yaml] file present in app's root directory
+   */
   private readConfigFile() {
     try {
       const configContents = readFileSync('dolph_config.yaml', 'utf8');

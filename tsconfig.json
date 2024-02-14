@@ -16,20 +16,6 @@
     "rootDir": ".",
     "outDir": "dist",
     "pretty": true,
-    // "paths": {
-    //   "@/common": ["./common"],
-    //   "@/common/*": ["./common/*"],
-    //   "@/main": ["core"],
-    //   "@/main/*": ["core/*"],
-    //   "@/classes": ["classes"],
-    //   "@/classes/*": ["classes/*"],
-    //   "@/decorators": ["decorators"],
-    //   "@/decorators/*": ["decorators/*"],
-    //   "@/packages": ["packages"],
-    //   "@/packages/*": ["packages/*"],
-    //   "@/utilities": ["utilities"],
-    //   "@/utilities/*": ["utilities/*"]
-    // },
     "module": "commonjs"
   }
 }

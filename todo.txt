@@ -1,7 +1,7 @@
 hide other fields except message field for exceptions
 fix bug with argon
 
-
+on the CLI, add @types/express as a devDependency for all ts projects
 
 
 🚀 Rocket: Represents launching something new, going live, or reaching new heights.
