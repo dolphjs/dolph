@@ -1,4 +1,4 @@
-import { DolphControllerHandler } from 'classes';
+import { DolphControllerHandler } from '../../classes';
 import { DNextFunc, DRequest, DResponse } from '../../common/interfaces';
 import { Dolph } from './dolph.types';
 
