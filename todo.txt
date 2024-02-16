@@ -3,6 +3,23 @@ fix bug with argon
 
 on the CLI, add @types/express as a devDependency for all ts projects
 
+----------
+Write tests for:
+
+- Routing and Controllers
+- Middleware
+- Request and Response Handling
+- Database Integration
+- Error Handling
+- Authentication and Authorization
+- Testing Edge Cases
+- Concurrency and Scalability
+- Configuration
+- Dependency Injection
+- Logging and Debugging
+- 
+----------
+
 
 🚀 Rocket: Represents launching something new, going live, or reaching new heights.
 
