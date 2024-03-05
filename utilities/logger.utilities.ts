@@ -41,6 +41,9 @@ const logger = winston.createLogger({
       return logMessage;
     }),
   ),
+  /**
+   * Todo: check if there's need to remove the logger file or fix the formatting issue as a result of clc
+   */
   transports: [
     new winston.transports.Console({ level: 'debug' }),
     new DailyRotateFile({

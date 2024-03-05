@@ -9,4 +9,10 @@ const createUser = {
   }),
 };
 
-export { createUser };
+const testCase = {
+  body: Joi.object().keys({
+    name: Joi.string().required()
+  })
+} 
+
+export { createUser, testCase };

@@ -27,7 +27,7 @@ const arrayUpload = (
 };
 
 /**
- *  dolphjs decorator  that processes media files
+ *  dolph decorator  that processes media files
  *
  *  uses the `multer` library under the hood
  */

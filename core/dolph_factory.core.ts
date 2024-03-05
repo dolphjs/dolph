@@ -182,7 +182,7 @@ const initExternalMiddlewares = (middlewares: DRequestHandler[]) => {
 // default not found endpoint
 const initNotFoundError = () => {
   engine.use('/', (req: DRequest, res: DResponse) => {
-    ErrorResponse({ res, status: 404, body: { message: 'end-point not found' } });
+    ErrorResponse({ res, status: 404, body: { message: 'this endpoint does not exist' } });
   });
 };
 
@@ -240,7 +240,7 @@ class DolphFactoryClass<T extends DolphControllerHandler<Dolph>> {
   env = process.env.NODE_ENV || 'development';
   configs: DolphConfig;
   externalMiddlewares: RequestHandler[];
-  jsonLimit = '50mb';
+  jsonLimit = '30mb';
   private dolph: typeof engine;
 
   constructor(routes: Array<{ new (): any } | { path?: string; router: Router }> = [], middlewares?: RequestHandler[]) {
@@ -287,7 +287,7 @@ class DolphFactoryClass<T extends DolphControllerHandler<Dolph>> {
   }
 
   /**
-   * Reads the [dolph_config.yaml] file present in app's root directory
+   * Reads the [dolph_config.yaml] file present in project's root directory
    */
   private readConfigFile() {
     try {
@@ -308,7 +308,7 @@ class DolphFactoryClass<T extends DolphControllerHandler<Dolph>> {
         if (!config.jsonLimit.includes('mb')) {
           logger.warn(
             clc.yellow(
-              "jsonLimit value in `dolph_config` file must be in format 'number + mb' e.g '20mb'. using default value of '50mb' ",
+              "jsonLimit value in `dolph_config` file must be in format 'number + mb' e.g '20mb'. using default value of '30mb' ",
             ),
           );
         } else {
@@ -322,6 +322,9 @@ class DolphFactoryClass<T extends DolphControllerHandler<Dolph>> {
 
       if (this.configs.database?.mongo?.url.length > 1) {
         if (this.configs.database.mongo.url === 'sensitive') {
+          if (!configs.MONGO_URL.length) {
+            logger.error('cannot find `MONGO_URL` in the projects `.env` file');
+          }
           this.configs.database.mongo.url = configs.MONGO_URL;
         }
         autoInitMongo(this.configs.database.mongo);
