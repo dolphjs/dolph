@@ -26,7 +26,7 @@ export const Shield = (middlewares: Middleware | Middleware[]): ClassDecorator =
   };
 };
 
-export const UseMiddlware = (middleware: Middleware): MethodDecorator => {
+export const UseMiddleware = (middleware: Middleware): MethodDecorator => {
   return (target: any, propertyKey: string, descriptor: PropertyDescriptor) => {
     const existingMiddleware: Middleware[] = Reflect.getMetadata('middleware', descriptor.value) || [];
     existingMiddleware.push(middleware);

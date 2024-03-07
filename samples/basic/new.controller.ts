@@ -1,6 +1,6 @@
 import { DolphControllerHandler } from '../../classes';
 import { DRequest, DResponse, Dolph, SuccessResponse } from '../../common';
-import { Get, Post, Route, Shield, UseMiddlware, ValidateReq } from '../../decorators';
+import { Get, Post, Route, Shield, UseMiddleware as UseMiddleware, ValidateReq } from '../../decorators';
 import { testMiddleware } from './app.middleware';
 import { testCase } from './app.validator';
 
@@ -17,7 +17,7 @@ export class NewController extends DolphControllerHandler<Dolph> {
   }
 
   @Post('test')
-  @UseMiddlware(testMiddleware)
+  @UseMiddleware(testMiddleware)
   @ValidateReq(testCase)
   async testNewController(req: DRequest, res: DResponse) {
     SuccessResponse({ res, body: { ...req.body, ...req.payload } });

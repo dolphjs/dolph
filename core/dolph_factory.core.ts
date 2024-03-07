@@ -47,7 +47,7 @@ const enableCorsFunc = (corsOptions: CorsOptions) => {
 /**
  * Function is used to register express router handlers using the **express routing** architecture
  */
-const initializaRoutes = (routes: Array<{ path?: string; router: import('express').Router }>) => {
+const initializeRoutes = (routes: Array<{ path?: string; router: import('express').Router }>) => {
   routes.forEach((route) => {
     engine.use('/', route.router);
   });
@@ -151,7 +151,7 @@ const initializeControllersAsRouter = <T extends Dolph>(controllers: Array<{ new
   });
 };
 
-// used to incrment the limit of listeners for express engine
+// used to increment the limit of listeners for express engine
 const incrementHandlers = () => {
   process.setMaxListeners(15);
 };
@@ -271,7 +271,7 @@ class DolphFactoryClass<T extends DolphControllerHandler<Dolph>> {
   }
 
   /**
-   * Methiod responsible for reading the controllers from components and registering them in the controllers array
+   * Method responsible for reading the controllers from components and registering them in the controllers array
    */
   private extractControllersFromComponent() {
     const newControllers: Array<{ new (): DolphControllerHandler<Dolph> }> = [];
@@ -366,7 +366,7 @@ class DolphFactoryClass<T extends DolphControllerHandler<Dolph>> {
     incrementHandlers();
     initializeMiddlewares({ jsonLimit: this.jsonLimit });
     initExternalMiddlewares(this.externalMiddlewares || []);
-    initializaRoutes(this.routes);
+    initializeRoutes(this.routes);
     initializeControllersAsRouter(this.controllers);
     initializeErrorHandlers();
     initNotFoundError();
