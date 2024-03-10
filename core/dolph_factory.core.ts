@@ -131,9 +131,9 @@ const initializeControllersAsRouter = <T extends Dolph>(controllers: Array<{ new
             console.log(
               dolphMessages.coreUtilMessage(
                 'REGISTRAR',
-                `registered ${clc.bold(clc.green(methodName))} from ${clc.bold(
+                `registered ${clc.bold(clc.green(methodName))} of ${clc.bold(
                   clc.green(Controller.name),
-                )} at {${fullPath}} --> ${method.toUpperCase()} REQUEST`,
+                )} at {${fullPath}} --> ${method.toUpperCase()}`,
               ),
             );
           } else {
