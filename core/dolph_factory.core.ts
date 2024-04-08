@@ -15,7 +15,7 @@ import {
   Middleware,
   dolphPort,
 } from '../common';
-import { logger } from '../utilities';
+import { inAppLogger, logger } from '../utilities';
 import { autoInitMongo } from '../packages';
 import { DolphErrors, dolphMessages } from '../common/constants';
 import express from 'express';
@@ -89,13 +89,8 @@ const initializeControllersAsRouter = <T extends Dolph>(controllers: Array<{ new
             middlewareList.unshift(...shieldMiddleware);
             shieldMiddleware.forEach((middleware: Middleware) => {
               if (!registeredShields?.includes(middleware.name)) {
-                console.log(
-                  dolphMessages.coreUtilMessage(
-                    'REGISTRAR',
-                    `registered ${middleware.name} ${clc.green('shield')} for ${Controller.name}`,
-                  ),
-                );
                 registeredShields.push(middleware.name);
+                inAppLogger.info(dolphMessages.middlewareMessages('Shield', middleware.name));
               }
             });
           }
@@ -127,15 +122,7 @@ const initializeControllersAsRouter = <T extends Dolph>(controllers: Array<{ new
 
             // parse the handler function together with full path to the express router object
             router[method](fullPath, handler);
-
-            console.log(
-              dolphMessages.coreUtilMessage(
-                'REGISTRAR',
-                `registered ${clc.bold(clc.green(methodName))} of ${clc.bold(
-                  clc.green(Controller.name),
-                )} at {${fullPath}} --> ${method.toUpperCase()}`,
-              ),
-            );
+            inAppLogger.info(dolphMessages.routeMessages(methodName, method, fullPath));
           } else {
             logger.error(clc.red(`Missing metadata for method ${methodName} in controller ${Controller.name}`));
           }
@@ -306,7 +293,7 @@ class DolphFactoryClass<T extends DolphControllerHandler<Dolph>> {
 
       if (config.jsonLimit?.length) {
         if (!config.jsonLimit.includes('mb')) {
-          logger.warn(
+          inAppLogger.warn(
             clc.yellow(
               "jsonLimit value in `dolph_config` file must be in format 'number + mb' e.g '20mb'. using default value of '30mb' ",
             ),
@@ -315,8 +302,8 @@ class DolphFactoryClass<T extends DolphControllerHandler<Dolph>> {
           this.jsonLimit = config.jsonLimit;
         }
       } else {
-        logger.warn(
-          clc.yellow("jsonLimit value should be added to `dolph_config` file else default value of '50mb' would be used "),
+        inAppLogger.warn(
+          clc.yellow("jsonLimit value should be added to `dolph_config` file else default value of '50mb' would be used"),
         );
       }
 

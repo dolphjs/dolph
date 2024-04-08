@@ -20,5 +20,5 @@ middlewares:
 routing:
   base: '/v1'
 port: 3030
-jsonLimit: 20mb
+# jsonLimit: 20mb
 # env: production
