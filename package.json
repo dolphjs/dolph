@@ -1,6 +1,6 @@
 {
   "name": "@dolphjs/dolph",
-  "version": "1.1.7",
+  "version": "1.2.0",
   "description": "New-Age, developer friendly node.js framework",
   "main": "index.js",
   "repository": "https://github.com/dolphjs/dolph",
@@ -76,6 +76,7 @@
     "@types/multer": "^1.4.7",
     "@types/node": "^20.3.2",
     "@types/sequelize": "^4.28.15",
+    "@types/socket.io": "^3.0.2",
     "@typescript-eslint/eslint-plugin": "^5.60.1",
     "@typescript-eslint/parser": "^5.60.1",
     "autocannon": "^7.15.0",
@@ -117,6 +118,8 @@
     "mysql2": "^3.6.1",
     "reflect-metadata": "^0.2.1",
     "sequelize": "^6.33.0",
+    "socket.io": "^4.7.5",
+    "typedi": "^0.10.0",
     "winston": "^3.9.0",
     "winston-daily-rotate-file": "^4.7.1",
     "xss": "^1.0.14"

@@ -16,7 +16,7 @@ import {
   dolphPort,
 } from '../common';
 import { inAppLogger, logger } from '../utilities';
-import { autoInitMongo } from '../packages';
+import { autoInitMongo, SocketService } from '../packages';
 import { DolphErrors, dolphMessages } from '../common/constants';
 import express from 'express';
 import cors from 'cors';
@@ -31,6 +31,8 @@ import { normalizePath } from '../utilities/normalize_path.utilities';
 import { DolphControllerHandler } from '../classes';
 import { getControllersFromMetadata } from '../utilities/get_controllers_from_component';
 import { getShieldMiddlewares } from '../utilities/spring_helpers.utilities';
+import { DSocketInit } from '../common/interfaces/socket.interfaces';
+import { GlobalInjection } from './initializers';
 
 const engine = express();
 
@@ -124,7 +126,7 @@ const initializeControllersAsRouter = <T extends Dolph>(controllers: Array<{ new
             router[method](fullPath, handler);
             inAppLogger.info(dolphMessages.routeMessages(methodName, method, fullPath));
           } else {
-            logger.error(clc.red(`Missing metadata for method ${methodName} in controller ${Controller.name}`));
+            // logger.error(clc.red(`Missing metadata for method ${methodName} in controller ${Controller.name}`));
           }
         }
       });
@@ -217,11 +219,13 @@ const initClosureHandler = () => {
  * The main engine for the dolph framework
  *
  *
- * @version 1.2.0
+ * @version 1.3.0
  */
 class DolphFactoryClass<T extends DolphControllerHandler<Dolph>> {
   private routes = [];
   private controllers = [];
+  private sockets?: DSocketInit<Dolph>;
+  private socketService?: SocketService;
 
   port: dolphPort = 3030;
   env = process.env.NODE_ENV || 'development';
@@ -230,7 +234,10 @@ class DolphFactoryClass<T extends DolphControllerHandler<Dolph>> {
   jsonLimit = '30mb';
   private dolph: typeof engine;
 
-  constructor(routes: Array<{ new (): any } | { path?: string; router: Router }> = [], middlewares?: RequestHandler[]) {
+  constructor(
+    routes: Array<{ new (): any } | { path?: string; router: Router }> = [],
+    middlewares?: RequestHandler[] | DSocketInit<Dolph>,
+  ) {
     /**
      * Start dolphjs initialization time
      */
@@ -251,7 +258,12 @@ class DolphFactoryClass<T extends DolphControllerHandler<Dolph>> {
       // this.controllers = Array.from(new Set(this.controllers));
     });
 
-    this.externalMiddlewares = middlewares;
+    if (Array.isArray(middlewares) && middlewares.length > 0 && 'handle' in middlewares[0]) {
+      this.externalMiddlewares = middlewares as RequestHandler[];
+    } else if (typeof middlewares === 'object' && 'socketService' in middlewares) {
+      this.sockets = middlewares as DSocketInit<Dolph>;
+    }
+
     this.extractControllersFromComponent();
     this.readConfigFile();
     this.intiDolphEngine(startTime);
@@ -375,7 +387,28 @@ class DolphFactoryClass<T extends DolphControllerHandler<Dolph>> {
     enableCorsFunc(options || { origin: '*', methods: ['POST', 'GET', 'PUT', 'DELETE', 'PATCH'] });
   }
 
+  private initSockets(server: Server<typeof IncomingMessage, typeof ServerResponse>) {
+    if (this.sockets) {
+      this.socketService = new this.sockets.socketService({ server, options: this.sockets.options });
+
+      GlobalInjection(this.sockets.socketService.name, this.socketService);
+
+      logger.info(`${clc.blue(`SocketIO Initialized`)}`);
+
+      const socketsMetadata = Reflect.getMetadata('sockets', this.sockets.component.constructor.prototype);
+
+      if (socketsMetadata && Array.isArray(socketsMetadata)) {
+        socketsMetadata.forEach((socketServiceClass) => {
+          new socketServiceClass();
+
+          logger.info(`${clc.blue(`${clc.white(`${socketServiceClass.name}`)} can now receive and send websocket events`)}`);
+        });
+      }
+    }
+  }
+
   public engine = () => this.dolph;
+  public socket = () => this.socketService;
 
   /**
    * Initializes and returns the dolphjs engine
@@ -385,6 +418,7 @@ class DolphFactoryClass<T extends DolphControllerHandler<Dolph>> {
       logger.info(
         clc.blueBright(`DOLPH APP RUNNING ON PORT ${clc.white(`${this.port}`)} IN ${this.env.toUpperCase()} MODE`),
       );
+      this.initSockets(server);
     });
     // if (this.configs.database?.mysql?.host.length > 1) {
     //   autoInitMySql(

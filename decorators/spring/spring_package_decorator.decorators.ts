@@ -5,6 +5,7 @@ import { DolphControllerHandler } from '../../classes';
 import clc from 'cli-color';
 import { logger } from '../../utilities';
 import { SHIELD_METADATA_KEY } from './meta_data_keys.decorators';
+import { GlobalInjection } from '../../core';
 
 export const Route = (path: string = ''): ClassDecorator => {
   return (target: any) => {
@@ -74,7 +75,7 @@ export const Delete = (path: string = ''): MethodDecorator => {
   };
 };
 
-export const Component = <T extends Dolph>({ controllers }: ComponentParams<T>): ClassDecorator => {
+export const Component = <T extends Dolph>({ controllers, services }: ComponentParams<T>): ClassDecorator => {
   if (
     Array.isArray(controllers) &&
     controllers.every((item) => {
@@ -90,6 +91,22 @@ export const Component = <T extends Dolph>({ controllers }: ComponentParams<T>):
   ) {
     return (target: any) => {
       Reflect.defineMetadata('controllers', controllers, target.prototype);
+
+      controllers.forEach((controller) => {
+        services.forEach((service) => {
+          const serviceInstance = new service();
+          const serviceName = service.name;
+
+          GlobalInjection(serviceName, serviceInstance);
+
+          Object.defineProperty(controller.prototype, serviceName, {
+            value: serviceInstance,
+            writable: true,
+            configurable: true,
+            enumerable: true,
+          });
+        });
+      });
     };
   } else {
     logger.error(clc.red('Provide an array of controllers with type `new (): T` '));

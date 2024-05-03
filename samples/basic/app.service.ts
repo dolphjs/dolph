@@ -13,7 +13,7 @@ class AppService extends DolphServiceHandler<Dolph> {
   userMySqlModel!: ModelStatic<SqlModel<any, any>>;
 
   constructor() {
-    super('app');
+    super('appService');
   }
 
   greeting = (body: { name: string; age: number }) => {

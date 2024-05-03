@@ -3,17 +3,21 @@ import { DRequest, DResponse, Dolph, SuccessResponse } from '../../common';
 import { Get, Post, Route, Shield, UseMiddleware as UseMiddleware, ValidateReq } from '../../decorators';
 import { testMiddleware } from './app.middleware';
 import { testCase } from './app.validator';
+import { NewService } from './new.service';
 
 @Shield(testMiddleware)
 @Route('app')
 export class NewController extends DolphControllerHandler<Dolph> {
+  private NewService: NewService;
+
   constructor() {
     super();
   }
 
   @Get('test')
   async newReq(req: DRequest, res: DResponse) {
-    SuccessResponse({ res, body: {} });
+    console.log(this.NewService.name);
+    SuccessResponse({ res, body: { message: 'ok' } });
   }
 
   @Post('test')

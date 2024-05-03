@@ -8,14 +8,16 @@ import { Model } from 'mongoose';
  * @param model  takes the actual mognoose model imported from the models dir
  *
  *
- * @version 1.0.1
+ * @version 2.0.0
  */
 function InjectMongo(propertyName: string, model: Model<any>) {
   return function <T extends { new (...args: any[]): {} }>(constructor: T) {
-    return class extends constructor {
-      //@ts-expect-errors
-      [propertyName]: Model<any> = model as Model<any>;
+    const Wrapped = class extends constructor {
+      //@ts-expect-error
+      [propertyName]: Model<any> = model;
     };
+    Object.defineProperty(Wrapped, 'name', { value: constructor.name, configurable: true });
+    return Wrapped;
   };
 }
 

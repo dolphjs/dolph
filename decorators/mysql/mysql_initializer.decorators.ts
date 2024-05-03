@@ -7,15 +7,18 @@ import { Model, ModelStatic } from 'sequelize';
  * @param model  takes the actual mognoose model imported from the models dir
  *
  *
- * @version 1.0.0
+ * @version 2.0.0
  */
 
 function InjectMySQL<T extends { new (...args: any[]): {} }>(propertyName: string, model: ModelStatic<Model<any, any>>) {
   return function (constructor: T) {
-    return class extends constructor {
-      //@ts-expect-error
+    const Wrapped = class extends constructor {
+      //@ts-expect-error - Expecting error due to dynamic property assignment
       [propertyName]: ModelStatic<Model<any, any>> = model;
     };
+    // Preserving the original class name after extension
+    Object.defineProperty(Wrapped, 'name', { value: constructor.name, configurable: true });
+    return Wrapped;
   };
 }
 
