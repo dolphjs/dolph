@@ -93,19 +93,21 @@ export const Component = <T extends Dolph>({ controllers, services }: ComponentP
       Reflect.defineMetadata('controllers', controllers, target.prototype);
 
       controllers.forEach((controller) => {
-        services.forEach((service) => {
-          const serviceInstance = new service();
-          const serviceName = service.name;
+        if (services.length) {
+          services.forEach((service) => {
+            const serviceInstance = new service();
+            const serviceName = service.name;
 
-          GlobalInjection(serviceName, serviceInstance);
+            GlobalInjection(serviceName, serviceInstance);
 
-          Object.defineProperty(controller.prototype, serviceName, {
-            value: serviceInstance,
-            writable: true,
-            configurable: true,
-            enumerable: true,
+            Object.defineProperty(controller.prototype, serviceName, {
+              value: serviceInstance,
+              writable: true,
+              configurable: true,
+              enumerable: true,
+            });
           });
-        });
+        }
       });
     };
   } else {

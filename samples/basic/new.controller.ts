@@ -16,7 +16,7 @@ export class NewController extends DolphControllerHandler<Dolph> {
 
   @Get('test')
   async newReq(req: DRequest, res: DResponse) {
-    console.log(this.NewService.name);
+    this.NewService.logger();
     SuccessResponse({ res, body: { message: 'ok' } });
   }
 
