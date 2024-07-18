@@ -1,4 +1,5 @@
-import { DolphFactory, GlobalInjector } from '../../core';
+import helmet from 'helmet';
+import { DolphFactory, GlobalInjector, middlewareRegistry } from '../../core';
 import { SocketService } from '../../packages';
 import { EventEmitterService } from '../../packages/events/events_module.packages';
 import { AppComponent } from './app.component';
@@ -10,12 +11,12 @@ import { EventsComponent } from './socket.component';
 
 new GlobalInjector([{ service: EventEmitterService.name, value: new EventEmitterService() }]);
 
+middlewareRegistry.register(helmet());
+
 const dolph = new DolphFactory([AppComponent], {
   options: { cors: { origin: '*' } },
   socketService: SocketService,
   component: new EventsComponent(),
 });
-
-// autoInitMySql(mysql);
 
 dolph.start();
