@@ -1,4 +1,4 @@
-import { DolphDbs, DolphMiddlewareOption, dolphEnv, dolphPort } from '..';
+import { DolphDbs, DolphMiddlewareHelmetOption, DolphMiddlewareOption, dolphEnv, dolphPort } from '..';
 import { IPayload, MongooseConfig } from '.';
 import { NextFunction, Request, RequestHandler, Response, Router } from 'express';
 

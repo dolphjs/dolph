@@ -11,6 +11,7 @@ import {
   DResponse,
   Dolph,
   DolphConfig,
+  DolphMiddlewareHelmetOption,
   ErrorResponse,
   Middleware,
   dolphPort,
@@ -22,7 +23,7 @@ import express from 'express';
 import cors from 'cors';
 import { configLoader, configs } from './config.core';
 import { morganErrorHandler, successHandler } from './morgan.core';
-import helmet from 'helmet';
+import helmet, { HelmetOptions } from 'helmet';
 import { errorConverter, errorHandler } from './error.core';
 import { IncomingMessage, Server, ServerResponse } from 'http';
 import xss from 'xss';
@@ -33,6 +34,9 @@ import { getControllersFromMetadata } from '../utilities/get_controllers_from_co
 import { getShieldMiddlewares } from '../utilities/spring_helpers.utilities';
 import { DSocketInit } from '../common/interfaces/socket.interfaces';
 import { GlobalInjection } from './initializers';
+import { middlewareRegistry } from './initializers/middleware_registrar';
+import { join } from 'path';
+import { fallbackResponseMiddleware } from './fallback_middleware.core';
 
 const engine = express();
 
@@ -41,31 +45,42 @@ let env = configs.NODE_ENV;
 let port = configs.PORT;
 let server: Server<typeof IncomingMessage, typeof ServerResponse>;
 
+// disable the x-powered-by header returned by express
+engine.disable('x-powered-by');
+
 // function add cors middleware to express
 const enableCorsFunc = (corsOptions: CorsOptions) => {
   engine.use(cors(corsOptions));
 };
 
+const enableHelmetFunc = (helmetOptions?: HelmetOptions) => {
+  engine.use(helmet(helmetOptions));
+};
+
 /**
  * Function is used to register express router handlers using the **express routing** architecture
  */
-const initializeRoutes = (routes: Array<{ path?: string; router: import('express').Router }>) => {
+const initializeRoutes = (routes: Array<{ path?: string; router: import('express').Router }>, basePath: string = '') => {
   routes.forEach((route) => {
-    engine.use('/', route.router);
+    const path = join(basePath, route.path || '');
+    engine.use(path, route.router);
   });
 };
 
 /**
  * Initializer is responsible for registering all spring controllers as routers and detaching each method from the controller classes and registering them as handler functions.
  */
-const initializeControllersAsRouter = <T extends Dolph>(controllers: Array<{ new (): DolphControllerHandler<T> }>) => {
+const initializeControllersAsRouter = <T extends Dolph>(
+  controllers: Array<{ new (): DolphControllerHandler<T> }>,
+  basePath: string,
+) => {
   const registeredShields: string[] = [];
 
   controllers.forEach((Controller) => {
     try {
       const controllerInstance = new Controller();
       const classPath = Reflect.getMetadata('basePath', controllerInstance.constructor.prototype) || '';
-      const basePath = classPath.startsWith('/') ? classPath : `/${classPath}`;
+      const controllerBasePath = classPath.startsWith('/') ? classPath : `/${classPath}`;
       const router = Router();
 
       /**
@@ -98,7 +113,7 @@ const initializeControllersAsRouter = <T extends Dolph>(controllers: Array<{ new
           }
 
           if (method && path) {
-            const fullPath = normalizePath(basePath + path);
+            const fullPath = normalizePath(join(basePath, controllerBasePath, path));
 
             const handler = async (req: DRequest, res: DResponse, next: DNextFunc) => {
               try {
@@ -154,9 +169,15 @@ const initializeMiddlewares = ({ jsonLimit }) => {
 
   engine.use(express.json({ limit: jsonLimit }));
   engine.use(express.urlencoded({ extended: true }));
-  engine.use(helmet());
+  engine.use((req, res, next) => {
+    //@ts-expect-error
+    req.handlerArgs = [];
+    next();
+  });
   engine.use(cookieParser());
   xss('<script>alert("xss");</script>');
+
+  engine.use(fallbackResponseMiddleware);
 };
 
 // registers middlewares defined by user
@@ -166,6 +187,13 @@ const initExternalMiddlewares = (middlewares: DRequestHandler[]) => {
       engine.use(middleware);
     });
   }
+};
+
+const initGlobalMiddlewares = () => {
+  const middlewares = middlewareRegistry.getMiddlewares();
+  middlewares.forEach((middleware) => {
+    engine.use(middleware);
+  });
 };
 
 // default not found endpoint
@@ -219,19 +247,20 @@ const initClosureHandler = () => {
  * The main engine for the dolph framework
  *
  *
- * @version 1.3.0
+ * @version 1.3.1
  */
 class DolphFactoryClass<T extends DolphControllerHandler<Dolph>> {
   private routes = [];
   private controllers = [];
   private sockets?: DSocketInit<Dolph>;
   private socketService?: SocketService;
+  private routingBase: string = '';
 
   port: dolphPort = 3030;
   env = process.env.NODE_ENV || 'development';
   configs: DolphConfig;
   externalMiddlewares: RequestHandler[];
-  jsonLimit = '30mb';
+  jsonLimit = '5mb';
   private dolph: typeof engine;
 
   constructor(
@@ -303,11 +332,15 @@ class DolphFactoryClass<T extends DolphControllerHandler<Dolph>> {
         this.env = config.env;
       }
 
+      if (config.routing?.base?.length) {
+        this.routingBase = config.routing.base;
+      }
+
       if (config.jsonLimit?.length) {
         if (!config.jsonLimit.includes('mb')) {
           inAppLogger.warn(
             clc.yellow(
-              "jsonLimit value in `dolph_config` file must be in format 'number + mb' e.g '20mb'. using default value of '30mb' ",
+              "jsonLimit value in `dolph_config` file must be in format 'number + mb' e.g '20mb'. Using default value of '5mb' ",
             ),
           );
         } else {
@@ -315,7 +348,7 @@ class DolphFactoryClass<T extends DolphControllerHandler<Dolph>> {
         }
       } else {
         inAppLogger.warn(
-          clc.yellow("jsonLimit value should be added to `dolph_config` file else default value of '50mb' would be used"),
+          clc.yellow("jsonLimit value should be added to `dolph_config` file else default value of '5mb' would be used"),
         );
       }
 
@@ -348,7 +381,6 @@ class DolphFactoryClass<T extends DolphControllerHandler<Dolph>> {
       logger.error(clc.red(DolphErrors.noDolphConfigFile));
       throw e;
     }
-    // console.log(config);
   }
 
   private changePort(port: dolphPort) {
@@ -365,8 +397,9 @@ class DolphFactoryClass<T extends DolphControllerHandler<Dolph>> {
     incrementHandlers();
     initializeMiddlewares({ jsonLimit: this.jsonLimit });
     initExternalMiddlewares(this.externalMiddlewares || []);
-    initializeRoutes(this.routes);
-    initializeControllersAsRouter(this.controllers);
+    initGlobalMiddlewares();
+    initializeRoutes(this.routes, this.routingBase);
+    initializeControllersAsRouter(this.controllers, this.routingBase);
     initializeErrorHandlers();
     initNotFoundError();
 
@@ -385,6 +418,14 @@ class DolphFactoryClass<T extends DolphControllerHandler<Dolph>> {
 
   public enableCors(options?: CorsOptions) {
     enableCorsFunc(options || { origin: '*', methods: ['POST', 'GET', 'PUT', 'DELETE', 'PATCH'] });
+  }
+
+  public enableHemet(options?: HelmetOptions) {
+    if (options) {
+      enableHelmetFunc(options);
+    } else {
+      enableHelmetFunc();
+    }
   }
 
   private initSockets(server: Server<typeof IncomingMessage, typeof ServerResponse>) {
