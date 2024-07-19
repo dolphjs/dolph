@@ -100,6 +100,8 @@
   "dependencies": {
     "argon2": "^0.31.2",
     "bcryptjs": "^2.4.3",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.14.1",
     "cli-color": "^2.0.3",
     "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",

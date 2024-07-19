@@ -93,19 +93,23 @@ export const Component = <T extends Dolph>({ controllers, services }: ComponentP
       Reflect.defineMetadata('controllers', controllers, target.prototype);
 
       controllers.forEach((controller) => {
-        if (services.length) {
+        if (Array.isArray(services) && services.length > 0) {
           services.forEach((service) => {
-            const serviceInstance = new service();
-            const serviceName = service.name;
+            try {
+              const serviceInstance = new service();
+              const serviceName = service.name;
 
-            GlobalInjection(serviceName, serviceInstance);
+              GlobalInjection(serviceName, serviceInstance);
 
-            Object.defineProperty(controller.prototype, serviceName, {
-              value: serviceInstance,
-              writable: true,
-              configurable: true,
-              enumerable: true,
-            });
+              Object.defineProperty(controller.prototype, serviceName, {
+                value: serviceInstance,
+                writable: true,
+                configurable: true,
+                enumerable: true,
+              });
+            } catch (e: any) {
+              logger.error(clc.red(`Failed to inject ${service.name} into ${controller.name}: ${e.message}`));
+            }
           });
         }
       });
@@ -113,4 +117,36 @@ export const Component = <T extends Dolph>({ controllers, services }: ComponentP
   } else {
     logger.error(clc.red('Provide an array of controllers with type `new (): T` '));
   }
+};
+
+export const Body = (): ParameterDecorator => {
+  return (target: Object, propertyKey: string | symbol, parameterIndex: number) => {
+    const existingBodyParameters: number[] = Reflect.getOwnMetadata('bodyParameters', target, propertyKey) || [];
+
+    existingBodyParameters.push(parameterIndex);
+
+    Reflect.defineMetadata('bodyParameters', existingBodyParameters, target, propertyKey);
+  };
+};
+
+export const Query = (): ParameterDecorator => {
+  return (target: Object, propertyKey: string | symbol, parameterIndex: number) => {
+    const existingQueryParameters: number[] = Reflect.getOwnMetadata('queryParameters', target, propertyKey) || [];
+    existingQueryParameters.push(parameterIndex);
+    Reflect.defineMetadata('queryParameters', existingQueryParameters, target, propertyKey);
+  };
+};
+
+export const Param = (): ParameterDecorator => {
+  return (target: Object, propertyKey: string | symbol, parameterIndex: number) => {
+    const existingParamParameters: number[] = Reflect.getOwnMetadata('paramParameters', target, propertyKey) || [];
+    existingParamParameters.push(parameterIndex);
+    Reflect.defineMetadata('paramParameters', existingParamParameters, target, propertyKey);
+  };
+};
+
+export const UseDto = (dto: any): MethodDecorator => {
+  return (target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor) => {
+    Reflect.defineMetadata('dto', dto, target, propertyKey);
+  };
 };

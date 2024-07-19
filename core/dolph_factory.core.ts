@@ -36,6 +36,7 @@ import { DSocketInit } from '../common/interfaces/socket.interfaces';
 import { GlobalInjection } from './initializers';
 import { middlewareRegistry } from './initializers/middleware_registrar';
 import { join } from 'path';
+import { fallbackResponseMiddleware } from './fallback_middleware.core';
 
 const engine = express();
 
@@ -168,8 +169,15 @@ const initializeMiddlewares = ({ jsonLimit }) => {
 
   engine.use(express.json({ limit: jsonLimit }));
   engine.use(express.urlencoded({ extended: true }));
+  engine.use((req, res, next) => {
+    //@ts-expect-error
+    req.handlerArgs = [];
+    next();
+  });
   engine.use(cookieParser());
   xss('<script>alert("xss");</script>');
+
+  engine.use(fallbackResponseMiddleware);
 };
 
 // registers middlewares defined by user
