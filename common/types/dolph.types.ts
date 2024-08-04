@@ -51,3 +51,5 @@ export type DolphServiceMapping<T> = {
 };
 
 export type Dolph = string;
+
+export type MVCEngine = 'handlebars' | 'pug' | 'ejs';

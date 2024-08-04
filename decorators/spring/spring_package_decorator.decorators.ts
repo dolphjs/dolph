@@ -4,7 +4,7 @@ import { ComponentParams, Dolph, Middleware } from '../../common';
 import { DolphControllerHandler } from '../../classes';
 import clc from 'cli-color';
 import { logger } from '../../utilities';
-import { SHIELD_METADATA_KEY } from './meta_data_keys.decorators';
+import { SHIELD_METADATA_KEY, UN_SHIELD_METADATA_KEY } from './meta_data_keys.decorators';
 import { GlobalInjection } from '../../core';
 
 export const Route = (path: string = ''): ClassDecorator => {
@@ -24,6 +24,20 @@ export const Shield = (middlewares: Middleware | Middleware[]): ClassDecorator =
     }
 
     Reflect.defineMetadata(SHIELD_METADATA_KEY, middlewareList, target.prototype);
+  };
+};
+
+export const UnShield = (middlewares: Middleware | Middleware[]): MethodDecorator => {
+  return (target: any, propertyKey: string, descriptor: PropertyDescriptor) => {
+    let middlewareList: Middleware[] = [];
+
+    if (Array.isArray(middlewares)) {
+      middlewareList = middlewares;
+    } else if (middlewares) {
+      middlewareList = [middlewares];
+    }
+
+    Reflect.defineMetadata(UN_SHIELD_METADATA_KEY, middlewareList, descriptor.value);
   };
 };
 
@@ -145,8 +159,20 @@ export const Param = (): ParameterDecorator => {
   };
 };
 
-export const UseDto = (dto: any): MethodDecorator => {
+// Todo: implement later in future version
+const UseDto = (dto: any): MethodDecorator => {
   return (target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor) => {
     Reflect.defineMetadata('dto', dto, target, propertyKey);
   };
 };
+
+/**
+ *  Renders template for MVC
+ *
+ * @version 1.0
+ */
+export function Render(template: string): MethodDecorator {
+  return function (target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor) {
+    Reflect.defineMetadata('render', template, descriptor.value);
+  };
+}

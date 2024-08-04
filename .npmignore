@@ -9,3 +9,5 @@ tsconfig.json
 .prettierrc
 
 *.tsbuildinfo
+
+views
