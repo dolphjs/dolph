@@ -14,13 +14,13 @@ new GlobalInjector([{ service: EventEmitterService.name, value: new EventEmitter
 
 middlewareRegistry.register(helmet());
 
-MVCAdapter.setViewEngine('ejs');
-MVCAdapter.setStaticAssets(path.join(__dirname, 'public'));
+// MVCAdapter.setViewEngine('ejs');
+// MVCAdapter.setStaticAssets(path.join(__dirname, 'public'));
 
 // For Handlebars
 // MVCAdapter.setViewsDir(path.join(__dirname, 'views', 'layouts', 'main'));
 
-MVCAdapter.setViewsDir(path.join(__dirname, 'views'));
+// MVCAdapter.setViewsDir(path.join(__dirname, 'views'));
 
 const dolph = new DolphFactory([AppComponent], {
   options: { cors: { origin: '*' } },

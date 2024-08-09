@@ -175,12 +175,10 @@ const initializeControllersAsRouter = <T extends Dolph>(
                 }
 
                 // Invoke the controller method
-                const result = await controllerInstance.constructor.prototype[methodName](req, res, next);
-
-                // check for a render template, and render if available
-
                 if (renderTemplate) {
-                  res.render(renderTemplate, result);
+                  res.render(renderTemplate, await controllerInstance.constructor.prototype[methodName](req, res, next));
+                } else {
+                  await controllerInstance.constructor.prototype[methodName](req, res, next);
                 }
 
                 // reduce length of array to 0
