@@ -1,5 +1,5 @@
 import { MVCEngine } from '../../common';
-
+    
 class MVCAdapterClass {
   private static instance: MVCAdapterClass;
   private engine: MVCEngine;

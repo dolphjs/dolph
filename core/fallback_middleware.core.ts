@@ -11,7 +11,7 @@ export const fallbackResponseMiddleware = (req: DRequest, res: DResponse, next: 
   next();
 
   res.on('finish', () => {
-    if (!res.locals.responseSent) {
+    if (!res.locals.responseSent && !res.headersSent) {
       res.status(200).send();
     }
   });

@@ -175,17 +175,20 @@ const initializeControllersAsRouter = <T extends Dolph>(
                 }
 
                 // Invoke the controller method
-                const result = await controllerInstance.constructor.prototype[methodName](req, res, next);
-
-                // check for a render template, and render if available
-
                 if (renderTemplate) {
-                  res.render(renderTemplate, result);
+                  res.render(renderTemplate, await controllerInstance.constructor.prototype[methodName](req, res, next));
+                } else {
+                  await controllerInstance.constructor.prototype[methodName](req, res, next);
                 }
 
                 // reduce length of array to 0
-                middlewareList.length = 0;
-                shieldMiddlewares.length = 0;
+                if (middlewareList?.length) {
+                  middlewareList.length = 0;
+                }
+
+                if (shieldMiddlewares?.length) {
+                  shieldMiddlewares.length = 0;
+                }
               } catch (error) {
                 next(error);
               }
@@ -539,7 +542,7 @@ class DolphFactoryClass<T extends DolphControllerHandler<Dolph>> {
    * Initializes and returns the dolphjs engine
    */
   public start() {
-    server = this.dolph.listen(port, () => {
+    server = this.dolph.listen(port, '0.0.0.0', () => {
       logger.info(
         clc.blueBright(`DOLPH APP RUNNING ON PORT ${clc.white(`${this.port}`)} IN ${this.env.toUpperCase()} MODE`),
       );
