@@ -542,7 +542,7 @@ class DolphFactoryClass<T extends DolphControllerHandler<Dolph>> {
    * Initializes and returns the dolphjs engine
    */
   public start() {
-    server = this.dolph.listen(port, () => {
+    server = this.dolph.listen(port, '0.0.0.0', () => {
       logger.info(
         clc.blueBright(`DOLPH APP RUNNING ON PORT ${clc.white(`${this.port}`)} IN ${this.env.toUpperCase()} MODE`),
       );
