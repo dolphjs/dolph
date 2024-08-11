@@ -182,8 +182,13 @@ const initializeControllersAsRouter = <T extends Dolph>(
                 }
 
                 // reduce length of array to 0
-                middlewareList.length = 0;
-                shieldMiddlewares.length = 0;
+                if (middlewareList?.length) {
+                  middlewareList.length = 0;
+                }
+
+                if (shieldMiddlewares?.length) {
+                  shieldMiddlewares.length = 0;
+                }
               } catch (error) {
                 next(error);
               }
