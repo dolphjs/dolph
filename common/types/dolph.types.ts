@@ -12,9 +12,44 @@ export type DolphMiddlewareOption = {
   optionsSuccessStatus: number | undefined;
 };
 
+export type DolphMiddlewareHelmetOption = {
+  activate: boolean;
+  contentSecurityPolicy?: {
+    directives?: {
+      defaultSrc?: string[];
+      scriptSrc?: string[];
+    };
+  };
+  expectCt?: {
+    enforce?: boolean;
+    maxAge?: number;
+  };
+  featurePolicy?: {
+    features?: {
+      fullscreen?: string[];
+      vibrate?: string[];
+    };
+  };
+  referrerPolicy?: {
+    policy?: string;
+  };
+  hsts?: {
+    maxAge?: number;
+    includeSubDomains?: boolean;
+  };
+  crossOriginEmbedderPolicy?: {
+    policy?: string;
+  };
+  crossOriginOpenerPolicy?: {
+    policy?: string;
+  };
+};
+
 export type DolphServiceMapping<T> = {
   serviceName: keyof T;
   serviceHandler: DolphConstructor<T>;
 };
 
 export type Dolph = string;
+
+export type MVCEngine = 'handlebars' | 'pug' | 'ejs';

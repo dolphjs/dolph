@@ -2,7 +2,7 @@ export interface IPayload {
   sub: string | object | Buffer;
   iat: number;
   exp: number;
-  info?: string | object | Array<any>;
+  info?: any;
 }
 
 export interface AuthorizationFunction {

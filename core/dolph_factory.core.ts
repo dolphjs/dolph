@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import { RequestHandler, Router } from 'express';
+import { RequestHandler, Router, urlencoded } from 'express';
 import { CorsOptions } from 'cors';
 import { readFileSync } from 'fs';
 import yaml from 'js-yaml';
@@ -11,6 +11,7 @@ import {
   DResponse,
   Dolph,
   DolphConfig,
+  DolphMiddlewareHelmetOption,
   ErrorResponse,
   Middleware,
   dolphPort,
@@ -22,7 +23,7 @@ import express from 'express';
 import cors from 'cors';
 import { configLoader, configs } from './config.core';
 import { morganErrorHandler, successHandler } from './morgan.core';
-import helmet from 'helmet';
+import helmet, { HelmetOptions } from 'helmet';
 import { errorConverter, errorHandler } from './error.core';
 import { IncomingMessage, Server, ServerResponse } from 'http';
 import xss from 'xss';
@@ -30,9 +31,19 @@ import cookieParser from 'cookie-parser';
 import { normalizePath } from '../utilities/normalize_path.utilities';
 import { DolphControllerHandler } from '../classes';
 import { getControllersFromMetadata } from '../utilities/get_controllers_from_component';
-import { getShieldMiddlewares } from '../utilities/spring_helpers.utilities';
+import {
+  getFunctionNames,
+  getShieldMiddlewares,
+  getUnShieldMiddlewares,
+  stringifyFunction,
+} from '../utilities/spring_helpers.utilities';
 import { DSocketInit } from '../common/interfaces/socket.interfaces';
 import { GlobalInjection } from './initializers';
+import { middlewareRegistry } from './initializers/middleware_registrar';
+import { join } from 'path';
+import { fallbackResponseMiddleware } from './fallback_middleware.core';
+import { MVCAdapter } from './adapters/mvc_registrar';
+import { engine as handlebars } from 'express-handlebars';
 
 const engine = express();
 
@@ -41,37 +52,48 @@ let env = configs.NODE_ENV;
 let port = configs.PORT;
 let server: Server<typeof IncomingMessage, typeof ServerResponse>;
 
+// disable the x-powered-by header returned by express
+engine.disable('x-powered-by');
+
 // function add cors middleware to express
 const enableCorsFunc = (corsOptions: CorsOptions) => {
   engine.use(cors(corsOptions));
 };
 
+const enableHelmetFunc = (helmetOptions?: HelmetOptions) => {
+  engine.use(helmet(helmetOptions));
+};
+
 /**
  * Function is used to register express router handlers using the **express routing** architecture
  */
-const initializeRoutes = (routes: Array<{ path?: string; router: import('express').Router }>) => {
+const initializeRoutes = (routes: Array<{ path?: string; router: import('express').Router }>, basePath: string = '') => {
   routes.forEach((route) => {
-    engine.use('/', route.router);
+    const path = join(basePath, route.path || '');
+    engine.use(path, route.router);
   });
 };
 
 /**
  * Initializer is responsible for registering all spring controllers as routers and detaching each method from the controller classes and registering them as handler functions.
  */
-const initializeControllersAsRouter = <T extends Dolph>(controllers: Array<{ new (): DolphControllerHandler<T> }>) => {
+const initializeControllersAsRouter = <T extends Dolph>(
+  controllers: Array<{ new (): DolphControllerHandler<T> }>,
+  basePath: string,
+) => {
   const registeredShields: string[] = [];
 
   controllers.forEach((Controller) => {
     try {
       const controllerInstance = new Controller();
       const classPath = Reflect.getMetadata('basePath', controllerInstance.constructor.prototype) || '';
-      const basePath = classPath.startsWith('/') ? classPath : `/${classPath}`;
+      const controllerBasePath = classPath.startsWith('/') ? classPath : `/${classPath}`;
       const router = Router();
 
       /**
        * Retrieve shield middleware if present
        */
-      const shieldMiddleware = getShieldMiddlewares(Controller);
+      let shieldMiddlewares = getShieldMiddlewares(Controller);
 
       /**
        * register each controller method
@@ -79,26 +101,63 @@ const initializeControllersAsRouter = <T extends Dolph>(controllers: Array<{ new
       Object.getOwnPropertyNames(Object.getPrototypeOf(controllerInstance)).forEach((methodName) => {
         if (methodName !== 'constructor') {
           const method = Reflect.getMetadata('method', controllerInstance.constructor.prototype[methodName]);
+
           const path = Reflect.getMetadata('path', controllerInstance.constructor.prototype[methodName]);
+
           const middlewareList: Middleware[] =
             Reflect.getMetadata('middleware', controllerInstance.constructor.prototype[methodName]) || [];
+
+          const renderTemplate =
+            Reflect.getMetadata('render', controllerInstance.constructor.prototype[methodName]) || undefined;
 
           /**
            * Append any present shield middleware into the middlewares list
            */
 
-          if (shieldMiddleware?.length) {
-            middlewareList.unshift(...shieldMiddleware);
-            shieldMiddleware.forEach((middleware: Middleware) => {
+          /**
+           * Todo: abstract to helper function
+           */
+
+          if (shieldMiddlewares?.length) {
+            const unshieldedMiddlewares = getUnShieldMiddlewares(controllerInstance.constructor.prototype[methodName]);
+
+            if (unshieldedMiddlewares?.length) {
+              const setOne = new Set(shieldMiddlewares.map(stringifyFunction));
+              const setTwo = new Set(unshieldedMiddlewares.map(stringifyFunction));
+
+              const uniqueToShield = shieldMiddlewares.filter((func) => !setTwo.has(stringifyFunction(func)));
+              const uniqueToUnShield = unshieldedMiddlewares.filter((func) => !setOne.has(stringifyFunction(func)));
+
+              shieldMiddlewares = [...uniqueToShield, ...uniqueToUnShield];
+
+              middlewareList.unshift(...shieldMiddlewares);
+
+              // set to 0
+              setOne.clear();
+              setTwo.clear();
+
+              uniqueToShield.length = 0;
+              uniqueToUnShield.length = 0;
+            } else {
+              middlewareList.unshift(...shieldMiddlewares);
+            }
+
+            /**
+             * Todo: check the relevance of this code-block -- start
+             */
+            shieldMiddlewares.forEach((middleware: Middleware) => {
               if (!registeredShields?.includes(middleware.name)) {
                 registeredShields.push(middleware.name);
                 inAppLogger.info(dolphMessages.middlewareMessages('Shield', middleware.name));
               }
             });
+            /**
+             * Todo: check the relevance of this code-block -- end
+             */
           }
 
           if (method && path) {
-            const fullPath = normalizePath(basePath + path);
+            const fullPath = normalizePath(join(basePath, controllerBasePath, path));
 
             const handler = async (req: DRequest, res: DResponse, next: DNextFunc) => {
               try {
@@ -116,7 +175,20 @@ const initializeControllersAsRouter = <T extends Dolph>(controllers: Array<{ new
                 }
 
                 // Invoke the controller method
-                await controllerInstance.constructor.prototype[methodName](req, res, next);
+                if (renderTemplate) {
+                  res.render(renderTemplate, await controllerInstance.constructor.prototype[methodName](req, res, next));
+                } else {
+                  await controllerInstance.constructor.prototype[methodName](req, res, next);
+                }
+
+                // reduce length of array to 0
+                if (middlewareList?.length) {
+                  middlewareList.length = 0;
+                }
+
+                if (shieldMiddlewares?.length) {
+                  shieldMiddlewares.length = 0;
+                }
               } catch (error) {
                 next(error);
               }
@@ -142,7 +214,7 @@ const initializeControllersAsRouter = <T extends Dolph>(controllers: Array<{ new
 
 // used to increment the limit of listeners for express engine
 const incrementHandlers = () => {
-  process.setMaxListeners(15);
+  process.setMaxListeners(12);
 };
 
 // initializes middlewares used by dolphjs
@@ -154,9 +226,15 @@ const initializeMiddlewares = ({ jsonLimit }) => {
 
   engine.use(express.json({ limit: jsonLimit }));
   engine.use(express.urlencoded({ extended: true }));
-  engine.use(helmet());
+  engine.use((req, res, next) => {
+    //@ts-expect-error
+    req.handlerArgs = [];
+    next();
+  });
   engine.use(cookieParser());
   xss('<script>alert("xss");</script>');
+
+  engine.use(fallbackResponseMiddleware);
 };
 
 // registers middlewares defined by user
@@ -165,6 +243,42 @@ const initExternalMiddlewares = (middlewares: DRequestHandler[]) => {
     middlewares.forEach((middleware) => {
       engine.use(middleware);
     });
+  }
+};
+
+const initGlobalMiddlewares = () => {
+  const middlewares = middlewareRegistry.getMiddlewares();
+  middlewares.forEach((middleware) => {
+    engine.use(middleware);
+  });
+};
+
+const initMvcAdapter = () => {
+  const MVCEngine = MVCAdapter.getViewEngine();
+  const MVCAssetsPath = MVCAdapter.getAssetsPath();
+  const MVCViewsDir = MVCAdapter.getViewsDir();
+
+  if (MVCEngine && MVCAssetsPath?.length && MVCViewsDir?.length) {
+    engine.use(urlencoded({ extended: true }));
+    engine.use(express.static(MVCAssetsPath));
+    engine.set('view engine', MVCEngine);
+
+    switch (MVCEngine) {
+      case 'handlebars':
+        engine.engine(
+          'handlebars',
+          handlebars({
+            defaultLayout: MVCViewsDir,
+          }),
+        );
+        break;
+      case 'ejs':
+        engine.use('views', express.static(MVCViewsDir));
+      case 'pug':
+        engine.use('views', express.static(MVCViewsDir));
+      default:
+        break;
+    }
   }
 };
 
@@ -208,7 +322,7 @@ const initClosureHandler = () => {
   process.on('unhandledRejection', unexpectedErrorHandler);
 
   process.on('SIGTERM', () => {
-    logger.error(clc.red(DolphErrors.sigtermReceived));
+    // logger.error(clc.red(DolphErrors.sigtermReceived));
     if (server) {
       server.close();
     }
@@ -219,19 +333,20 @@ const initClosureHandler = () => {
  * The main engine for the dolph framework
  *
  *
- * @version 1.3.0
+ * @version 1.3.1
  */
 class DolphFactoryClass<T extends DolphControllerHandler<Dolph>> {
   private routes = [];
   private controllers = [];
   private sockets?: DSocketInit<Dolph>;
   private socketService?: SocketService;
+  private routingBase: string = '';
 
   port: dolphPort = 3030;
   env = process.env.NODE_ENV || 'development';
   configs: DolphConfig;
   externalMiddlewares: RequestHandler[];
-  jsonLimit = '30mb';
+  jsonLimit = '5mb';
   private dolph: typeof engine;
 
   constructor(
@@ -303,11 +418,15 @@ class DolphFactoryClass<T extends DolphControllerHandler<Dolph>> {
         this.env = config.env;
       }
 
+      if (config.routing?.base?.length) {
+        this.routingBase = config.routing.base;
+      }
+
       if (config.jsonLimit?.length) {
         if (!config.jsonLimit.includes('mb')) {
           inAppLogger.warn(
             clc.yellow(
-              "jsonLimit value in `dolph_config` file must be in format 'number + mb' e.g '20mb'. using default value of '30mb' ",
+              "jsonLimit value in `dolph_config` file must be in format 'number + mb' e.g '20mb'. Using default value of '5mb' ",
             ),
           );
         } else {
@@ -315,7 +434,7 @@ class DolphFactoryClass<T extends DolphControllerHandler<Dolph>> {
         }
       } else {
         inAppLogger.warn(
-          clc.yellow("jsonLimit value should be added to `dolph_config` file else default value of '50mb' would be used"),
+          clc.yellow("jsonLimit value should be added to `dolph_config` file else default value of '5mb' would be used"),
         );
       }
 
@@ -348,7 +467,6 @@ class DolphFactoryClass<T extends DolphControllerHandler<Dolph>> {
       logger.error(clc.red(DolphErrors.noDolphConfigFile));
       throw e;
     }
-    // console.log(config);
   }
 
   private changePort(port: dolphPort) {
@@ -365,8 +483,10 @@ class DolphFactoryClass<T extends DolphControllerHandler<Dolph>> {
     incrementHandlers();
     initializeMiddlewares({ jsonLimit: this.jsonLimit });
     initExternalMiddlewares(this.externalMiddlewares || []);
-    initializeRoutes(this.routes);
-    initializeControllersAsRouter(this.controllers);
+    initGlobalMiddlewares();
+    initMvcAdapter();
+    initializeRoutes(this.routes, this.routingBase);
+    initializeControllersAsRouter(this.controllers, this.routingBase);
     initializeErrorHandlers();
     initNotFoundError();
 
@@ -385,6 +505,14 @@ class DolphFactoryClass<T extends DolphControllerHandler<Dolph>> {
 
   public enableCors(options?: CorsOptions) {
     enableCorsFunc(options || { origin: '*', methods: ['POST', 'GET', 'PUT', 'DELETE', 'PATCH'] });
+  }
+
+  public enableHemet(options?: HelmetOptions) {
+    if (options) {
+      enableHelmetFunc(options);
+    } else {
+      enableHelmetFunc();
+    }
   }
 
   private initSockets(server: Server<typeof IncomingMessage, typeof ServerResponse>) {
@@ -414,7 +542,7 @@ class DolphFactoryClass<T extends DolphControllerHandler<Dolph>> {
    * Initializes and returns the dolphjs engine
    */
   public start() {
-    server = this.dolph.listen(port, () => {
+    server = this.dolph.listen(port, '0.0.0.0', () => {
       logger.info(
         clc.blueBright(`DOLPH APP RUNNING ON PORT ${clc.white(`${this.port}`)} IN ${this.env.toUpperCase()} MODE`),
       );
