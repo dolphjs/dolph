@@ -6,7 +6,7 @@ import clc from 'cli-color';
 import { logger } from '../../utilities';
 import { SHIELD_METADATA_KEY, UN_SHIELD_METADATA_KEY } from './meta_data_keys.decorators';
 import { GlobalInjection } from '../../core';
-import { serviceRegistry } from '../../core/initializers/service_registeries.core';
+// import { serviceRegistry } from '../../core/initializers/service_registeries.core';
 
 export const Route = (path: string = ''): ClassDecorator => {
   return (target: any) => {
@@ -91,6 +91,8 @@ export const Delete = (path: string = ''): MethodDecorator => {
 };
 
 export const Component = <T extends Dolph>({ controllers, services }: ComponentParams<T>): ClassDecorator => {
+  const serviceRegistry: Map<string, any> = new Map();
+
   if (
     Array.isArray(controllers) &&
     controllers.every((item) => {
