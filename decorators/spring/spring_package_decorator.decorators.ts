@@ -104,82 +104,64 @@ export const Component = <T extends Dolph>({ controllers, services }: ComponentP
       return isFunction && isInstanceOfDolphControllerHandler;
     })
   ) {
-    // return (target: any) => {
-    //   Reflect.defineMetadata('controllers', controllers, target.prototype);
+    const injectedServices = new Set<string>();
 
-    //   const serviceRegistry = new Map<string, any>();
+    const injectServices = (target: any, services: any[], depth: number = 0) => {
+      if (depth > services.length) {
+        // Prevent circular dependency overflow
+        return;
+      }
 
-    //   // Instantiate and register services
-    //   if (Array.isArray(services) && services.length > 0) {
-    //     services.forEach((ServiceClass) => {
-    //       const serviceName = ServiceClass.name;
+      services.forEach((service) => {
+        const serviceInstance = new service();
+        const serviceName = service.name;
 
-    //       if (!serviceRegistry.has(serviceName)) {
-    //         try {
-    //           const serviceInstance = new ServiceClass();
-    //           serviceRegistry.set(serviceName, serviceInstance);
-    //           GlobalInjection(serviceName, serviceInstance);
-    //         } catch (e: any) {
-    //           logger.error(clc.red(`Failed to inject ${serviceName}: ${e.message}`));
-    //         }
-    //       }
-    //     });
-    //   }
+        // Skip already injected services to avoid circular dependency
+        if (!injectedServices.has(serviceName)) {
+          GlobalInjection(serviceName, serviceInstance);
 
-    //   // Inject services into controllers
-    //   controllers.forEach((ControllerClass) => {
-    //     services.forEach((ServiceClass) => {
-    //       const serviceName = ServiceClass.name;
-    //       const serviceInstance = serviceRegistry.get(serviceName);
+          // Get the prototype of the target instance
+          const targetPrototype = Object.getPrototypeOf(target);
 
-    //       if (serviceInstance) {
-    //         Object.defineProperty(ControllerClass.prototype, serviceName, {
-    //           value: serviceInstance,
-    //           writable: true,
-    //           configurable: true,
-    //           enumerable: true,
-    //         });
-    //       }
-    //     });
-    //   });
+          // Inject the service instance into the target
+          if (typeof targetPrototype === 'object' && targetPrototype !== null) {
+            Object.defineProperty(targetPrototype, serviceName, {
+              value: serviceInstance,
+              writable: true,
+              configurable: true,
+              enumerable: true,
+            });
+          }
 
-    //   // Inject services into other services
-    //   services.forEach((ServiceClass) => {
-    //     services.forEach((OtherServiceClass) => {
-    //       const serviceName = OtherServiceClass.name;
-    //       if (ServiceClass !== OtherServiceClass) {
-    //         const serviceInstance = serviceRegistry.get(serviceName);
+          // Track the service as injected
+          injectedServices.add(serviceName);
 
-    //         if (serviceInstance) {
-    //           Object.defineProperty(ServiceClass.prototype, serviceName, {
-    //             value: serviceInstance,
-    //             writable: true,
-    //             configurable: true,
-    //             enumerable: true,
-    //           });
-    //         }
-    //       }
-    //     });
-    //   });
-    // };
+          // Recursively inject other services into this service
+          injectServices(
+            serviceInstance,
+            services.filter((s) => s !== service),
+            depth + 1,
+          );
+        }
+      });
+    };
 
     return (target: any) => {
       Reflect.defineMetadata('controllers', controllers, target.prototype);
 
+      // Inject services into each controller
       controllers.forEach((controller) => {
-        services.forEach((service) => {
-          const serviceInstance = new service();
-          const serviceName = service.name;
+        const controllerInstance = new controller();
+        injectServices(controllerInstance, services);
+      });
 
-          GlobalInjection(serviceName, serviceInstance);
-
-          Object.defineProperty(controller.prototype, serviceName, {
-            value: serviceInstance,
-            writable: true,
-            configurable: true,
-            enumerable: true,
-          });
-        });
+      // Inject services into each other, excluding themselves
+      services.forEach((service) => {
+        const serviceInstance = new service();
+        injectServices(
+          serviceInstance,
+          services.filter((s) => s !== service),
+        );
       });
     };
   } else {

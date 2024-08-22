@@ -5,18 +5,24 @@ import { Model } from 'mongoose';
 import { User } from './app.schema';
 import { ModelStatic, Model as SqlModel } from 'sequelize';
 import { Dolph } from '../../common';
+import { NewService } from './new.service';
 
 @InjectMongo('userModel', userModel)
 @InjectMySQL('userMySqlModel', User)
 class AppService extends DolphServiceHandler<Dolph> {
   userModel!: Model<IUser>;
   userMySqlModel!: ModelStatic<SqlModel<any, any>>;
+  NewService: NewService;
 
   constructor() {
     super('appService');
   }
 
   greeting = (body: { name: string; age: number }) => {
+    console.log('New Service');
+    console.log(this.NewService);
+    console.log('New Service');
+
     const greeting = `Hi ${body.name}, wow you are ${body.age} years old`;
     return greeting;
   };
