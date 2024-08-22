@@ -160,7 +160,8 @@ export const Component = <T extends Dolph>({ controllers, services }: ComponentP
             });
 
             services.forEach((otherService, otherIndex) => {
-              if (index !== otherIndex && !(serviceName in otherService.prototype)) {
+              //  if (index !== otherIndex && !(serviceName in otherService.prototype)) {
+              if (index !== otherIndex) {
                 Object.defineProperty(otherService.prototype, serviceName, {
                   value: serviceInstance,
                   writable: true,
