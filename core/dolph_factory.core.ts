@@ -55,6 +55,8 @@ let server: Server<typeof IncomingMessage, typeof ServerResponse>;
 // disable the x-powered-by header returned by express
 engine.disable('x-powered-by');
 
+engine.options('*', cors());
+
 // function add cors middleware to express
 const enableCorsFunc = (corsOptions: CorsOptions) => {
   engine.use(cors(corsOptions));
