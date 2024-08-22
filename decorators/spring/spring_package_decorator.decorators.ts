@@ -6,6 +6,7 @@ import clc from 'cli-color';
 import { logger } from '../../utilities';
 import { SHIELD_METADATA_KEY, UN_SHIELD_METADATA_KEY } from './meta_data_keys.decorators';
 import { GlobalInjection } from '../../core';
+import { serviceRegistry } from '../../core/initializers/service_registeries.core';
 
 export const Route = (path: string = ''): ClassDecorator => {
   return (target: any) => {
@@ -135,10 +136,19 @@ export const Component = <T extends Dolph>({ controllers, services }: ComponentP
       if (Array.isArray(services) && services.length > 0) {
         services.forEach((service, index) => {
           try {
-            const serviceInstance = new service();
             const serviceName = service.name;
 
-            GlobalInjection(serviceName, serviceInstance);
+            // check if already instantiated
+            let serviceInstance = serviceRegistry.get(serviceName);
+
+            if (!serviceInstance) {
+              // instantiate the service and store in service registry
+              serviceInstance = new service();
+              serviceRegistry.set(serviceName, serviceInstance);
+
+              // to be used in the future
+              GlobalInjection(serviceName, serviceInstance);
+            }
 
             controllers.forEach((controller) => {
               Object.defineProperty(controller.prototype, serviceName, {
@@ -150,7 +160,7 @@ export const Component = <T extends Dolph>({ controllers, services }: ComponentP
             });
 
             services.forEach((otherService, otherIndex) => {
-              if (index !== otherIndex) {
+              if (index !== otherIndex && !(serviceName in otherService.prototype)) {
                 Object.defineProperty(otherService.prototype, serviceName, {
                   value: serviceInstance,
                   writable: true,
