@@ -19,10 +19,6 @@ class AppService extends DolphServiceHandler<Dolph> {
   }
 
   greeting = (body: { name: string; age: number }) => {
-    console.log('New Service');
-    console.log(this.NewService);
-    console.log('New Service');
-
     const greeting = `Hi ${body.name}, wow you are ${body.age} years old`;
     return greeting;
   };
