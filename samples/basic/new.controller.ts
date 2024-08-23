@@ -36,8 +36,8 @@ export class NewController extends DolphControllerHandler<Dolph> {
   @Get('test')
   async newReq(req: DRequest, res: DResponse) {
     this.NewService.logger();
-    this.NewService.newA();
-    SuccessResponse({ res, body: { message: 'ok' } });
+    const a = this.NewService.newA();
+    SuccessResponse({ res, body: { message: a } });
   }
 
   @Post('test')

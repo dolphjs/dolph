@@ -19,7 +19,7 @@ export class NewService extends DolphServiceHandler<Dolph> {
   }
 
   newA() {
-    console.log(this.AppService);
+    return this.AppService.greeting({ name: 'Aemn', age: 12 });
   }
 
   @OnEvent('test')

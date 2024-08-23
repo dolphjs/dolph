@@ -6,6 +6,7 @@ import clc from 'cli-color';
 import { logger } from '../../utilities';
 import { SHIELD_METADATA_KEY, UN_SHIELD_METADATA_KEY } from './meta_data_keys.decorators';
 import { GlobalInjection } from '../../core';
+// import { serviceRegistry } from '../../core/initializers/service_registeries.core';
 
 export const Route = (path: string = ''): ClassDecorator => {
   return (target: any) => {
@@ -103,67 +104,75 @@ export const Component = <T extends Dolph>({ controllers, services }: ComponentP
       return isFunction && isInstanceOfDolphControllerHandler;
     })
   ) {
-    // return (target: any) => {
-    //   Reflect.defineMetadata('controllers', controllers, target.prototype);
-
-    //   controllers.forEach((controller) => {
-    //     if (Array.isArray(services) && services.length > 0) {
-    //       services.forEach((service) => {
-    //         try {
-    //           const serviceInstance = new service();
-    //           const serviceName = service.name;
-
-    //           GlobalInjection(serviceName, serviceInstance);
-
-    //           Object.defineProperty(controller.prototype, serviceName, {
-    //             value: serviceInstance,
-    //             writable: true,
-    //             configurable: true,
-    //             enumerable: true,
-    //           });
-    //         } catch (e: any) {
-    //           logger.error(clc.red(`Failed to inject ${service.name} into ${controller.name}: ${e.message}`));
-    //         }
-    //       });
-    //     }
-    //   });
-    // };
-
     return (target: any) => {
       Reflect.defineMetadata('controllers', controllers, target.prototype);
 
-      if (Array.isArray(services) && services.length > 0) {
-        services.forEach((service, index) => {
+      // controllers.forEach((controller) => {
+      //   if (Array.isArray(services) && services.length > 0) {
+      //     services.forEach((service) => {
+      //       try {
+      //         const serviceInstance = new service();
+      //         const serviceName = service.name;
+
+      //         GlobalInjection(serviceName, serviceInstance);
+
+      //         Object.defineProperty(controller.prototype, serviceName, {
+      //           value: serviceInstance,
+      //           writable: true,
+      //           configurable: true,
+      //           enumerable: true,
+      //         });
+      //       } catch (e: any) {
+      //         logger.error(clc.red(`Failed to inject ${service.name} into ${controller.name}: ${e.message}`));
+      //       }
+      //     });
+      //   }
+      // });
+
+      const injectedServices = new Map();
+
+      const injectServices = (targetPrototype: any, services: any[]) => {
+        services.forEach((service) => {
           try {
-            const serviceInstance = new service();
             const serviceName = service.name;
 
-            GlobalInjection(serviceName, serviceInstance);
+            if (!injectedServices.has(serviceName)) {
+              const serviceInstance = new service();
 
-            controllers.forEach((controller) => {
-              Object.defineProperty(controller.prototype, serviceName, {
+              Object.defineProperty(targetPrototype, serviceName, {
                 value: serviceInstance,
                 writable: true,
                 configurable: true,
                 enumerable: true,
               });
-            });
 
-            services.forEach((otherService, otherIndex) => {
-              if (index !== otherIndex) {
-                Object.defineProperty(otherService.prototype, serviceName, {
-                  value: serviceInstance,
-                  writable: true,
-                  configurable: true,
-                  enumerable: true,
-                });
-              }
-            });
+              injectedServices.set(serviceName, serviceInstance);
+
+              services.forEach((otherService) => {
+                const otherServiceName = otherService.name;
+                if (
+                  otherService !== service &&
+                  !injectedServices.has(`${serviceName}-${otherServiceName}`) &&
+                  !injectedServices.has(`${otherServiceName}-${serviceName}`)
+                ) {
+                  serviceInstance[otherServiceName] = new otherService();
+                  injectedServices.set(`${serviceName}-${otherServiceName}`, true);
+                }
+              });
+            }
           } catch (e: any) {
-            logger.error(clc.red(`Failed to inject ${service.name}: ${e.message}`));
+            logger.error(clc.red(`Failed to inject ${service.name} into ${targetPrototype.constructor.name}: ${e.message}`));
           }
         });
-      }
+      };
+
+      controllers.forEach((controller) => {
+        injectServices(controller.prototype, services);
+      });
+
+      services.forEach((service) => {
+        injectServices(service.prototype, services);
+      });
     };
   } else {
     logger.error(clc.red('Provide an array of controllers with type `new (): T` '));
