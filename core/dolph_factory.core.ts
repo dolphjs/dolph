@@ -95,7 +95,7 @@ const initializeControllersAsRouter = <T extends Dolph>(
       /**
        * Retrieve shield middleware if present
        */
-      let shieldMiddlewares = getShieldMiddlewares(Controller);
+      let shieldMiddlewares = getShieldMiddlewares(Controller) || [];
 
       /**
        * register each controller method
