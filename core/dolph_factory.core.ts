@@ -120,19 +120,21 @@ const initializeControllersAsRouter = <T extends Dolph>(
            * Todo: abstract to helper function
            */
 
-          if (shieldMiddlewares?.length) {
+          let individualShieldMiddlewares = [...shieldMiddlewares];
+
+          if (individualShieldMiddlewares?.length) {
             const unshieldedMiddlewares = getUnShieldMiddlewares(controllerInstance.constructor.prototype[methodName]);
 
             if (unshieldedMiddlewares?.length) {
-              const setOne = new Set(shieldMiddlewares.map(stringifyFunction));
+              const setOne = new Set(individualShieldMiddlewares.map(stringifyFunction));
               const setTwo = new Set(unshieldedMiddlewares.map(stringifyFunction));
 
-              const uniqueToShield = shieldMiddlewares.filter((func) => !setTwo.has(stringifyFunction(func)));
+              const uniqueToShield = individualShieldMiddlewares.filter((func) => !setTwo.has(stringifyFunction(func)));
               const uniqueToUnShield = unshieldedMiddlewares.filter((func) => !setOne.has(stringifyFunction(func)));
 
-              shieldMiddlewares = [...uniqueToShield, ...uniqueToUnShield];
+              individualShieldMiddlewares = [...uniqueToShield, ...uniqueToUnShield];
 
-              middlewareList.unshift(...shieldMiddlewares);
+              middlewareList.unshift(...individualShieldMiddlewares);
 
               // set to 0
               setOne.clear();
@@ -141,7 +143,7 @@ const initializeControllersAsRouter = <T extends Dolph>(
               uniqueToShield.length = 0;
               uniqueToUnShield.length = 0;
             } else {
-              middlewareList.unshift(...shieldMiddlewares);
+              middlewareList.unshift(...individualShieldMiddlewares);
             }
 
             /**
@@ -190,6 +192,10 @@ const initializeControllersAsRouter = <T extends Dolph>(
 
                 if (shieldMiddlewares?.length) {
                   shieldMiddlewares.length = 0;
+                }
+
+                if (individualShieldMiddlewares?.length) {
+                  individualShieldMiddlewares.length = 0;
                 }
               } catch (error) {
                 next(error);
