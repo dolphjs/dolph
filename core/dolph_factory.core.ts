@@ -112,6 +112,7 @@ const initializeControllersAsRouter = <T extends Dolph>(
           const renderTemplate =
             Reflect.getMetadata('render', controllerInstance.constructor.prototype[methodName]) || undefined;
 
+          let finalMiddlewareList = [...shieldMiddlewares];
           /**
            * Append any present shield middleware into the middlewares list
            */
@@ -120,45 +121,43 @@ const initializeControllersAsRouter = <T extends Dolph>(
            * Todo: abstract to helper function
            */
 
-          let individualShieldMiddlewares = [...shieldMiddlewares];
+          const unshieldedMiddlewares = getUnShieldMiddlewares(controllerInstance.constructor.prototype[methodName]);
 
-          if (individualShieldMiddlewares?.length) {
-            const unshieldedMiddlewares = getUnShieldMiddlewares(controllerInstance.constructor.prototype[methodName]);
+          if (unshieldedMiddlewares?.length) {
+            const setOne = new Set(finalMiddlewareList.map(stringifyFunction));
+            const setTwo = new Set(unshieldedMiddlewares.map(stringifyFunction));
 
-            if (unshieldedMiddlewares?.length) {
-              const setOne = new Set(individualShieldMiddlewares.map(stringifyFunction));
-              const setTwo = new Set(unshieldedMiddlewares.map(stringifyFunction));
+            const uniqueToShield = finalMiddlewareList.filter((func) => !setTwo.has(stringifyFunction(func)));
+            const uniqueToUnShield = unshieldedMiddlewares.filter((func) => !setOne.has(stringifyFunction(func)));
 
-              const uniqueToShield = individualShieldMiddlewares.filter((func) => !setTwo.has(stringifyFunction(func)));
-              const uniqueToUnShield = unshieldedMiddlewares.filter((func) => !setOne.has(stringifyFunction(func)));
+            finalMiddlewareList = [...uniqueToShield, ...uniqueToUnShield];
 
-              individualShieldMiddlewares = [...uniqueToShield, ...uniqueToUnShield];
+            // middlewareList.unshift(...finalMiddlewareList);
 
-              middlewareList.unshift(...individualShieldMiddlewares);
+            // set to 0
+            // setOne.clear();
+            // setTwo.clear();
 
-              // set to 0
-              setOne.clear();
-              setTwo.clear();
-
-              uniqueToShield.length = 0;
-              uniqueToUnShield.length = 0;
-            } else {
-              middlewareList.unshift(...individualShieldMiddlewares);
-            }
-
-            /**
-             * Todo: check the relevance of this code-block -- start
-             */
-            shieldMiddlewares.forEach((middleware: Middleware) => {
-              if (!registeredShields?.includes(middleware.name)) {
-                registeredShields.push(middleware.name);
-                inAppLogger.info(dolphMessages.middlewareMessages('Shield', middleware.name));
-              }
-            });
-            /**
-             * Todo: check the relevance of this code-block -- end
-             */
+            // uniqueToShield.length = 0;
+            // uniqueToUnShield.length = 0;
+          } else {
+            // middlewareList.unshift(...individualShieldMiddlewares);
           }
+
+          finalMiddlewareList.push(...middlewareList);
+
+          /**
+           * Todo: check the relevance of this code-block -- start
+           */
+          shieldMiddlewares.forEach((middleware: Middleware) => {
+            if (!registeredShields?.includes(middleware.name)) {
+              registeredShields.push(middleware.name);
+              inAppLogger.info(dolphMessages.middlewareMessages('Shield', middleware.name));
+            }
+          });
+          /**
+           * Todo: check the relevance of this code-block -- end
+           */
 
           if (method && path) {
             const fullPath = normalizePath(join(basePath, controllerBasePath, path));
@@ -166,7 +165,7 @@ const initializeControllersAsRouter = <T extends Dolph>(
             const handler = async (req: DRequest, res: DResponse, next: DNextFunc) => {
               try {
                 // Apply middleware
-                for (const middleware of middlewareList) {
+                for (const middleware of finalMiddlewareList) {
                   await new Promise<void>((resolve, reject) => {
                     middleware(req, res, (err?: any) => {
                       if (err) {
@@ -183,19 +182,6 @@ const initializeControllersAsRouter = <T extends Dolph>(
                   res.render(renderTemplate, await controllerInstance.constructor.prototype[methodName](req, res, next));
                 } else {
                   await controllerInstance.constructor.prototype[methodName](req, res, next);
-                }
-
-                // reduce length of array to 0
-                if (middlewareList?.length) {
-                  middlewareList.length = 0;
-                }
-
-                if (shieldMiddlewares?.length) {
-                  shieldMiddlewares.length = 0;
-                }
-
-                if (individualShieldMiddlewares?.length) {
-                  individualShieldMiddlewares.length = 0;
                 }
               } catch (error) {
                 next(error);
