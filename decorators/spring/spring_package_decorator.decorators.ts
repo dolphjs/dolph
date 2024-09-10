@@ -16,13 +16,7 @@ export const Route = (path: string = ''): ClassDecorator => {
 
 export const Shield = (middlewares: Middleware | Middleware[]): ClassDecorator => {
   return (target: any) => {
-    let middlewareList: Middleware[] = [];
-
-    if (Array.isArray(middlewares)) {
-      middlewareList = middlewares;
-    } else if (middlewares) {
-      middlewareList = [middlewares];
-    }
+    let middlewareList: Middleware[] = Array.isArray(middlewares) ? middlewares : [middlewares];
 
     Reflect.defineMetadata(SHIELD_METADATA_KEY, middlewareList, target.prototype);
   };
@@ -30,13 +24,7 @@ export const Shield = (middlewares: Middleware | Middleware[]): ClassDecorator =
 
 export const UnShield = (middlewares: Middleware | Middleware[]): MethodDecorator => {
   return (target: any, propertyKey: string, descriptor: PropertyDescriptor) => {
-    let middlewareList: Middleware[] = [];
-
-    if (Array.isArray(middlewares)) {
-      middlewareList = middlewares;
-    } else if (middlewares) {
-      middlewareList = [middlewares];
-    }
+    let middlewareList: Middleware[] = Array.isArray(middlewares) ? middlewares : [middlewares];
 
     Reflect.defineMetadata(UN_SHIELD_METADATA_KEY, middlewareList, descriptor.value);
   };
