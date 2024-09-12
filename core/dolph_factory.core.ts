@@ -213,10 +213,10 @@ const incrementHandlers = () => {
 
 // initializes middlewares used by dolphjs
 const initializeMiddlewares = ({ jsonLimit }) => {
-  if (env === 'development') {
-    engine.use(successHandler);
-    engine.use(morganErrorHandler);
-  }
+  // if (env === 'development') {
+  engine.use(successHandler);
+  engine.use(morganErrorHandler);
+  // }
 
   engine.use(express.json({ limit: jsonLimit }));
   engine.use(express.urlencoded({ extended: true }));

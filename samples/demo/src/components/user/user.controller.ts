@@ -1,6 +1,6 @@
-import { DolphControllerHandler } from '@dolphjs/dolph/classes';
-import { Dolph, SuccessResponse, DRequest, DResponse, TryCatchAsyncDec } from '@dolphjs/dolph/common';
-import { Get, Post, Route } from '@dolphjs/dolph/decorators';
+import { DolphControllerHandler } from '../../../../../classes';
+import { Dolph, SuccessResponse, DRequest, DResponse, TryCatchAsyncDec } from '../../../../../common';
+import { Get, Post, Route } from '../../../../../decorators';
 
 @Route('user')
 export class UserController extends DolphControllerHandler<Dolph> {

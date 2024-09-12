@@ -1,4 +1,4 @@
-import { DolphFactory } from '@dolphjs/dolph';
+import { DolphFactory } from '../../../../core';
 import { UserComponent } from './components/user/user.component';
 
 const dolph = new DolphFactory([UserComponent]);
