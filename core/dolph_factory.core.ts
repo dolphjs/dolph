@@ -327,7 +327,7 @@ const initClosureHandler = () => {
  * The main engine for the dolph framework
  *
  *
- * @version 1.3.1
+ * @version 1.3.22
  */
 class DolphFactoryClass<T extends DolphControllerHandler<Dolph>> {
   private routes = [];
@@ -336,7 +336,7 @@ class DolphFactoryClass<T extends DolphControllerHandler<Dolph>> {
   private socketService?: SocketService;
   private routingBase: string = '';
 
-  port: dolphPort = 3030;
+  port: dolphPort = process.env.PORT || 3030;
   env = process.env.NODE_ENV || 'development';
   configs: DolphConfig;
   externalMiddlewares: RequestHandler[];
