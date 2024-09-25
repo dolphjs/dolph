@@ -96,7 +96,7 @@ const inAppLogger = winston.createLogger({
 
       if (message.startsWith('Registered')) {
         // Split the message to extract the relevant parts
-        const [action, componentDetails] = message.split('|').map((part) => part.trim());
+        const [action, componentDetails] = message.split('>>>>').map((part) => part.trim());
 
         // Determine the component type based on the presence of specific keywords
         const componentType = componentDetails.includes('Middleware')
@@ -107,7 +107,7 @@ const inAppLogger = winston.createLogger({
 
         // Construct the formatted message
         formattedMessage = `${logEmoji} [${formattedTimestamp}] ${levelLog}: ${clc.blueBright(`${action}`)} ${clc.blueBright(
-          `| ${componentDetails}`,
+          `>>>> ${componentDetails}`,
         )} ${componentEmoji[componentType] || ''}`;
       } else {
         formattedMessage = `${logEmoji} [${formattedTimestamp}] ${levelLog}: ${formattedMessage}`;

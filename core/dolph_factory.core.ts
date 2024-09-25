@@ -201,6 +201,7 @@ const initializeControllersAsRouter = <T extends Dolph>(
       // register the router object in the express engine
       engine.use('/', router);
     } catch (e) {
+      console.error(e);
       logger.error(clc.red(`Error initializing controller ${Controller.name}: ${e.message}`));
     }
   });
@@ -494,7 +495,7 @@ class DolphFactoryClass<T extends DolphControllerHandler<Dolph>> {
 
     const durationInMilliseconds = Math.round(endTime[0] * 1000 + endTime[1] / 1e6);
 
-    logger.info(`${clc.blueBright('initialized application in')} ${clc.white(` ${durationInMilliseconds}ms`)}`);
+    logger.info(`${clc.blueBright('Initialized application in')} ${clc.white(`${durationInMilliseconds}ms`)}`);
   }
 
   public enableCors(options?: CorsOptions) {
@@ -538,7 +539,7 @@ class DolphFactoryClass<T extends DolphControllerHandler<Dolph>> {
   public start() {
     server = this.dolph.listen(port, '0.0.0.0', () => {
       logger.info(
-        clc.blueBright(`DOLPH APP RUNNING ON PORT ${clc.white(`${this.port}`)} IN ${this.env.toUpperCase()} MODE`),
+        clc.blueBright(`Dolph app running on port ${clc.white(`${this.port}`)} in ${this.env.toUpperCase()} mode`),
       );
       this.initSockets(server);
     });
