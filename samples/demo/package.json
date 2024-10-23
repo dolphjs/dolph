@@ -13,7 +13,7 @@
     "dev:docker:stop": "docker-compose -f docker-compose-dev.yml down",
     "build": "dolph build",
     "build:tsc": "tsc && tsc-alias",
-    "start": "dolph watch", 
+    "start": "dolph watch",
     "clean": "rm -r app && rm -r logs"
   },
   "dependencies": {
@@ -33,6 +33,7 @@
     "@types/express": "^4.17.21",
     "@types/node": "^20.8.2",
     "@types/nodemailer": "^6.4.14",
+    "graphql-scalars": "^1.23.0",
     "ts-node": "^10.9.1",
     "tsc-alias": "^1.8.8",
     "tsconfig-paths": "^4.2.0",
