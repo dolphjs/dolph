@@ -25,7 +25,7 @@ import { configLoader, configs } from './config.core';
 import { morganErrorHandler, successHandler } from './morgan.core';
 import helmet, { HelmetOptions } from 'helmet';
 import { errorConverter, errorHandler } from './error.core';
-import { IncomingMessage, Server, ServerResponse } from 'http';
+import { createServer, IncomingMessage, Server, ServerResponse } from 'http';
 import xss from 'xss';
 import cookieParser from 'cookie-parser';
 import { normalizePath } from '../utilities/normalize_path.utilities';
@@ -44,13 +44,15 @@ import { join } from 'path';
 import { fallbackResponseMiddleware } from './fallback_middleware.core';
 import { MVCAdapter } from './adapters/mvc_registrar';
 import { engine as handlebars } from 'express-handlebars';
+import { GraphQLAdapter } from '@dolphjs/graphql';
+import { graphql } from 'graphql';
 
 const engine = express();
 
 // declare core variables
 let env = configs.NODE_ENV;
 let port = configs.PORT;
-let server: Server<typeof IncomingMessage, typeof ServerResponse>;
+let server: Server<typeof IncomingMessage, typeof ServerResponse> = createServer(engine);
 
 // disable the x-powered-by header returned by express
 engine.disable('x-powered-by');
@@ -328,7 +330,7 @@ const initClosureHandler = () => {
  * The main engine for the dolph framework
  *
  *
- * @version 1.3.22
+ * @version 1.4.0
  */
 class DolphFactoryClass<T extends DolphControllerHandler<Dolph>> {
   private routes = [];
@@ -336,6 +338,7 @@ class DolphFactoryClass<T extends DolphControllerHandler<Dolph>> {
   private sockets?: DSocketInit<Dolph>;
   private socketService?: SocketService;
   private routingBase: string = '';
+  private isGraphQL: boolean = false;
 
   port: dolphPort = process.env.PORT || 3030;
   env = process.env.NODE_ENV || 'development';
@@ -344,8 +347,14 @@ class DolphFactoryClass<T extends DolphControllerHandler<Dolph>> {
   jsonLimit = '5mb';
   private dolph: typeof engine;
 
+  constructor(adapter: { graphql: boolean; schema: any });
   constructor(
-    routes: Array<{ new (): any } | { path?: string; router: Router }> = [],
+    routes: Array<{ new (): any } | { path?: string; router: Router }>,
+    middlewares?: RequestHandler[] | DSocketInit<Dolph>,
+  );
+
+  constructor(
+    adapterOrRoutes?: Array<{ new (): any } | { path?: string; router: Router }> | { graphql: boolean; schema: any },
     middlewares?: RequestHandler[] | DSocketInit<Dolph>,
   ) {
     /**
@@ -353,30 +362,52 @@ class DolphFactoryClass<T extends DolphControllerHandler<Dolph>> {
      */
     const startTime = process.hrtime();
 
-    routes.forEach((item) => {
-      if ('router' in item) {
-        this.routes.push(item);
-      } else {
-        if (!this.controllers.some((c) => c === item)) {
-          this.controllers.push(item);
-        }
+    if (this.isAdapter(adapterOrRoutes)) {
+      const adapter = adapterOrRoutes;
+
+      if (adapter.graphql) {
+        this.isGraphQL = adapter.graphql;
+
+        GraphQLAdapter.apolloServer(server, adapter.schema)
+          .then((middleware) => {
+            engine.use(middleware);
+          })
+          .catch((err) => {
+            logger.error(`${clc.red('DOLPH ERROR: ')}`, err);
+          });
       }
+    } else {
+      const routes = adapterOrRoutes;
 
-      /**
-       * Uncomment this line of code if the controllers are duplicated
-       */
-      // this.controllers = Array.from(new Set(this.controllers));
-    });
+      routes.forEach((item) => {
+        if ('router' in item) {
+          this.routes.push(item);
+        } else {
+          if (!this.controllers.some((c) => c === item)) {
+            this.controllers.push(item);
+          }
+        }
 
-    if (Array.isArray(middlewares) && middlewares.length > 0 && 'handle' in middlewares[0]) {
-      this.externalMiddlewares = middlewares as RequestHandler[];
-    } else if (typeof middlewares === 'object' && 'socketService' in middlewares) {
-      this.sockets = middlewares as DSocketInit<Dolph>;
+        /**
+         * Uncomment this line of code if the controllers are duplicated
+         */
+        // this.controllers = Array.from(new Set(this.controllers));
+      });
+
+      if (Array.isArray(middlewares) && middlewares.length > 0 && 'handle' in middlewares[0]) {
+        this.externalMiddlewares = middlewares as RequestHandler[];
+      } else if (typeof middlewares === 'object' && 'socketService' in middlewares) {
+        this.sockets = middlewares as DSocketInit<Dolph>;
+      }
     }
 
     this.extractControllersFromComponent();
     this.readConfigFile();
     this.intiDolphEngine(startTime);
+  }
+
+  private isAdapter(arg: any): arg is { graphql: boolean; schema: any } {
+    return arg !== null && typeof arg == 'object' && 'graphql' in arg && 'schema' in arg && typeof arg.graphql == 'boolean';
   }
 
   /**
@@ -483,7 +514,10 @@ class DolphFactoryClass<T extends DolphControllerHandler<Dolph>> {
     initializeRoutes(this.routes, this.routingBase);
     initializeControllersAsRouter(this.controllers, this.routingBase);
     initializeErrorHandlers();
-    initNotFoundError();
+
+    if (!this.isGraphQL) {
+      initNotFoundError();
+    }
 
     port = +this.port;
     env = this.env;
@@ -537,12 +571,31 @@ class DolphFactoryClass<T extends DolphControllerHandler<Dolph>> {
    * Initializes and returns the dolphjs engine
    */
   public start() {
-    server = this.dolph.listen(port, '0.0.0.0', () => {
-      logger.info(
-        clc.blueBright(`Dolph app running on port ${clc.white(`${this.port}`)} in ${this.env.toUpperCase()} mode`),
-      );
-      this.initSockets(server);
-    });
+    if (!this.isGraphQL) {
+      server = this.dolph.listen(port, '0.0.0.0', () => {
+        logger.info(
+          clc.blueBright(`Dolph app running on port ${clc.white(`${this.port}`)} in ${this.env.toUpperCase()} mode`),
+        );
+        this.initSockets(server);
+      });
+    } else {
+      const start = async () => {
+        //@ts-expect-error
+        await new Promise((resolve) => server.listen({ port }, resolve));
+      };
+
+      start()
+        .then((res) => {
+          logger.info(
+            clc.blueBright(`Dolph app running on port ${clc.white(`${this.port}`)} in ${this.env.toUpperCase()} mode`),
+          );
+
+          this.initSockets(server);
+        })
+        .catch((err) => {
+          logger.error(clc.red(`Cannot start Dolph Server: ${err}`));
+        });
+    }
     // if (this.configs.database?.mysql?.host.length > 1) {
     //   autoInitMySql(
     //     this.configs.database.mysql.database,
