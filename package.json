@@ -1,6 +1,6 @@
 {
   "name": "@dolphjs/dolph",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "description": "New-Age, developer friendly node.js framework",
   "main": "index.js",
   "repository": "https://github.com/dolphjs/dolph",
@@ -62,7 +62,7 @@
     "node": ">= 18"
   },
   "devDependencies": {
-    "@dolphjs/graphql": "^0.1.1",
+    "@dolphjs/graphql": "^0.2.1",
     "@types/autocannon": "^7.12.5",
     "@types/bcryptjs": "^2.4.2",
     "@types/cli-color": "^2.0.2",

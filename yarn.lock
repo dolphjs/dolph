@@ -499,10 +499,10 @@
     enabled "2.0.x"
     kuler "^2.0.0"
 
-"@dolphjs/graphql@^0.1.1":
-  version "0.1.1"
-  resolved "https://registry.yarnpkg.com/@dolphjs/graphql/-/graphql-0.1.1.tgz#5b7a1fb5617424cfc5280caa65873bebea02a9d1"
-  integrity sha512-eEK60TEfVh+ZQ/IU29iswsyYbEMrGe8RqLZUqLcIVvfr2YUabOB1yfW+YvyLtfcfghkbPzxmldNDAK8N6jN5wQ==
+"@dolphjs/graphql@^0.2.1":
+  version "0.2.1"
+  resolved "https://registry.yarnpkg.com/@dolphjs/graphql/-/graphql-0.2.1.tgz#271161ef000c1d1cf7ad1faa08d20749e7ecc37e"
+  integrity sha512-SuH35pB+ZhspVEVLZmj7NctpCd8B6sAddm32Q3e8iy0YX/QEhS67XHKsm2DVP//coTCd+nTubfLVYpijICE6aQ==
   dependencies:
     "@apollo/server" "^4.11.0"
     cli-color "^2.0.4"
