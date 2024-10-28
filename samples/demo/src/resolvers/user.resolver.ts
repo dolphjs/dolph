@@ -1,4 +1,4 @@
-import { Arg, Mutation, Query, Resolver } from 'type-graphql';
+import { Arg, Ctx, Mutation, Query, Resolver } from 'type-graphql';
 import { User } from './user.entity';
 
 @Resolver((of) => User)
@@ -6,7 +6,8 @@ export class UserResolver {
   private users: User[] = [];
 
   @Query((returns) => [User])
-  async getUsers() {
+  async getUsers(@Ctx() context: any) {
+    console.log(context.token);
     return this.users;
   }
 

@@ -347,14 +347,16 @@ class DolphFactoryClass<T extends DolphControllerHandler<Dolph>> {
   jsonLimit = '5mb';
   private dolph: typeof engine;
 
-  constructor(adapter: { graphql: boolean; schema: any });
+  constructor(adapter: { graphql: boolean; schema: any; context?: any });
   constructor(
     routes: Array<{ new (): any } | { path?: string; router: Router }>,
     middlewares?: RequestHandler[] | DSocketInit<Dolph>,
   );
 
   constructor(
-    adapterOrRoutes?: Array<{ new (): any } | { path?: string; router: Router }> | { graphql: boolean; schema: any },
+    adapterOrRoutes?:
+      | Array<{ new (): any } | { path?: string; router: Router }>
+      | { graphql: boolean; schema: any; context?: any },
     middlewares?: RequestHandler[] | DSocketInit<Dolph>,
   ) {
     /**
@@ -368,7 +370,7 @@ class DolphFactoryClass<T extends DolphControllerHandler<Dolph>> {
       if (adapter.graphql) {
         this.isGraphQL = adapter.graphql;
 
-        GraphQLAdapter.apolloServer(server, adapter.schema)
+        GraphQLAdapter.apolloServer(server, adapter.schema, adapter.context)
           .then((middleware) => {
             engine.use(middleware);
           })
@@ -406,7 +408,7 @@ class DolphFactoryClass<T extends DolphControllerHandler<Dolph>> {
     this.intiDolphEngine(startTime);
   }
 
-  private isAdapter(arg: any): arg is { graphql: boolean; schema: any } {
+  private isAdapter(arg: any): arg is { graphql: boolean; schema: any; context?: any } {
     return arg !== null && typeof arg == 'object' && 'graphql' in arg && 'schema' in arg && typeof arg.graphql == 'boolean';
   }
 
