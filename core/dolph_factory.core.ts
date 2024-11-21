@@ -44,8 +44,6 @@ import { join } from 'path';
 import { fallbackResponseMiddleware } from './fallback_middleware.core';
 import { MVCAdapter } from './adapters/mvc_registrar';
 import { engine as handlebars } from 'express-handlebars';
-import { GraphQLAdapter } from '@dolphjs/graphql';
-import { graphql } from 'graphql';
 
 const engine = express();
 
@@ -370,6 +368,8 @@ class DolphFactoryClass<T extends DolphControllerHandler<Dolph>> {
       if (adapter.graphql) {
         this.isGraphQL = adapter.graphql;
 
+        const { GraphQLAdapter } = require('@dolphjs/graphql');
+
         GraphQLAdapter.apolloServer(server, adapter.schema, adapter.context)
           .then((middleware) => {
             engine.use(middleware);
@@ -468,7 +468,7 @@ class DolphFactoryClass<T extends DolphControllerHandler<Dolph>> {
 
       if (this.configs.database?.mongo?.url.length > 1) {
         if (this.configs.database.mongo.url === 'sensitive') {
-          if (!configs.MONGO_URL.length) {
+          if (!configs.MONGO_URL) {
             logger.error('cannot find `MONGO_URL` in the projects `.env` file');
           }
           this.configs.database.mongo.url = configs.MONGO_URL;
