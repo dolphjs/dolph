@@ -11,7 +11,6 @@ import {
   DResponse,
   Dolph,
   DolphConfig,
-  DolphMiddlewareHelmetOption,
   ErrorResponse,
   Middleware,
   dolphPort,
@@ -31,12 +30,7 @@ import cookieParser from 'cookie-parser';
 import { normalizePath } from '../utilities/normalize_path.utilities';
 import { DolphControllerHandler } from '../classes';
 import { getControllersFromMetadata } from '../utilities/get_controllers_from_component';
-import {
-  getFunctionNames,
-  getShieldMiddlewares,
-  getUnShieldMiddlewares,
-  stringifyFunction,
-} from '../utilities/spring_helpers.utilities';
+import { getShieldMiddlewares, getUnShieldMiddlewares, stringifyFunction } from '../utilities/spring_helpers.utilities';
 import { DSocketInit } from '../common/interfaces/socket.interfaces';
 import { GlobalInjection } from './initializers';
 import { middlewareRegistry } from './initializers/middleware_registrar';
@@ -44,6 +38,7 @@ import { join } from 'path';
 import { fallbackResponseMiddleware } from './fallback_middleware.core';
 import { MVCAdapter } from './adapters/mvc_registrar';
 import { engine as handlebars } from 'express-handlebars';
+import { TryCatchAsyncDec } from '../decorators';
 
 const engine = express();
 
@@ -343,6 +338,7 @@ class DolphFactoryClass<T extends DolphControllerHandler<Dolph>> {
   configs: DolphConfig;
   externalMiddlewares: RequestHandler[];
   jsonLimit = '5mb';
+  globalFilter = false;
   private dolph: typeof engine;
 
   constructor(adapter: { graphql: boolean; schema: any; context?: any });
@@ -491,6 +487,10 @@ class DolphFactoryClass<T extends DolphControllerHandler<Dolph>> {
           });
         }
       }
+
+      if (config.globalExceptionFilter) {
+        this.globalFilter = true;
+      }
     } catch (e) {
       logger.error(clc.red(DolphErrors.noDolphConfigFile));
       throw e;
@@ -521,6 +521,11 @@ class DolphFactoryClass<T extends DolphControllerHandler<Dolph>> {
       initNotFoundError();
     }
 
+    if (this.globalFilter) {
+      this.dolph.use(this.attachGlobalExceptionFilter);
+      logger.info(clc.blueBright(`Dolph app using global exception filter`));
+    }
+
     port = +this.port;
     env = this.env;
 
@@ -532,6 +537,11 @@ class DolphFactoryClass<T extends DolphControllerHandler<Dolph>> {
     const durationInMilliseconds = Math.round(endTime[0] * 1000 + endTime[1] / 1e6);
 
     logger.info(`${clc.blueBright('Initialized application in')} ${clc.white(`${durationInMilliseconds}ms`)}`);
+  }
+
+  @TryCatchAsyncDec()
+  private attachGlobalExceptionFilter(req: DRequest, res: DResponse, next: DNextFunc) {
+    next();
   }
 
   public enableCors(options?: CorsOptions) {

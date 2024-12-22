@@ -1,4 +1,4 @@
-import { DolphDbs, DolphMiddlewareHelmetOption, DolphMiddlewareOption, dolphEnv, dolphPort } from '..';
+import { DolphMiddlewareOption, dolphEnv, dolphPort } from '..';
 import { IPayload, MongooseConfig } from '.';
 import { NextFunction, Request, RequestHandler, Response, Router } from 'express';
 
@@ -9,6 +9,7 @@ export interface DolphConfig {
   routing?: DolphConfigRouting;
   env?: dolphEnv;
   jsonLimit?: string;
+  globalExceptionFilter?: boolean;
 }
 
 export interface DolphConfigDbOption {
