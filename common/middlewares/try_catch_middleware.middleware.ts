@@ -20,6 +20,7 @@ const TryCatchAsyncFn =
  *
  * Should be used as a top-most decorator
  * @version 1.0.0
+ * @deprecated - see @dolphjs/dolph/decorators
  */
 const TryCatchAsyncDec = (target: any, propertyKey: string, descriptor: PropertyDescriptor) => {
   const originalMethod = descriptor.value;
