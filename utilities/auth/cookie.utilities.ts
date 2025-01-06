@@ -1,28 +1,27 @@
 import { configs } from '../../core/config.core';
 import { DNextFunc, DRequest, DResponse, ErrorException, HttpStatus, IPayload, cookieContent, sub } from '../../common';
 import { generateJWTwithHMAC, verifyJWTwithHMAC } from './JWT_generator.utilities';
-import moment from 'moment';
 
 /**
  *
  * @param sub holds value for the principal data used in hashing the token
- * @param exp expiration time in milliseconds, i.e 1000 for 1 seconds
- * @param secret token seccret used for authorization
+ * @param exp expiration time in Date
+ * @param secret token secret used for authorization
  * @param info option parameter used to store data that might be useful
  *
- * @version 1.1
+ * @version 2
  */
-export const newAuthCookie = (sub: sub, exp: number, secret: string, info?: string | object | []): cookieContent => {
+export const newAuthCookie = (sub: sub, exp: Date, secret: string, info?: string | object | []): cookieContent => {
   const payload: IPayload = {
-    exp: moment().add(exp, 'seconds').unix(),
-    iat: moment().unix(),
+    iat: Math.floor(Date.now() / 1000),
+    exp: Math.floor(exp.getTime() / 1000),
     sub: sub,
     info: info,
   };
   const token = generateJWTwithHMAC({ payload, secret });
 
   const options = {
-    expires: new Date(new Date().getTime() + exp * 60 * 30),
+    expires: new Date(exp.getTime()),
     httpOnly: false,
     secure: false,
   };

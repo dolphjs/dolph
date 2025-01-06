@@ -1,7 +1,7 @@
 import winston from 'winston';
 import clc from 'cli-color';
+import { formatDate } from './formatters/format_date.utilities';
 // import DailyRotateFile from 'winston-daily-rotate-file';
-import moment from 'moment';
 
 const logger = winston.createLogger({
   levels: {
@@ -14,7 +14,7 @@ const logger = winston.createLogger({
     winston.format.timestamp(),
     winston.format.printf((info) => {
       const { timestamp, level, message, stack } = info;
-      const formattedTimestamp = clc.white(moment(timestamp).format('YYYY-MM-DD HH:mm:ss'));
+      const formattedTimestamp = clc.white(formatDate(timestamp));
       let formattedLevel: string;
 
       let newMessage: string = message;
@@ -64,11 +64,11 @@ const emojiForLevel = {
   error: '❗️',
 };
 
-const componentEmoji = {
-  route: '🌐',
-  shield: '🛡️',
-  middleware: '🛡️',
-};
+// const componentEmoji = {
+//   route: '🌐',
+//   shield: '🛡️',
+//   middleware: '🛡️',
+// };
 
 const inAppLogger = winston.createLogger({
   levels: {
@@ -81,7 +81,7 @@ const inAppLogger = winston.createLogger({
     winston.format.timestamp(),
     winston.format.printf((info) => {
       const { timestamp, level, message } = info;
-      const formattedTimestamp = moment(timestamp).format('YYYY-MM-DD HH:mm:ss');
+      const formattedTimestamp = formatDate(timestamp);
       const logEmoji = emojiForLevel[level] || '🔹';
       let formattedMessage = message;
 
@@ -99,16 +99,16 @@ const inAppLogger = winston.createLogger({
         const [action, componentDetails] = message.split('>>>>').map((part) => part.trim());
 
         // Determine the component type based on the presence of specific keywords
-        const componentType = componentDetails.includes('Middleware')
-          ? 'middleware'
-          : componentDetails.includes('Shield')
-          ? 'shield'
-          : 'route'; // Default to 'route' if neither Middleware nor Shield is found
+        // const componentType = componentDetails.includes('Middleware')
+        //   ? 'middleware'
+        //   : componentDetails.includes('Shield')
+        //   ? 'shield'
+        //   : 'route'; // Default to 'route' if neither Middleware nor Shield is found
 
         // Construct the formatted message
         formattedMessage = `${logEmoji} [${formattedTimestamp}] ${levelLog}: ${clc.blueBright(`${action}`)} ${clc.blueBright(
           `>>>> ${componentDetails}`,
-        )} ${componentEmoji[componentType] || ''}`;
+        )}`;
       } else {
         formattedMessage = `${logEmoji} [${formattedTimestamp}] ${levelLog}: ${formattedMessage}`;
       }
