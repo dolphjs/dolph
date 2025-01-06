@@ -1,7 +1,7 @@
 {
   "name": "@dolphjs/dolph",
   "version": "1.4.3",
-  "description": "New-Age, developer friendly node.js framework",
+  "description": "New-Age, developer friendly node.js and bun framework",
   "repository": "https://github.com/dolphjs/dolph",
   "author": "Utee Akaninyene",
   "license": "MIT",
@@ -32,7 +32,7 @@
     "copy:license": "gulp copy:license",
     "copy:npm-ignore": "gulp copy:npm-ignore",
     "copy:all": "npm run copy:package-json && npm run copy:readme && npm run copy:license && npm run copy:npm-ignore",
-    "pre:release": "npm run build && npm run copy:all"
+    "pre:release": "npm run test && npm run build && npm run copy:all"
   },
   "lint-staged": {
     "**/*.ts": [
@@ -131,7 +131,6 @@
     "socket.io": "^4.7.5",
     "typedi": "^0.10.0",
     "winston": "^3.9.0",
-    "winston-daily-rotate-file": "^4.7.1",
     "xss": "^1.0.14"
   }
 }

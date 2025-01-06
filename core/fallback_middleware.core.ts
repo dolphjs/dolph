@@ -1,3 +1,4 @@
+import httpStatus from 'http-status';
 import { DNextFunc, DRequest, DResponse } from '../common';
 
 export const fallbackResponseMiddleware = (req: DRequest, res: DResponse, next: DNextFunc) => {
@@ -12,7 +13,7 @@ export const fallbackResponseMiddleware = (req: DRequest, res: DResponse, next: 
 
   res.on('finish', () => {
     if (!res.locals.responseSent && !res.headersSent) {
-      res.status(200).send();
+      res.status(httpStatus.OK).send();
     }
   });
 };

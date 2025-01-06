@@ -4,7 +4,6 @@
  */
 
 import { Dolph } from '../common';
-import { DolphServiceHandler } from './service_classes.class';
 
 /**
  * `DolphControllerHandler` takes a string generic.

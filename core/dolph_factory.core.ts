@@ -39,6 +39,7 @@ import { fallbackResponseMiddleware } from './fallback_middleware.core';
 import { MVCAdapter } from './adapters/mvc_registrar';
 import { engine as handlebars } from 'express-handlebars';
 import { TryCatchAsyncDec } from '../decorators';
+import httpStatus from 'http-status';
 
 const engine = express();
 
@@ -204,7 +205,7 @@ const initializeControllersAsRouter = <T extends Dolph>(
 
 // used to increment the limit of listeners for express engine
 const incrementHandlers = () => {
-  process.setMaxListeners(12);
+  process.setMaxListeners(10);
 };
 
 // initializes middlewares used by dolphjs
@@ -275,7 +276,7 @@ const initMvcAdapter = () => {
 // default not found endpoint
 const initNotFoundError = () => {
   engine.use('/', (req: DRequest, res: DResponse) => {
-    ErrorResponse({ res, status: 404, body: { message: 'this endpoint does not exist' } });
+    ErrorResponse({ res, status: httpStatus.NOT_FOUND, body: { message: 'this endpoint does not exist' } });
   });
 };
 
@@ -545,7 +546,7 @@ class DolphFactoryClass<T extends DolphControllerHandler<Dolph>> {
   }
 
   public enableCors(options?: CorsOptions) {
-    enableCorsFunc(options || { origin: '*', methods: ['POST', 'GET', 'PUT', 'DELETE', 'PATCH'] });
+    enableCorsFunc(options || { origin: '*', methods: ['POST', 'GET', 'PUT', 'DELETE', 'PATCH', 'OPTION'] });
   }
 
   public enableHemet(options?: HelmetOptions) {
@@ -562,7 +563,7 @@ class DolphFactoryClass<T extends DolphControllerHandler<Dolph>> {
 
       GlobalInjection(this.sockets.socketService.name, this.socketService);
 
-      logger.info(`${clc.blue(`SocketIO Initialized`)}`);
+      logger.info(`${clc.blue(`SocketIO Initialized Successfully`)}`);
 
       const socketsMetadata = Reflect.getMetadata('sockets', this.sockets.component.constructor.prototype);
 

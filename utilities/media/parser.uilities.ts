@@ -32,15 +32,15 @@ const arrayUpload = (
  *  uses the `multer` library under the hood
  */
 function MediaParser(options: IMediaParserOptions) {
-  return (_target: any, _propertyKey: string, desccriptor?: TypedPropertyDescriptor<any>) => {
-    const originalMethod = desccriptor.value;
+  return (_target: any, _propertyKey: string, descriptor?: TypedPropertyDescriptor<any>) => {
+    const originalMethod = descriptor.value;
     try {
-      desccriptor.value = async (req: DRequest, res: DResponse, next: DNextFunc) => {
+      descriptor.value = async (req: DRequest, res: DResponse, next: DNextFunc) => {
         if (!req.headers['content-type'].startsWith('multipart/form-data')) {
           return ErrorResponse({
             res,
             status: 400,
-            msg: 'The request body has no media file atached, epected `multipart/form-data`',
+            msg: 'The request body has no media file attached, expected `multipart/form-data`',
           });
         }
 
@@ -117,9 +117,8 @@ const mediaParser = (options: IMediaParserOptions) => {
 
     const filter = (req: Request | DRequest, file: Express.Multer.File, callback) => {
       if (!req.headers['content-type'].startsWith('multipart/form-data')) {
-        throw new BadRequestException('The request body has no media file atached, epected `multipart/form-data`');
+        throw new BadRequestException('The request body has no media file attached, expected `multipart/form-data`');
       }
-      // if (!file) return ErrorResponse({ res, status: 400, msg: 'The request body has no media file atached' });
 
       const extensionCheck = _extensions.includes(path.extname(file.originalname).toLowerCase());
 
