@@ -105,9 +105,11 @@
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
+    "busboy": "^1.6.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",
     "cli-color": "^2.0.3",
+    "concat-stream": "^2.0.0",
     "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
@@ -128,6 +130,7 @@
     "socket.io": "^4.7.5",
     "typedi": "^0.10.0",
     "winston": "^3.9.0",
-    "xss": "^1.0.14"
+    "xss": "^1.0.14",
+    "xtend": "^4.0.2"
   }
 }
