@@ -1,11 +1,7 @@
-import { EventEmitter } from 'events';
+import { EventEmitter } from 'stream';
 
 export class Counter extends EventEmitter {
-  private value: number;
-  constructor() {
-    super();
-    this.value = 0;
-  }
+  private value: number = 0;
 
   increment(): void {
     this.value++;

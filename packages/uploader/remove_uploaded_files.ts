@@ -1,21 +1,26 @@
-export function removeUploadedFiles(uploadedFiles, remove, next) {
+import { FileHandler, FileInfo, FileRemoveCallback } from '../../common/types/dolph_uploader.type';
+
+export function removeUploadedFiles(uploadedFiles: FileInfo[], remove: FileHandler, next: FileRemoveCallback): void {
   const length = uploadedFiles.length;
-  const errors = [];
+  const errors: Error[] = [];
 
-  if (!length) return next(null, errors);
+  if (!length) {
+    return next(null, errors);
+  }
 
-  function handleFile(idx) {
-    const file = uploadedFiles[idx];
+  function handleFile(index: number): void {
+    const file = uploadedFiles[index];
 
-    remove(file, function (err) {
+    remove(file, (err: Error | null) => {
       if (err) {
-        err.file = file;
-        err.field = file.fieldname;
-        errors.push(err);
+        const enhancedError = err as Error & { file?: FileInfo; field?: string };
+        enhancedError.file = file;
+        enhancedError.field = file.fieldname;
+        errors.push(enhancedError);
       }
 
-      if (idx < length - 1) {
-        handleFile(idx + 1);
+      if (index < length - 1) {
+        handleFile(index + 1);
       } else {
         next(null, errors);
       }

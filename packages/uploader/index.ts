@@ -1,27 +1,52 @@
-import { memory } from './storage/memory.storage';
-import { disk } from './storage/disk.storage';
+export { DolphFIleUploaderError as DFileUploaderError } from './errors/error_messages';
+import { extname } from 'path';
+import { DRequest, DResponse } from '../../common';
+import { FileInfo, UploadOptions } from '../../common/types/dolph_uploader.type';
+import { defaultFileExtensions } from '../../utilities/media/file_extensions.utilities';
+import { diskStorage, fileUploader, memoryStorage } from './file_uploader';
 
-function allowAll(req, file, cb) {
-  cb(null, true);
-}
+/**
+ * diskStorage({
+            destination: './uploads',
+            filename: (req, file, cb) => {
+              cb(null, Date.now() + '-' + file.originalname);
+            },
+ */
 
-export class MediaParser {
-  private storage;
-  private limits: number;
-  private preservePaths: any;
-  private fileFilter: Function;
+export const useFileUploader =
+  ({ storage, fileFilter, extensions }: UploadOptions) =>
+  (req, res: DResponse, next) => {
+    let filter = fileFilter;
 
-  constructor(options) {
-    if (options.storage) {
-      this.storage = options.storage;
-    } else if (options.dest) {
-      this.storage = disk({ destination: options.dest });
-    } else {
-      this.storage = memory();
+    if (filter) {
+      let _extensions = defaultFileExtensions;
+
+      if (extensions?.length) {
+        _extensions = extensions;
+      }
+
+      filter = (req: DRequest, file: FileInfo, callback) => {
+        const extensionCheck = _extensions.includes(extname(file.originalname).toLowerCase());
+
+        if (!extensionCheck && file.originalname !== 'blob') {
+          callback(next(res.status(400).json({ message: 'The media file you sent is not unsupported' })), false);
+        } else {
+          callback(null, true);
+        }
+      };
     }
 
-    this.limits = options.limits;
-    this.preservePaths = options.preservePaths;
-    this.fileFilter = options.fileFilter || allowAll;
-  }
-}
+    fileUploader({
+      storage: storage || memoryStorage(),
+      limits: {
+        fileSize: 5 * 1024 * 1024, // 5MB
+      },
+      fileFilter: filter,
+      type: 'single',
+      fieldname: 'upload',
+    });
+
+    next();
+  };
+
+export { fileUploader, diskStorage, memoryStorage };
