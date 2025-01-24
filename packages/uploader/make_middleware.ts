@@ -43,7 +43,6 @@ export function makeMiddleware(getOptions: () => UploadConfig & { fields?: Array
     try {
       options = getOptions();
     } catch (error) {
-      console.error('Error in getOptions:', error);
       return next(error);
     }
 

@@ -10,21 +10,8 @@ import {
 import { Get, Post, Route, UseMiddleware } from '../../../../../decorators';
 import { diskStorage, fileUploader, useFileUploader } from '../../../../../packages';
 
-// const upload = fileUploader({
-//   storage: diskStorage({
-//     destination: './uploads',
-//     filename: (req, file, cb) => {
-//       cb(null, Date.now() + '-' + file.originalname);
-//     },
-//   }),
-//   limits: {
-//     fileSize: 5 * 1024 * 1024, // 5MB
-//   },
-// });
-
 @Route('user')
 export class UserController extends DolphControllerHandler<Dolph> {
-  private name = 'utibe';
   constructor() {
     super();
   }
@@ -39,8 +26,10 @@ export class UserController extends DolphControllerHandler<Dolph> {
   @Post('')
   @UseMiddleware(
     useFileUploader({
-      type: 'single',
+      type: 'array',
       fieldname: 'upload',
+      maxCount: 2,
+
       // storage: diskStorage({
       //   destination: './uploads',
       //   filename: (req, file, cb) => {
@@ -50,7 +39,7 @@ export class UserController extends DolphControllerHandler<Dolph> {
     }),
   )
   async post(req: DRequest, res: DResponse) {
-    console.log('name: ', this.name);
+    console.log('req.files: ', req.file);
     SuccessResponse({ res, body: req.body });
   }
 }

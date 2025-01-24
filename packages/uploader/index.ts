@@ -13,6 +13,13 @@ import { diskStorage, fileUploader, memoryStorage } from './file_uploader';
             },
  */
 
+/**
+ *  Use this middleware to process media files
+ *  @version 1.4.0
+ *
+ * @author Utee
+ *
+ */
 export const useFileUploader =
   ({ storage, fileFilter, extensions, type, fieldname, fields, limit, maxCount }: UploadOptions) =>
   (req, res: DResponse, next) => {
@@ -37,11 +44,10 @@ export const useFileUploader =
       limits: {
         fileSize: limit || 5 * 1024 * 1024, // 5MB
       },
+      fieldname: fieldname || 'upload',
       fileFilter: _filter,
       type,
-      fieldname,
       maxCount,
-      limit,
       fields,
     });
 

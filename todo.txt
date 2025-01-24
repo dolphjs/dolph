@@ -1,6 +1,10 @@
 1. Add the globalExceptionFilter documentation to the docs which means no need to wrap methods with TryCatchAsync anymore
 2. Add notice that the moment library has been removed on release of v2.
 3. The former hashing functions have been deprecated and replaced with new ones, should be added to the README
+4. maxCount field on fileUploader is useless atm and should be worked on
+5. Add documentation for the fileUploader function as MediaParser has been removed
+
+
 ----------
 Write tests for:
 
@@ -15,7 +19,6 @@ Write tests for:
 - Configuration
 - Dependency Injection
 - Logging and Debugging
-- 
 ----------
 
 

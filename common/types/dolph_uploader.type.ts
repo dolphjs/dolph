@@ -32,19 +32,64 @@ export type FileFilter = (
 export type FileStrategy = 'NONE' | 'VALUE' | 'ARRAY' | 'OBJECT';
 
 export type UploadOptions = {
-  //defaults to memoryStorage
+  /**
+   * accepts either **diskStorage** or **memoryStorage**
+   *
+   * defaults to *memoryStorage*
+   *
+   * @type {Storage}
+   */
   storage?: Storage;
-  // defaults to `Date.now() + '-' + file.originalname `
+  /**
+   * the name that file(s) sent to the dolph app will be identified by
+   *
+   * defaults to *upload*
+   */
   fieldname?: string;
-  // defaults to 5MB
+  /**
+   * the limit in fileSize for media being processed
+   *
+   * defaults to *5MB*
+   */
   limit?: number;
+
+  /**
+   * type of media process to use
+   *
+   * **single** accepts only one file
+   *
+   *
+   * **array** accepts an array of files
+   *
+   * only when set to **array** does **maxCount** matter
+   *
+   * **fields** accepts fields/object of files
+   *
+   */
   type: 'single' | 'fields' | 'array';
+
+  /**
+   * @type {FileFilter}
+   *
+   * defaults to use the default *FileFilter* function which should suit most use-cases
+   */
   fileFilter?: FileFilter;
-  // this is an array containing allowed file extensions and only needed were `fileFilter` is not provided
+
+  /**
+   * specify what file extensions should be allowed in this format: **[".png", ".pdf"]**
+   */
   extensions?: string[];
-  // max count of files, only used when type is array
+
+  /**
+   * max count of files that can be uploaded
+   *
+   * only works when `type` is of *array*
+   */
   maxCount?: number;
 
+  /**
+   * @type {UploadFields}
+   */
   fields?: UploadFields[];
 };
 

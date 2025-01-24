@@ -177,7 +177,11 @@ const initializeControllersAsRouter = <T extends Dolph>(
                 if (renderTemplate) {
                   res.render(renderTemplate, await controllerInstance.constructor.prototype[methodName](req, res, next));
                 } else {
-                  await controllerInstance.constructor.prototype[methodName](req, res, next);
+                  // await controllerInstance.constructor.prototype[methodName](req, res, next);
+                  /**
+                   * This allows that the `this` keyword does not lose its context unlike in the previous line used for binding
+                   */
+                  await controllerInstance[methodName].call(controllerInstance, req, res, next);
                 }
               } catch (error) {
                 next(error);
