@@ -9,7 +9,6 @@ import { removeUploadedFiles } from './remove_uploaded_files';
 
 export function isMultipart(req: IncomingMessage): boolean {
   const contentType = req.headers['content-type'] || '';
-  console.log('content-type: ', contentType);
   return contentType.startsWith('multipart/');
 }
 
@@ -69,16 +68,34 @@ export function makeMiddleware(getOptions: () => UploadConfig & { fields?: Array
     let readFinished = false;
     let errorOccurred = false;
 
+    let uploadTimeOut: NodeJS.Timeout;
+
     function done(err?: any): void {
       if (isDone) return;
       isDone = true;
+
+      // clear all  pending timeout
+      if (uploadTimeOut) clearTimeout(uploadTimeOut);
 
       req.unpipe(busboy);
       drainStream(req);
       busboy.removeAllListeners();
 
-      onRequestFinished(req, () => next(err));
+      // onRequestFinished(req, () => next(err));
+
+      // Force resolution with a setImmediate to ensure all callbacks are processed
+      setImmediate(() => {
+        next(err);
+      });
     }
+
+    /**
+     * Todo: allow developer to set the modify the timeout from outside.
+     */
+    uploadTimeOut = setTimeout(() => {
+      console.error('Upload middleware timed out');
+      done(new Error('Upload process timed out'));
+    }, 3000);
 
     function indicateDone(): void {
       if (readFinished && pendingWrites.isZero() && !errorOccurred) {
@@ -121,7 +138,7 @@ export function makeMiddleware(getOptions: () => UploadConfig & { fields?: Array
 
     busboy.on(
       'file',
-      (fieldname: string, fileStream: NodeJS.ReadableStream, filename: string, encoding: string, mimetype: string) => {
+      (fieldname: string, fileStream: NodeJS.ReadableStream, filename: any, encoding: string, mimetype: string) => {
         if (!fieldname) return fileStream.resume();
 
         if (options.limits?.fieldNameSize && fieldname.length > options.limits.fieldNameSize) {
@@ -130,106 +147,155 @@ export function makeMiddleware(getOptions: () => UploadConfig & { fields?: Array
 
         const file: FileInfo = {
           fieldname,
-          originalname: filename,
-          encoding,
-          mimetype,
+          originalname: filename.filename || filename,
+          encoding: filename.encoding || encoding || '7bit',
+          mimetype: filename.mimeType || mimetype || 'application/octet-stream',
         };
 
         const placeholder = appender.insertPlaceholder(file);
 
-        if (!options.fileFilter) {
-          options.fileFilter = (req, file) => (err: Error | null, includeFile: boolean) => {
-            if (err || !includeFile) {
-              appender.removePlaceholder(placeholder);
-              return fileStream.resume();
-            }
+        // if (!options.fileFilter) {
+        //   // options.fileFilter = (req, file) => (err: Error | null, includeFile: boolean) => {
+        //   //   if (err || !includeFile) {
+        //   //     appender.removePlaceholder(placeholder);
+        //   //     return fileStream.resume();
+        //   //   }
 
-            let aborting = false;
-            pendingWrites.increment();
+        //   //   let aborting = false;
+        //   //   pendingWrites.increment();
 
-            Object.defineProperty(file, 'stream', {
-              configurable: true,
-              enumerable: false,
-              value: fileStream,
-            });
+        //   //   Object.defineProperty(file, 'stream', {
+        //   //     configurable: true,
+        //   //     enumerable: false,
+        //   //     value: fileStream,
+        //   //   });
 
-            fileStream.on('error', (err: Error) => {
-              pendingWrites.decrement();
-              abortWithError(err);
-            });
+        //   //   fileStream.on('error', (err: Error) => {
+        //   //     pendingWrites.decrement();
+        //   //     abortWithError(err);
+        //   //   });
 
-            fileStream.on('limit', () => {
-              aborting = true;
-              abortWithCode('LIMIT_FILE_SIZE', fieldname);
-            });
+        //   //   fileStream.on('limit', () => {
+        //   //     aborting = true;
+        //   //     abortWithCode('LIMIT_FILE_SIZE', fieldname);
+        //   //   });
 
-            options.storage.handleFile(req, file, (err: Error | null, info?: Partial<FileInfo>) => {
-              if (aborting) {
-                appender.removePlaceholder(placeholder);
-                uploadedFiles.push({ ...file, ...info });
-                return pendingWrites.decrement();
-              }
+        //   //   options.storage.handleFile(req, file, (err: Error | null, info?: Partial<FileInfo>) => {
+        //   //     if (aborting) {
+        //   //       appender.removePlaceholder(placeholder);
+        //   //       uploadedFiles.push({ ...file, ...info });
+        //   //       return pendingWrites.decrement();
+        //   //     }
 
-              if (err) {
-                appender.removePlaceholder(placeholder);
-                pendingWrites.decrement();
-                return abortWithError(err);
-              }
+        //   //     if (err) {
+        //   //       appender.removePlaceholder(placeholder);
+        //   //       pendingWrites.decrement();
+        //   //       return abortWithError(err);
+        //   //     }
 
-              const fileInfo = { ...file, ...info };
-              appender.replacePlaceholder(placeholder, fileInfo);
-              uploadedFiles.push(fileInfo);
-              pendingWrites.decrement();
-              indicateDone();
-            });
-          };
-        } else {
-          options.fileFilter(req, file, (err: Error | null, includeFile: boolean) => {
-            if (err || !includeFile) {
-              appender.removePlaceholder(placeholder);
-              return fileStream.resume();
-            }
+        //   //     const fileInfo = { ...file, ...info };
+        //   //     appender.replacePlaceholder(placeholder, fileInfo);
+        //   //     uploadedFiles.push(fileInfo);
+        //   //     pendingWrites.decrement();
+        //   //     indicateDone();
+        //   //   });
+        //   // };
+        //   options.fileFilter = (_req, file, callback) => {
+        //     callback(null, true);
+        //   };
+        // } else {
+        //   options.fileFilter(req, file, (err: Error | null, includeFile: boolean) => {
+        //     if (err || !includeFile) {
+        //       appender.removePlaceholder(placeholder);
+        //       return fileStream.resume();
+        //     }
 
-            let aborting = false;
-            pendingWrites.increment();
+        //     let aborting = false;
+        //     pendingWrites.increment();
 
-            Object.defineProperty(file, 'stream', {
-              configurable: true,
-              enumerable: false,
-              value: fileStream,
-            });
+        //     Object.defineProperty(file, 'stream', {
+        //       configurable: true,
+        //       enumerable: false,
+        //       value: fileStream,
+        //     });
 
-            fileStream.on('error', (err: Error) => {
-              pendingWrites.decrement();
-              abortWithError(err);
-            });
+        //     fileStream.on('error', (err: Error) => {
+        //       pendingWrites.decrement();
+        //       abortWithError(err);
+        //     });
 
-            fileStream.on('limit', () => {
-              aborting = true;
-              abortWithCode('LIMIT_FILE_SIZE', fieldname);
-            });
+        //     fileStream.on('limit', () => {
+        //       aborting = true;
+        //       abortWithCode('LIMIT_FILE_SIZE', fieldname);
+        //     });
 
-            options.storage.handleFile(req, file, (err: Error | null, info?: Partial<FileInfo>) => {
-              if (aborting) {
-                appender.removePlaceholder(placeholder);
-                uploadedFiles.push({ ...file, ...info });
-                return pendingWrites.decrement();
-              }
+        //     options.storage.handleFile(req, file, (err: Error | null, info?: Partial<FileInfo>) => {
+        //       if (aborting) {
+        //         appender.removePlaceholder(placeholder);
+        //         uploadedFiles.push({ ...file, ...info });
+        //         return pendingWrites.decrement();
+        //       }
 
-              if (err) {
-                appender.removePlaceholder(placeholder);
-                pendingWrites.decrement();
-                return abortWithError(err);
-              }
+        //       if (err) {
+        //         appender.removePlaceholder(placeholder);
+        //         pendingWrites.decrement();
+        //         return abortWithError(err);
+        //       }
 
-              const fileInfo = { ...file, ...info };
-              appender.replacePlaceholder(placeholder, fileInfo);
-              uploadedFiles.push(fileInfo);
-              pendingWrites.decrement();
-              indicateDone();
-            });
+        //       const fileInfo = { ...file, ...info };
+        //       appender.replacePlaceholder(placeholder, fileInfo);
+        //       uploadedFiles.push(fileInfo);
+        //       pendingWrites.decrement();
+        //       indicateDone();
+        //     });
+        //   });
+        // }
+
+        options.fileFilter(req, file, (err: Error | null, includeFile: boolean) => {
+          if (err || !includeFile) {
+            appender.removePlaceholder(placeholder);
+            return fileStream.resume();
+          }
+
+          let aborting = false;
+          pendingWrites.increment();
+
+          Object.defineProperty(file, 'stream', {
+            configurable: true,
+            enumerable: false,
+            value: fileStream,
           });
-        }
+
+          fileStream.on('error', (streamErr: Error) => {
+            pendingWrites.decrement();
+            abortWithError(streamErr);
+          });
+
+          fileStream.on('limit', () => {
+            aborting = true;
+            abortWithCode('LIMIT_FILE_SIZE', fieldname);
+          });
+
+          options.storage.handleFile(req, file, (storageErr: Error | null, info?: Partial<FileInfo>) => {
+            if (aborting) {
+              appender.removePlaceholder(placeholder);
+              uploadedFiles.push({ ...file, ...info });
+              return pendingWrites.decrement();
+            }
+
+            if (storageErr) {
+              appender.removePlaceholder(placeholder);
+              pendingWrites.decrement();
+              return abortWithError(storageErr);
+            }
+
+            const fileInfo = { ...file, ...info };
+            appender.replacePlaceholder(placeholder, fileInfo);
+            uploadedFiles.push(fileInfo);
+            pendingWrites.decrement();
+            indicateDone();
+          });
+        });
       },
     );
 
@@ -239,7 +305,9 @@ export function makeMiddleware(getOptions: () => UploadConfig & { fields?: Array
     busboy.on('fieldsLimit', () => abortWithCode('LIMIT_FIELD_COUNT'));
     busboy.on('finish', () => {
       readFinished = true;
-      indicateDone();
+      // this ensures that indicateDone is called in next tick
+      setImmediate(indicateDone);
+      // indicateDone();
     });
 
     req.pipe(busboy);

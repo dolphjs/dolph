@@ -8,7 +8,9 @@ export class Counter extends EventEmitter {
   }
 
   decrement(): void {
-    if (--this.value === 0) {
+    this.value--;
+    if (this.value < 0) this.value = 0;
+    if (this.value === 0) {
       this.emit('zero');
     }
   }

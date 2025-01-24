@@ -23,6 +23,10 @@ class DiskStorage implements Storage {
   private getDestination: NonNullable<DiskStorageOptions['destination']>;
 
   constructor(options: DiskStorageOptions = {}) {
+    if (options.destination && typeof options.destination !== 'string') {
+      throw new Error('Destination must be a string path');
+    }
+
     this.getFilename = options.filename || defaultGetFilename;
 
     if (typeof options.destination === 'string') {
@@ -118,6 +122,7 @@ function createDirectory(destination: string): void {
 // Middleware creator function
 function createUploadMiddleware(options: Partial<UploadOptionAndConfig> = {}) {
   if (!options.fieldname) throw new Error('Provide the `fieldname` option');
+
   if (options.type == 'single') {
     return makeMiddleware(
       () =>
@@ -150,33 +155,6 @@ function createUploadMiddleware(options: Partial<UploadOptionAndConfig> = {}) {
   } else {
     throw new Error('Provide a valid and supported type');
   }
-
-  //   return {
-  //     fields(fields: Array<{ name: string; maxCount?: number }>) {
-
-  //     },
-
-  //     none() {
-  //       return makeMiddleware(
-  //         () =>
-  //           ({
-  //             ...options,
-  //             fileStrategy: 'NONE',
-  //             fields: [],
-  //           } as UploadConfig),
-  //       );
-  //     },
-
-  //     any() {
-  //       return makeMiddleware(
-  //         () =>
-  //           ({
-  //             ...options,
-  //             fileStrategy: 'ARRAY',
-  //           } as UploadConfig),
-  //       );
-  //     },
-  //   };
 }
 
 export const fileUploader = createUploadMiddleware;

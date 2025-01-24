@@ -14,39 +14,38 @@ import { diskStorage, fileUploader, memoryStorage } from './file_uploader';
  */
 
 export const useFileUploader =
-  ({ storage, fileFilter, extensions }: UploadOptions) =>
+  ({ storage, fileFilter, extensions, type, fieldname, fields, limit, maxCount }: UploadOptions) =>
   (req, res: DResponse, next) => {
-    let filter = fileFilter;
+    let _filter = fileFilter;
 
-    if (filter) {
-      let _extensions = defaultFileExtensions;
+    if (!_filter) {
+      let _extensions = extensions?.length ? extensions : defaultFileExtensions;
 
-      if (extensions?.length) {
-        _extensions = extensions;
-      }
-
-      filter = (req: DRequest, file: FileInfo, callback) => {
+      _filter = (req: DRequest, file: FileInfo, callback) => {
         const extensionCheck = _extensions.includes(extname(file.originalname).toLowerCase());
 
         if (!extensionCheck && file.originalname !== 'blob') {
-          callback(next(res.status(400).json({ message: 'The media file you sent is not unsupported' })), false);
-        } else {
-          callback(null, true);
+          return callback(new Error('Unsupported media file'), false);
         }
+
+        return callback(null, true);
       };
     }
 
-    fileUploader({
+    const uploadMiddleware = fileUploader({
       storage: storage || memoryStorage(),
       limits: {
-        fileSize: 5 * 1024 * 1024, // 5MB
+        fileSize: limit || 5 * 1024 * 1024, // 5MB
       },
-      fileFilter: filter,
-      type: 'single',
-      fieldname: 'upload',
+      fileFilter: _filter,
+      type,
+      fieldname,
+      maxCount,
+      limit,
+      fields,
     });
 
-    next();
+    uploadMiddleware(req, res, next);
   };
 
 export { fileUploader, diskStorage, memoryStorage };

@@ -10,12 +10,14 @@ describe('File Uploader Test', () => {
   beforeEach(() => {
     upload = fileUploader({
       storage: diskStorage({ destination: join(__dirname, 'uploads') }),
+      type: 'single', // Add this to match current fileUploader implementation
+      fieldname: 'avatar', // Add a default fieldname
     });
     mockNext.mockClear();
   });
 
   test('single file upload should work correctly', (done) => {
-    const middleware = upload.single('avatar');
+    const middleware = upload;
 
     const mockFileStream = new Readable();
     mockFileStream.push('test file content');
@@ -58,7 +60,14 @@ describe('File Uploader Test', () => {
   }, 15000);
 
   test('array upload should handle multiple files', (done) => {
-    const middleware = upload.array('photos', 3);
+    const upload = fileUploader({
+      type: 'array',
+      fieldname: 'photos',
+      maxCount: 3,
+      storage: diskStorage({ destination: join(__dirname, 'uploads') }),
+    });
+
+    const middleware = upload;
 
     const mockFileStream = new Readable();
     mockFileStream.push('test file content');
@@ -108,7 +117,7 @@ describe('File Uploader Test', () => {
   }, 15000);
 
   test('should handle non-multipart requests', (done) => {
-    const middleware = upload.single('avatar');
+    const middleware = upload;
 
     const mockRequest = {
       headers: {
@@ -126,10 +135,17 @@ describe('File Uploader Test', () => {
   });
 
   test('fields upload should handle multiple fields', (done) => {
-    const middleware = upload.fields([
-      { name: 'avatar', maxCount: 1 },
-      { name: 'gallery', maxCount: 3 },
-    ]);
+    const upload = fileUploader({
+      type: 'fields',
+      fields: [
+        { name: 'avatar', maxCount: 1 },
+        { name: 'gallery', maxCount: 3 },
+      ],
+      fieldname: 'upload',
+      storage: diskStorage({ destination: join(__dirname, 'uploads') }),
+    });
+
+    const middleware = upload;
 
     const mockFileStream = new Readable();
     mockFileStream.push('test file content');

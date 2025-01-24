@@ -24,6 +24,7 @@ import { diskStorage, fileUploader, useFileUploader } from '../../../../../packa
 
 @Route('user')
 export class UserController extends DolphControllerHandler<Dolph> {
+  private name = 'utibe';
   constructor() {
     super();
   }
@@ -36,12 +37,20 @@ export class UserController extends DolphControllerHandler<Dolph> {
   // Make a wrapper that returns the function : req: DRequest, res: DResponse, next: DNextFunc
 
   @Post('')
-  @UseMiddleware(useFileUploader({ type: 'single' }))
+  @UseMiddleware(
+    useFileUploader({
+      type: 'single',
+      fieldname: 'upload',
+      // storage: diskStorage({
+      //   destination: './uploads',
+      //   filename: (req, file, cb) => {
+      //     cb(null, Date.now() + '-' + file.originalname);
+      //   },
+      // }),
+    }),
+  )
   async post(req: DRequest, res: DResponse) {
-    console.log(req.file);
-    console.log('Request file and request files');
-    console.log(req.files);
-    throw new InternalServerErrorException('Here is an error, big time one');
+    console.log('name: ', this.name);
     SuccessResponse({ res, body: req.body });
   }
 }

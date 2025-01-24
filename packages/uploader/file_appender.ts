@@ -60,7 +60,6 @@ export class FileAppender {
       this.request.file = file;
       return;
     }
-
     delete placeholder.fieldname;
     Object.assign(placeholder, file);
   }
