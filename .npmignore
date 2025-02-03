@@ -6,8 +6,26 @@ log
 yarn-error.log
 tslint.json
 tsconfig.json
+tsconfig.spec.json
 .prettierrc
 
 *.tsbuildinfo
 
 views
+samples
+
+README.md
+renovate.json
+todo.txt
+LICENSE
+jset.setup.js
+jest.config.js
+gulpfile.js
+CONTRIBUTING.md
+compile.sh
+.prettierrignore
+.gitignore
+.gitattributes
+.editorconfig
+.eslintrc.js
+.eslintignore

@@ -1,7 +1,9 @@
-hide other fields except message field for exceptions
-fix bug with argon
+1. Add the globalExceptionFilter documentation to the docs which means no need to wrap methods with TryCatchAsync anymore
+2. Add notice that the moment library has been removed on release of v2.
+3. The former hashing functions have been deprecated and replaced with new ones, should be added to the README
+4. maxCount field on fileUploader is useless atm and should be worked on
+5. Add documentation for the fileUploader function as MediaParser has been removed
 
-on the CLI, add @types/express as a devDependency for all ts projects
 
 ----------
 Write tests for:
@@ -17,18 +19,12 @@ Write tests for:
 - Configuration
 - Dependency Injection
 - Logging and Debugging
-- 
 ----------
 
 
-🚀 Rocket: Represents launching something new, going live, or reaching new heights.
-
-✨ Sparkles: Indicates something shiny, new, and exciting.
-
-🎉 Party Popper: Suggests celebration and excitement for the introduction of a new feature.
-
-🆕 NEW Button: Specifically denotes something new.
-
-🌟 Star: Signifies something special or noteworthy.
-
-🛠️ Wrench: Symbolizes improvements or enhancements to existing functionality.
+ * const payload: IPayload = {
+     iat: Math.floor(Date.now() / 1000),
+     exp: Math.floor(exp.getTime() / 1000),
+     sub: sub,
+     info: info,
+   };

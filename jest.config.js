@@ -9,5 +9,9 @@ module.exports = {
   transform: {
     '^.+\\.ts?$': 'ts-jest',
   },
+  transformIgnorePatterns: [
+    'node_modules/(?!(fs-temp|random-path)/)'
+  ],
+  setupFilesAfterEnv: ['<rootDir>/jest.setup.js']
   //   moduleNameMapper: pathsToModuleNameMapper(compilerOptions.paths, { prefix: '<rootDir>' }),
 };

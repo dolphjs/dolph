@@ -5,7 +5,7 @@ describe('DolphJs Integration Test', () => {
   let server;
 
   beforeAll(() => {
-    const app = new DolphFactory();
+    const app = new DolphFactory([]);
     server = app.start();
   });
 

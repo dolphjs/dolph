@@ -1,7 +1,14 @@
-import { InternalServerErrorException } from '@dolphjs/dolph/common';
 import { DolphControllerHandler } from '../../../../../classes';
-import { Dolph, SuccessResponse, DRequest, DResponse } from '../../../../../common';
-import { Get, Post, Route } from '../../../../../decorators';
+import {
+  Dolph,
+  SuccessResponse,
+  DRequest,
+  DResponse,
+  InternalServerErrorException,
+  Middleware,
+} from '../../../../../common';
+import { Get, Post, Route, UseMiddleware } from '../../../../../decorators';
+import { diskStorage, fileUploader, useFileUploader } from '../../../../../packages';
 
 @Route('user')
 export class UserController extends DolphControllerHandler<Dolph> {
@@ -14,9 +21,25 @@ export class UserController extends DolphControllerHandler<Dolph> {
     SuccessResponse({ res, body: { message: "you've reached the user endpoint." } });
   }
 
+  // Make a wrapper that returns the function : req: DRequest, res: DResponse, next: DNextFunc
+
   @Post('')
+  @UseMiddleware(
+    useFileUploader({
+      type: 'array',
+      fieldname: 'upload',
+      maxCount: 2,
+
+      // storage: diskStorage({
+      //   destination: './uploads',
+      //   filename: (req, file, cb) => {
+      //     cb(null, Date.now() + '-' + file.originalname);
+      //   },
+      // }),
+    }),
+  )
   async post(req: DRequest, res: DResponse) {
-    throw new InternalServerErrorException('Here is an error, big time one');
+    console.log('req.files: ', req.file);
     SuccessResponse({ res, body: req.body });
   }
 }
