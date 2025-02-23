@@ -1,29 +1,29 @@
 import { EventEmitter } from 'stream';
 
 export class Counter extends EventEmitter {
-  private value: number = 0;
+    private value: number = 0;
 
-  increment(): void {
-    this.value++;
-  }
-
-  decrement(): void {
-    this.value--;
-    if (this.value < 0) this.value = 0;
-    if (this.value === 0) {
-      this.emit('zero');
+    increment(): void {
+        this.value++;
     }
-  }
 
-  isZero(): boolean {
-    return this.value === 0;
-  }
-
-  onceZero(fn: () => void): void {
-    if (this.isZero()) {
-      fn();
-    } else {
-      this.once('zero', fn);
+    decrement(): void {
+        this.value--;
+        if (this.value < 0) this.value = 0;
+        if (this.value === 0) {
+            this.emit('zero');
+        }
     }
-  }
+
+    isZero(): boolean {
+        return this.value === 0;
+    }
+
+    onceZero(fn: () => void): void {
+        if (this.isZero()) {
+            fn();
+        } else {
+            this.once('zero', fn);
+        }
+    }
 }

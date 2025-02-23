@@ -1,26 +1,26 @@
 import { RequestHandler } from 'express';
 
 class MiddlewareRegistry {
-  private static instance: MiddlewareRegistry;
-  private middlewares: RequestHandler[] = [];
+    private static instance: MiddlewareRegistry;
+    private middlewares: RequestHandler[] = [];
 
-  private constructor() {}
+    private constructor() {}
 
-  public static getInstance(): MiddlewareRegistry {
-    if (!MiddlewareRegistry.instance) {
-      MiddlewareRegistry.instance = new MiddlewareRegistry();
+    public static getInstance(): MiddlewareRegistry {
+        if (!MiddlewareRegistry.instance) {
+            MiddlewareRegistry.instance = new MiddlewareRegistry();
+        }
+
+        return MiddlewareRegistry.instance;
     }
 
-    return MiddlewareRegistry.instance;
-  }
+    public register(middleware: RequestHandler) {
+        this.middlewares.push(middleware);
+    }
 
-  public register(middleware: RequestHandler) {
-    this.middlewares.push(middleware);
-  }
-
-  public getMiddlewares(): RequestHandler[] {
-    return this.middlewares;
-  }
+    public getMiddlewares(): RequestHandler[] {
+        return this.middlewares;
+    }
 }
 
 export const middlewareRegistry = MiddlewareRegistry.getInstance();

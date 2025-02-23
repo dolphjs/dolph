@@ -1,21 +1,29 @@
 {
-  "include": ["utilities/**/*", "common/**/*", "core/**/*", "decorators/**/*", "packages/**/*", "classes/**/*", "index.ts"],
-  "exclude": ["node_modules"],
-  "compilerOptions": {
-    "allowJs": false,
-    "declaration": true,
-    "experimentalDecorators": true,
-    "sourceMap": true,
-    "useUnknownInCatchVariables": false,
-    "esModuleInterop": true,
-    "strictFunctionTypes": false,
-    "emitDeclarationOnly": false,
-    "emitDecoratorMetadata": true,
-    "declarationMap": false,
-    "target": "ES2022",
-    "rootDir": ".",
-    "outDir": "dist",
-    "pretty": true,
-    "module": "commonjs"
-  }
+    "include": [
+        "utilities/**/*",
+        "common/**/*",
+        "core/**/*",
+        "decorators/**/*",
+        "packages/**/*",
+        "classes/**/*",
+        "index.ts"
+    ],
+    "exclude": ["node_modules"],
+    "compilerOptions": {
+        "allowJs": false,
+        "declaration": true,
+        "experimentalDecorators": true,
+        "sourceMap": true,
+        "useUnknownInCatchVariables": false,
+        "esModuleInterop": true,
+        "strictFunctionTypes": false,
+        "emitDeclarationOnly": false,
+        "emitDecoratorMetadata": true,
+        "declarationMap": false,
+        "target": "ES2022",
+        "rootDir": ".",
+        "outDir": "dist",
+        "pretty": true,
+        "module": "commonjs"
+    }
 }

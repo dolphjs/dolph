@@ -1,1 +1,1 @@
-export * from './validations.decorators'
+export * from './validations.decorators';

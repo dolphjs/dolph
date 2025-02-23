@@ -21,37 +21,37 @@ import { diskStorage, fileUploader, memoryStorage } from './file_uploader';
  *
  */
 export const useFileUploader =
-  ({ storage, fileFilter, extensions, type, fieldname, fields, limit, maxCount }: UploadOptions) =>
-  (req, res: DResponse, next) => {
-    let _filter = fileFilter;
+    ({ storage, fileFilter, extensions, type, fieldname, fields, limit, maxCount }: UploadOptions) =>
+    (req, res: DResponse, next) => {
+        let _filter = fileFilter;
 
-    if (!_filter) {
-      let _extensions = extensions?.length ? extensions : defaultFileExtensions;
+        if (!_filter) {
+            let _extensions = extensions?.length ? extensions : defaultFileExtensions;
 
-      _filter = (req: DRequest, file: FileInfo, callback) => {
-        const extensionCheck = _extensions.includes(extname(file.originalname).toLowerCase());
+            _filter = (req: DRequest, file: FileInfo, callback) => {
+                const extensionCheck = _extensions.includes(extname(file.originalname).toLowerCase());
 
-        if (!extensionCheck && file.originalname !== 'blob') {
-          return callback(new Error('Unsupported media file'), false);
+                if (!extensionCheck && file.originalname !== 'blob') {
+                    return callback(new Error('Unsupported media file'), false);
+                }
+
+                return callback(null, true);
+            };
         }
 
-        return callback(null, true);
-      };
-    }
+        const uploadMiddleware = fileUploader({
+            storage: storage || memoryStorage(),
+            limits: {
+                fileSize: limit || 5 * 1024 * 1024, // 5MB
+            },
+            fieldname: fieldname || 'upload',
+            fileFilter: _filter,
+            type,
+            maxCount,
+            fields,
+        });
 
-    const uploadMiddleware = fileUploader({
-      storage: storage || memoryStorage(),
-      limits: {
-        fileSize: limit || 5 * 1024 * 1024, // 5MB
-      },
-      fieldname: fieldname || 'upload',
-      fileFilter: _filter,
-      type,
-      maxCount,
-      fields,
-    });
-
-    uploadMiddleware(req, res, next);
-  };
+        uploadMiddleware(req, res, next);
+    };
 
 export { fileUploader, diskStorage, memoryStorage };

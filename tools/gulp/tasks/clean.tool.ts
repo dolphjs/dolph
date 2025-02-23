@@ -8,10 +8,10 @@ import * as deleteEmpty from 'delete-empty';
  */
 
 function cleanOutput() {
-  // `${source}/**/*.d.ts`;
-  return src([`${source}/**/*.js`, `${source}/**/*.js.map`, `${source}/**/*.d.ts.map`], {
-    read: false,
-  }).pipe(clean());
+    // `${source}/**/*.d.ts`;
+    return src([`${source}/**/*.js`, `${source}/**/*.js.map`, `${source}/**/*.d.ts.map`], {
+        read: false,
+    }).pipe(clean());
 }
 
 /**
@@ -19,8 +19,8 @@ function cleanOutput() {
  */
 
 function cleanDirs(done: () => void) {
-  deleteEmpty.sync(`${source}/`);
-  done();
+    deleteEmpty.sync(`${source}/`);
+    done();
 }
 
 task('clean:output', cleanOutput);

@@ -4,13 +4,13 @@ import { DSocket } from '../../common/interfaces/socket.interfaces';
 
 @Service()
 export class SocketService {
-  private socketIo: SocketServer;
+    private socketIo: SocketServer;
 
-  constructor(params: DSocket) {
-    this.socketIo = new SocketServer(params.server, params.options);
-  }
+    constructor(params: DSocket) {
+        this.socketIo = new SocketServer(params.server, params.options);
+    }
 
-  public getSocket(): SocketServer {
-    return this.socketIo;
-  }
+    public getSocket(): SocketServer {
+        return this.socketIo;
+    }
 }

@@ -6,24 +6,24 @@ import { AppService } from './app.service';
 
 @DService()
 export class NewService extends DolphServiceHandler<Dolph> {
-  private emitterService: EventEmitterService = new EventEmitterService();
-  private AppService: AppService;
+    private emitterService: EventEmitterService = new EventEmitterService();
+    private AppService: AppService;
 
-  constructor() {
-    super('newService');
-  }
+    constructor() {
+        super('newService');
+    }
 
-  logger() {
-    this.emitterService.emitEvent('test');
-    console.log('Okay, reached');
-  }
+    logger() {
+        this.emitterService.emitEvent('test');
+        console.log('Okay, reached');
+    }
 
-  newA() {
-    return this.AppService.greeting({ name: 'Aemn', age: 12 });
-  }
+    newA() {
+        return this.AppService.greeting({ name: 'Aemn', age: 12 });
+    }
 
-  @OnEvent('test')
-  test() {
-    console.log('it works');
-  }
+    @OnEvent('test')
+    test() {
+        console.log('it works');
+    }
 }

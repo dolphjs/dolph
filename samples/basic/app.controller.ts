@@ -10,74 +10,74 @@ import { authFunc } from './app.auth_function';
 
 @InjectServiceHandler([{ serviceHandler: AppService, serviceName: 'appservice' }])
 class ControllerService {
-  appservice!: AppService;
+    appservice!: AppService;
 }
 
 const controllerServices = new ControllerService();
 class AppController extends DolphControllerHandler<Dolph> {
-  constructor() {
-    super();
-    this.createUser = this.createUser.bind(this);
-  }
+    constructor() {
+        super();
+        this.createUser = this.createUser.bind(this);
+    }
 
-  public readonly sendGreeting = TryCatchFn((req: DRequest, res: DResponse) => {
-    const { body } = req;
-    const response = controllerServices.appservice.greeting(body);
-    SuccessResponse({ res, msg: response });
-  });
-
-  @TryCatchAsyncDec
-  @JWTAuthVerifyDec('random_secret')
-  // @JWTAuthorizeDec('random_secret', authFunc)
-  @MediaParser({ fieldname: 'upload', type: 'single', extensions: ['.png'] })
-  public async createUser(req: DRequest, res: DResponse) {
-    const { body, file } = req;
-    if (body.height < 1.7) throw new BadRequestException('sorry, you are too short for this program');
-    const data = await controllerServices.appservice.createUser(body);
-    SuccessResponse({ res, body: { data, file: file, payload: req.payload } });
-  }
-
-  public readonly register = TryCatchAsyncFn(async (req: DRequest, res: DResponse, next: DNextFunc) => {
-    const { username } = req.body;
-    console.log(req.file);
-    const token = generateJWTwithHMAC({
-      payload: {
-        exp: moment().add(30000, 'seconds').unix(),
-        iat: moment().unix(),
-        sub: username,
-      },
-      secret: 'random_secret',
-    });
-    SuccessResponse({ res, body: token });
-  });
-
-  @TryCatchAsyncDec
-  public async testMysql(req: DRequest, res: DResponse) {
-    const { username, age } = req.body;
-    console.log(username, age);
-    const result = await controllerServices.appservice.createSQLUser({ username, age });
-    SuccessResponse({ res, body: result });
-  }
-
-  @TryCatchAsyncDec
-  public async testCookieFn(req: DRequest, res: DResponse) {
-    const cookieValue = newAuthCookie('user_id_00', 100000, 'random_secret', { info: 'yeah' });
-    res.cookie(cookieValue.name, cookieValue.value, {
-      expires: cookieValue.expires,
-      secure: cookieValue.secure,
-      httpOnly: cookieValue.httpOnly,
+    public readonly sendGreeting = TryCatchFn((req: DRequest, res: DResponse) => {
+        const { body } = req;
+        const response = controllerServices.appservice.greeting(body);
+        SuccessResponse({ res, msg: response });
     });
 
-    res.send('done');
-  }
+    @TryCatchAsyncDec
+    @JWTAuthVerifyDec('random_secret')
+    // @JWTAuthorizeDec('random_secret', authFunc)
+    @MediaParser({ fieldname: 'upload', type: 'single', extensions: ['.png'] })
+    public async createUser(req: DRequest, res: DResponse) {
+        const { body, file } = req;
+        if (body.height < 1.7) throw new BadRequestException('sorry, you are too short for this program');
+        const data = await controllerServices.appservice.createUser(body);
+        SuccessResponse({ res, body: { data, file: file, payload: req.payload } });
+    }
 
-  @TryCatchAsyncDec
-  @CookieAuthVerifyDec('random_secret')
-  public async testCookieVerify(req: DRequest, res: DResponse) {
-    const payload = req.payload;
+    public readonly register = TryCatchAsyncFn(async (req: DRequest, res: DResponse, next: DNextFunc) => {
+        const { username } = req.body;
+        console.log(req.file);
+        const token = generateJWTwithHMAC({
+            payload: {
+                exp: moment().add(30000, 'seconds').unix(),
+                iat: moment().unix(),
+                sub: username,
+            },
+            secret: 'random_secret',
+        });
+        SuccessResponse({ res, body: token });
+    });
 
-    res.json(payload);
-  }
+    @TryCatchAsyncDec
+    public async testMysql(req: DRequest, res: DResponse) {
+        const { username, age } = req.body;
+        console.log(username, age);
+        const result = await controllerServices.appservice.createSQLUser({ username, age });
+        SuccessResponse({ res, body: result });
+    }
+
+    @TryCatchAsyncDec
+    public async testCookieFn(req: DRequest, res: DResponse) {
+        const cookieValue = newAuthCookie('user_id_00', 100000, 'random_secret', { info: 'yeah' });
+        res.cookie(cookieValue.name, cookieValue.value, {
+            expires: cookieValue.expires,
+            secure: cookieValue.secure,
+            httpOnly: cookieValue.httpOnly,
+        });
+
+        res.send('done');
+    }
+
+    @TryCatchAsyncDec
+    @CookieAuthVerifyDec('random_secret')
+    public async testCookieVerify(req: DRequest, res: DResponse) {
+        const payload = req.payload;
+
+        res.json(payload);
+    }
 }
 // const appController = new AppController();
 export { AppController };

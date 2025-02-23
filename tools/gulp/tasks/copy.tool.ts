@@ -1,19 +1,19 @@
 import { dest, series, src, task } from 'gulp';
 
 function copyPackageJson(): NodeJS.ReadWriteStream {
-  return src('package.json').pipe(dest('dist'));
+    return src('package.json').pipe(dest('dist'));
 }
 
 function copyReadme(): NodeJS.ReadWriteStream {
-  return src('README.md').pipe(dest('dist'));
+    return src('README.md').pipe(dest('dist'));
 }
 
 function copyLicense(): NodeJS.ReadWriteStream {
-  return src('LICENSE').pipe(dest('dist'));
+    return src('LICENSE').pipe(dest('dist'));
 }
 
 function copyNpmIgnore(): NodeJS.ReadWriteStream {
-  return src('.npmignore').pipe(dest('dist'));
+    return src('.npmignore').pipe(dest('dist'));
 }
 
 task('copy:package-json', copyPackageJson);

@@ -23,9 +23,9 @@ MVCAdapter.setStaticAssets(path.join(__dirname, 'public'));
 MVCAdapter.setViewsDir(path.join(__dirname, 'views'));
 
 const dolph = new DolphFactory([AppComponent], {
-  options: { cors: { origin: '*' } },
-  socketService: SocketService,
-  component: new EventsComponent(),
+    options: { cors: { origin: '*' } },
+    socketService: SocketService,
+    component: new EventsComponent(),
 });
 
 dolph.start();

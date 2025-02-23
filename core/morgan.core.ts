@@ -11,11 +11,11 @@ const successResponseFormat = `${getIpFormat()}:method :url :status - :response-
 const errorResponseFormat = `${getIpFormat()}:method :url :status - :response-time ms - message: :message`;
 
 export const successHandler = morgan(successResponseFormat, {
-  skip: (req: DRequest, res: DResponse) => res.statusCode >= 400,
-  stream: { write: (message) => logger.info(clc.blackBright(message.trim())) },
+    skip: (req: DRequest, res: DResponse) => res.statusCode >= 400,
+    stream: { write: (message) => logger.info(clc.blackBright(message.trim())) },
 });
 
 export const morganErrorHandler = morgan(errorResponseFormat, {
-  skip: (req: DRequest, res: DResponse) => res.statusCode < 400,
-  stream: { write: (message) => logger.error(clc.redBright(message.trim())) },
+    skip: (req: DRequest, res: DResponse) => res.statusCode < 400,
+    stream: { write: (message) => logger.error(clc.redBright(message.trim())) },
 });

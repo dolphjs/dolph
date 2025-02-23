@@ -14,10 +14,10 @@ import { Dolph } from '../common';
  * @version 1.0.0
  */
 abstract class DolphServiceHandler<T extends Dolph> {
-  public name: string;
-  constructor(name: T) {
-    this.name = name;
-  }
+    public name: string;
+    constructor(name: T) {
+        this.name = name;
+    }
 }
 
 export { DolphServiceHandler };

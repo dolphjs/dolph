@@ -5,9 +5,9 @@ import { UserComponent } from './components/user/user.component';
 // import { UserComponent } from './components/user/user.component';
 
 const schema = async function createSchema() {
-  return await buildSchema({
-    resolvers: [UserResolver],
-  });
+    return await buildSchema({
+        resolvers: [UserResolver],
+    });
 };
 
 const context = async ({ req }) => ({ token: req.headers.token });

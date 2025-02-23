@@ -11,7 +11,7 @@ import { boolean } from 'joi';
  * @deprecated use `hashString` instead
  */
 const hashWithBcrypt = async ({ pureString, salt }: bcryptHashParam): Promise<string> => {
-  return hashSync(pureString, salt ? salt : await genSalt(11));
+    return hashSync(pureString, salt ? salt : await genSalt(11));
 };
 
 /**
@@ -23,7 +23,7 @@ const hashWithBcrypt = async ({ pureString, salt }: bcryptHashParam): Promise<st
  * @version 2.0
  */
 const hashString = async (pureString: string, salt: number = 11): Promise<string> => {
-  return hashSync(pureString, await genSalt(salt));
+    return hashSync(pureString, await genSalt(salt));
 };
 
 /**
@@ -36,7 +36,7 @@ const hashString = async (pureString: string, salt: number = 11): Promise<string
  *
  */
 const compareWithBcryptHash = ({ pureString, hashString }: bcryptCompareParam): boolean => {
-  return compareSync(pureString, hashString);
+    return compareSync(pureString, hashString);
 };
 
 /**
@@ -48,7 +48,7 @@ const compareWithBcryptHash = ({ pureString, hashString }: bcryptCompareParam): 
  * @version 2.0
  */
 const compareHashedString = (pureString: string, hashString: string): boolean => {
-  return compareSync(pureString, hashString);
+    return compareSync(pureString, hashString);
 };
 
 export { compareWithBcryptHash, hashWithBcrypt, compareHashedString, hashString };

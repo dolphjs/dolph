@@ -8,34 +8,34 @@ import { verifyJWTwithHMAC } from '../../utilities';
  * @version 1.0
  */
 export const CookieAuthVerifyDec = (tokenSecret: string) => {
-  return (_target: any, _propertyKey: string, descriptor?: TypedPropertyDescriptor<any>) => {
-    const originalMethod = descriptor.value;
+    return (_target: any, _propertyKey: string, descriptor?: TypedPropertyDescriptor<any>) => {
+        const originalMethod = descriptor.value;
 
-    // convert to normal func
+        // convert to normal func
 
-    descriptor.value = (req: DRequest, res: DResponse, next: DNextFunc) => {
-      try {
-        const context = this;
+        descriptor.value = (req: DRequest, res: DResponse, next: DNextFunc) => {
+            try {
+                const context = this;
 
-        if (!req.cookies)
-          return next(new ErrorException('user not authorized, login and try again', HttpStatus.UNAUTHORIZED));
+                if (!req.cookies)
+                    return next(new ErrorException('user not authorized, login and try again', HttpStatus.UNAUTHORIZED));
 
-        const { xAuthToken } = req.cookies;
+                const { xAuthToken } = req.cookies;
 
-        if (!xAuthToken)
-          return next(new ErrorException('user not authorized, login and try again', HttpStatus.UNAUTHORIZED));
+                if (!xAuthToken)
+                    return next(new ErrorException('user not authorized, login and try again', HttpStatus.UNAUTHORIZED));
 
-        let payload: IPayload;
+                let payload: IPayload;
 
-        //@ts-expect-error
-        payload = verifyJWTwithHMAC({ token: xAuthToken, secret: tokenSecret });
+                //@ts-expect-error
+                payload = verifyJWTwithHMAC({ token: xAuthToken, secret: tokenSecret });
 
-        req.payload = payload;
+                req.payload = payload;
 
-        return originalMethod.apply(context, [req, res, next]);
-      } catch (e) {
-        throw e;
-      }
+                return originalMethod.apply(context, [req, res, next]);
+            } catch (e) {
+                throw e;
+            }
+        };
     };
-  };
 };

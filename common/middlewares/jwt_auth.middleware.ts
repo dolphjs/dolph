@@ -10,12 +10,12 @@ import { DNextFunc, DRequest, DResponse } from '../interfaces';
  *  - see `IPayload` interface to see the design of the payload object
  */
 function JwtAuthMiddleware(jwtBasicAuthInstance: JwtBasicAuth) {
-  return TryCatchAsyncFn(async (req: DRequest, res: DResponse, next: DNextFunc) => {
-    const payload = await jwtBasicAuthInstance.Verify(req, res, next);
-    //@ts-expect-error
-    req.payload = payload;
-    next();
-  });
+    return TryCatchAsyncFn(async (req: DRequest, res: DResponse, next: DNextFunc) => {
+        const payload = await jwtBasicAuthInstance.Verify(req, res, next);
+        //@ts-expect-error
+        req.payload = payload;
+        next();
+    });
 }
 
 export { JwtAuthMiddleware };

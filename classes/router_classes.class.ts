@@ -15,10 +15,10 @@ import { Dolph } from '../common';
  * @version 1.0.9
  */
 abstract class DolphRouteHandler<T extends Dolph> {
-  abstract path: T;
-  abstract initRoutes(): void;
-  public router = Router();
-  abstract controller: DolphControllerHandler<T>;
+    abstract path: T;
+    abstract initRoutes(): void;
+    public router = Router();
+    abstract controller: DolphControllerHandler<T>;
 }
 
 export { DolphRouteHandler };

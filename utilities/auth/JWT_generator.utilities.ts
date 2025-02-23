@@ -9,8 +9,8 @@ import { readFileSync } from 'fs';
  * @version 1.0.0
  */
 const generateJWTwithHMAC = ({ payload, secret }: { payload: IPayload; secret: string }): string => {
-  const token = JWT.sign(payload, secret);
-  return token;
+    const token = JWT.sign(payload, secret);
+    return token;
 };
 
 /**
@@ -20,9 +20,9 @@ const generateJWTwithHMAC = ({ payload, secret }: { payload: IPayload; secret: s
  * @version 1.0.0
  */
 const verifyJWTwithHMAC = ({ token, secret }: { token: string | string[]; secret: string }): string | JWT.JwtPayload => {
-  //@ts-expect-error
-  const payload = JWT.verify(token, secret);
-  return payload;
+    //@ts-expect-error
+    const payload = JWT.verify(token, secret);
+    return payload;
 };
 
 /**
@@ -32,9 +32,9 @@ const verifyJWTwithHMAC = ({ token, secret }: { token: string | string[]; secret
  * @version 1.0.0
  */
 const generateJWTwithRSA = ({ pathToPrivateKey, payload }: { pathToPrivateKey: string; payload: IPayload }): string => {
-  const privateKey = readFileSync(pathToPrivateKey, 'utf8');
-  const token = JWT.sign(payload, privateKey, { algorithm: 'RS256' });
-  return token;
+    const privateKey = readFileSync(pathToPrivateKey, 'utf8');
+    const token = JWT.sign(payload, privateKey, { algorithm: 'RS256' });
+    return token;
 };
 
 /**
@@ -44,20 +44,20 @@ const generateJWTwithRSA = ({ pathToPrivateKey, payload }: { pathToPrivateKey: s
  * @version 1.0.0
  */
 const verifyJWTwithRSA = ({
-  pathToPublicKey,
-  token,
+    pathToPublicKey,
+    token,
 }: {
-  pathToPublicKey: string;
-  token: string | string[];
+    pathToPublicKey: string;
+    token: string | string[];
 }): string | JWT.JwtPayload => {
-  const publicKey = readFileSync(pathToPublicKey, 'utf8');
-  try {
-    //@ts-expect-error
-    const payload = JWT.verify(token, publicKey, { algorithms: ['RS256'] });
-    return payload;
-  } catch (e) {
-    throw e;
-  }
+    const publicKey = readFileSync(pathToPublicKey, 'utf8');
+    try {
+        //@ts-expect-error
+        const payload = JWT.verify(token, publicKey, { algorithms: ['RS256'] });
+        return payload;
+    } catch (e) {
+        throw e;
+    }
 };
 
 export { generateJWTwithHMAC, verifyJWTwithHMAC, verifyJWTwithRSA, generateJWTwithRSA };

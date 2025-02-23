@@ -10,12 +10,12 @@ import { Sequelize } from 'sequelize';
  * @version 1.0.0
  */
 const initMySql = (name: string, user: string, password: string, host: string) => {
-  const sequelize = new Sequelize(name, user, password, {
-    dialect: 'mysql',
-    host: host || 'localhost',
-  });
-  // DolphSequelize = sequelize;
-  return sequelize;
+    const sequelize = new Sequelize(name, user, password, {
+        dialect: 'mysql',
+        host: host || 'localhost',
+    });
+    // DolphSequelize = sequelize;
+    return sequelize;
 };
 
 /**
@@ -27,14 +27,14 @@ const initMySql = (name: string, user: string, password: string, host: string) =
  * @version 1.0.0
  */
 const autoInitMySql = (sequelize: Sequelize) => {
-  sequelize
-    .sync()
-    .then((_res) => {
-      logger.info(clc.blueBright('MYSQL CONNECTED'));
-    })
-    .catch((err: any) => {
-      logger.error(clc.red(err));
-    });
+    sequelize
+        .sync()
+        .then((_res) => {
+            logger.info(clc.blueBright('MYSQL CONNECTED'));
+        })
+        .catch((err: any) => {
+            logger.error(clc.red(err));
+        });
 };
 
 export { initMySql, autoInitMySql };

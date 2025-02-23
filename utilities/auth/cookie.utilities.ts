@@ -12,32 +12,32 @@ import { generateJWTwithHMAC, verifyJWTwithHMAC } from './JWT_generator.utilitie
  * @version 2
  */
 export const newAuthCookie = (sub: sub, exp: Date, secret: string, info?: string | object | []): cookieContent => {
-  const payload: IPayload = {
-    iat: Math.floor(Date.now() / 1000),
-    exp: Math.floor(exp.getTime() / 1000),
-    sub: sub,
-    info: info,
-  };
-  const token = generateJWTwithHMAC({ payload, secret });
+    const payload: IPayload = {
+        iat: Math.floor(Date.now() / 1000),
+        exp: Math.floor(exp.getTime() / 1000),
+        sub: sub,
+        info: info,
+    };
+    const token = generateJWTwithHMAC({ payload, secret });
 
-  const options = {
-    expires: new Date(exp.getTime()),
-    httpOnly: false,
-    secure: false,
-  };
+    const options = {
+        expires: new Date(exp.getTime()),
+        httpOnly: false,
+        secure: false,
+    };
 
-  if (configs.NODE_ENV !== 'development') {
-    options.httpOnly = true;
-    options.secure = true;
-  }
+    if (configs.NODE_ENV !== 'development') {
+        options.httpOnly = true;
+        options.secure = true;
+    }
 
-  return {
-    name: 'xAuthToken',
-    value: token,
-    expires: options.expires,
-    httpOnly: options.httpOnly,
-    secure: options.secure,
-  };
+    return {
+        name: 'xAuthToken',
+        value: token,
+        expires: options.expires,
+        httpOnly: options.httpOnly,
+        secure: options.secure,
+    };
 };
 
 /**
@@ -46,19 +46,19 @@ export const newAuthCookie = (sub: sub, exp: Date, secret: string, info?: string
  * @version 1.1
  */
 export const cookieAuthVerify = (tokenSecret: string) => (req: DRequest, _res: DResponse, next: DNextFunc) => {
-  const cookies = req.cookies;
+    const cookies = req.cookies;
 
-  if (!cookies) return next(new ErrorException('user not authorized, login and try again', HttpStatus.UNAUTHORIZED));
+    if (!cookies) return next(new ErrorException('user not authorized, login and try again', HttpStatus.UNAUTHORIZED));
 
-  const { xAuthToken } = cookies;
+    const { xAuthToken } = cookies;
 
-  if (!xAuthToken) return next(new ErrorException('user not authorized, login and try again', HttpStatus.UNAUTHORIZED));
+    if (!xAuthToken) return next(new ErrorException('user not authorized, login and try again', HttpStatus.UNAUTHORIZED));
 
-  let payload: IPayload;
+    let payload: IPayload;
 
-  //@ts-expect-error
-  payload = verifyJWTwithHMAC({ token: xAuthToken, secret: tokenSecret });
+    //@ts-expect-error
+    payload = verifyJWTwithHMAC({ token: xAuthToken, secret: tokenSecret });
 
-  req.payload = payload;
-  next();
+    req.payload = payload;
+    next();
 };

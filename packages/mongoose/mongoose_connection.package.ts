@@ -11,8 +11,8 @@ import clc from 'cli-color';
  * @version 1.0.0
  */
 const initMongo = (config: MongooseConfig): Promise<typeof mongoose> => {
-  mongoose.set('strictQuery', false);
-  return mongoose.connect(config.url, config.options);
+    mongoose.set('strictQuery', false);
+    return mongoose.connect(config.url, config.options);
 };
 
 /**
@@ -24,13 +24,13 @@ const initMongo = (config: MongooseConfig): Promise<typeof mongoose> => {
  * @version 1.0.0
  */
 const autoInitMongo = (config: MongooseConfig): void => {
-  initMongo(config)
-    .then((_res) => {
-      logger.info(clc.blueBright('MONGODB CONNECTED'));
-    })
-    .catch((err) => {
-      logger.error(clc.red(err));
-    });
+    initMongo(config)
+        .then((_res) => {
+            logger.info(clc.blueBright('MONGODB CONNECTED'));
+        })
+        .catch((err) => {
+            logger.error(clc.red(err));
+        });
 };
 
 export { initMongo, autoInitMongo };

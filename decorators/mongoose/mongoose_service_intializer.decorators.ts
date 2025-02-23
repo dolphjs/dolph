@@ -11,14 +11,14 @@ import { Model } from 'mongoose';
  * @version 2.0.0
  */
 function InjectMongo(propertyName: string, model: Model<any>) {
-  return function <T extends { new (...args: any[]): {} }>(constructor: T) {
-    const Wrapped = class extends constructor {
-      //@ts-expect-error
-      [propertyName]: Model<any> = model;
+    return function <T extends { new (...args: any[]): {} }>(constructor: T) {
+        const Wrapped = class extends constructor {
+            //@ts-expect-error
+            [propertyName]: Model<any> = model;
+        };
+        Object.defineProperty(Wrapped, 'name', { value: constructor.name, configurable: true });
+        return Wrapped;
     };
-    Object.defineProperty(Wrapped, 'name', { value: constructor.name, configurable: true });
-    return Wrapped;
-  };
 }
 
 export { InjectMongo };

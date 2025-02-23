@@ -5,8 +5,8 @@ import { DefaultException } from './default_exception.api';
  * @returns `HttpStatus.UNAUTHORIZED` exception
  */
 class UnauthorizedException extends DefaultException {
-  statusCode: number = HttpStatus.UNAUTHORIZED;
-  name: string = 'Unauthorized';
+    statusCode: number = HttpStatus.UNAUTHORIZED;
+    name: string = 'Unauthorized';
 }
 
 export { UnauthorizedException };
