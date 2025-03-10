@@ -67,7 +67,8 @@ const enableHelmetFunc = (helmetOptions?: HelmetOptions) => {
  */
 const initializeRoutes = (routes: Array<{ path?: string; router: import('express').Router }>, basePath: string = '') => {
     routes.forEach((route) => {
-        const path = join(basePath, route.path || '');
+        // const path = join(basePath, route.path || '');
+        const path = normalizePath(join(basePath, route.path || '')).replace(/\\/g, '/');
         engine.use(path, route.router);
     });
 };
@@ -160,7 +161,12 @@ const initializeControllersAsRouter = <T extends Dolph>(
                      */
 
                     if (method && path) {
-                        const fullPath = normalizePath(join(basePath, controllerBasePath, path));
+                        /**
+                         * This was commented because of how windows handles paths
+                         */
+                        // const fullPath = normalizePath(join(basePath, controllerBasePath, path));
+                        // const fullPath = normalizePath(`${basePath}/${controllerBasePath}/${path}`);
+                        const fullPath = normalizePath(join(basePath, controllerBasePath, path)).replace(/\\/g, '/');
 
                         const handler = async (req: DRequest, res: DResponse, next: DNextFunc) => {
                             try {
@@ -594,7 +600,9 @@ class DolphFactoryClass<T extends DolphControllerHandler<Dolph>> {
                     new socketServiceClass();
 
                     logger.info(
-                        `${clc.blue(`${clc.white(`${socketServiceClass.name}`)} can now receive and send websocket events`)}`,
+                        `${clc.blue(
+                            `${clc.white(`${socketServiceClass.name}`)} can now receive and send websocket events`,
+                        )}`,
                     );
                 });
             }
