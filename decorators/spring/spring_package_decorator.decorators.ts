@@ -6,7 +6,7 @@ import clc from 'cli-color';
 import { logger } from '../../utilities';
 import { SHIELD_METADATA_KEY, UN_SHIELD_METADATA_KEY } from './meta_data_keys.decorators';
 import { GlobalInjection } from '../../core';
-// import { serviceRegistry } from '../../core/initializers/service_registeries.core';
+// import { serviceRegistry } from '../../core/initializers/service_registries.core';
 
 export const Route = (path: string = ''): ClassDecorator => {
     return (target: any) => {
@@ -95,79 +95,121 @@ export const Component = <T extends Dolph>({ controllers, services }: ComponentP
         return (target: any) => {
             Reflect.defineMetadata('controllers', controllers, target.prototype);
 
-            // controllers.forEach((controller) => {
-            //   if (Array.isArray(services) && services.length > 0) {
-            //     services.forEach((service) => {
-            //       try {
-            //         const serviceInstance = new service();
-            //         const serviceName = service.name;
+            // Instantiate services once to be shared by all controllers within this component.
+            // This map will hold the singleton instances of the services.
+            const serviceInstances = new Map<string, any>();
 
-            //         GlobalInjection(serviceName, serviceInstance);
-
-            //         Object.defineProperty(controller.prototype, serviceName, {
-            //           value: serviceInstance,
-            //           writable: true,
-            //           configurable: true,
-            //           enumerable: true,
-            //         });
-            //       } catch (e: any) {
-            //         logger.error(clc.red(`Failed to inject ${service.name} into ${controller.name}: ${e.message}`));
-            //       }
-            //     });
-            //   }
-            // });
-
-            const injectedServices = new Map();
-
-            const injectServices = (targetPrototype: any, services: any[]) => {
-                services.forEach((service) => {
+            services.forEach((serviceClass) => {
+                if (!serviceInstances.has(serviceClass.name)) {
                     try {
-                        const serviceName = service.name;
+                        serviceInstances.set(serviceClass.name, new serviceClass());
+                    } catch (e: any) {
+                        logger.error(clc.red(`Failed to instantiate service ${serviceClass.name}: ${e.message}`));
+                    }
+                }
+            });
 
-                        if (!injectedServices.has(serviceName)) {
-                            const serviceInstance = new service();
+            const modifiedControllers = controllers.map((controllerClass: any) => {
+                const originalConstructor = controllerClass;
 
-                            Object.defineProperty(targetPrototype, serviceName, {
+                // Create a new constructor that wraps the original
+                const newConstructor = function (...args: any[]) {
+                    // Create instance using the original constructor.
+                    // 'Reflect.construct' handles 'new.target' correctly if 'controllerClass' is further subclassed.
+                    const instance = Reflect.construct(originalConstructor, args, new.target || originalConstructor);
+                    // Alternatively, simpler: const instance = new originalConstructor(...args);
+
+                    // Inject service instances onto the controller instance
+                    serviceInstances.forEach((serviceInstance, serviceName) => {
+                        if (serviceInstance) {
+                            // Ensure service was successfully instantiated
+                            Object.defineProperty(instance, serviceName, {
                                 value: serviceInstance,
                                 writable: true,
+                                // Allows redefining/deleting if necessary later
                                 configurable: true,
                                 enumerable: true,
                             });
-
-                            injectedServices.set(serviceName, serviceInstance);
-
-                            services.forEach((otherService) => {
-                                const otherServiceName = otherService.name;
-                                if (
-                                    otherService !== service &&
-                                    !injectedServices.has(`${serviceName}-${otherServiceName}`) &&
-                                    !injectedServices.has(`${otherServiceName}-${serviceName}`)
-                                ) {
-                                    serviceInstance[otherServiceName] = new otherService();
-                                    injectedServices.set(`${serviceName}-${otherServiceName}`, true);
-                                }
-                            });
                         }
-                    } catch (e: any) {
-                        logger.error(
-                            clc.red(
-                                `Failed to inject ${service.name} into ${targetPrototype.constructor.name}: ${e.message}`,
-                            ),
-                        );
-                    }
-                });
-            };
+                    });
 
-            controllers.forEach((controller) => {
-                injectServices(controller.prototype, services);
+                    return instance;
+                };
+
+                // Ensures the new constructor mimics the original (prototype chain, name, static properties)
+                newConstructor.prototype = originalConstructor.prototype;
+                // Preserve the original constructor as a property of the prototype for `instanceof` checks
+                originalConstructor.prototype.constructor = newConstructor;
+
+                Object.defineProperty(newConstructor, 'name', { value: originalConstructor.name, writable: false });
+                Object.setPrototypeOf(newConstructor, originalConstructor); // Copy static members
+
+                return newConstructor;
             });
 
-            services.forEach((service) => {
-                injectServices(service.prototype, services);
-            });
+            // Updates the metadata with the modified controller constructors
+            Reflect.defineMetadata('controllers', modifiedControllers, target.prototype);
+
+            /**
+             * The commented code block below has a bug that prevents service instantiation for controllers
+             * making service declarations something that has to be done by the user
+             */
+
+            // const injectServices = (targetPrototype: any, services: any[]) => {
+            //     services.forEach((service) => {
+            //         try {
+            //             const serviceName = service.name;
+            //             if (!injectedServices.has(serviceName)) {
+            //                 const serviceInstance = new service();
+
+            //                 Object.defineProperty(targetPrototype, serviceName, {
+            //                     value: serviceInstance,
+            //                     writable: true,
+            //                     configurable: true,
+            //                     enumerable: true,
+            //                 });
+
+            //                 injectedServices.set(serviceName, serviceInstance);
+
+            //                 services.forEach((otherService) => {
+            //                     const otherServiceName = otherService.name;
+            //                     if (
+            //                         otherService !== service &&
+            //                         !injectedServices.has(`${serviceName}-${otherServiceName}`) &&
+            //                         !injectedServices.has(`${otherServiceName}-${serviceName}`)
+            //                     ) {
+            //                         serviceInstance[otherServiceName] = new otherService();
+            //                         injectedServices.set(`${serviceName}-${otherServiceName}`, true);
+            //                     }
+            //                 });
+            //             }
+            //         } catch (e: any) {
+            //             logger.error(
+            //                 clc.red(
+            //                     `Failed to inject ${service.name} into ${targetPrototype.constructor.name}: ${e.message}`,
+            //                 ),
+            //             );
+            //         }
+            //     });
+            // };
+
+            // controllers.forEach((controller) => {
+
+            // });
+
+            // for (const controller of controllers) {
+            //     injectServices(controller.prototype, services);
+            // }
+
+            // This leads to a bug because the same service gets injected to it'self and Dolph does not really encourage inter service communications.
+            // services.forEach((service) => {
+            //     injectServices(service.prototype, services);
+            // });
         };
     } else {
         logger.error(clc.red('Provide an array of controllers with type `new (): T` '));
+        // Return a no-op decorator in case of an error
+        return (target: any) => target;
     }
 };
 

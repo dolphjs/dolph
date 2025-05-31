@@ -1,5 +1,5 @@
 import { buildSchema } from 'type-graphql';
-import { DolphFactory } from '../../../../core';
+import { DolphFactory } from '../../../core';
 import { UserResolver } from './resolvers/user.resolver';
 import { UserComponent } from './components/user/user.component';
 // import { UserComponent } from './components/user/user.component';

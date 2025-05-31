@@ -9,16 +9,28 @@ import {
 } from '../../../../../common';
 import { Get, Post, Route, UseMiddleware } from '../../../../../decorators';
 import { diskStorage, fileUploader, useFileUploader } from '../../../../../packages';
+import { UserService } from './user.service';
+import { User2Service } from './user2.service';
 
 @Route('user')
 export class UserController extends DolphControllerHandler<Dolph> {
+    private UserService: UserService;
+    private User2Service: User2Service;
+
     constructor() {
         super();
     }
 
     @Get('greet')
     async greet(req: DRequest, res: DResponse) {
-        SuccessResponse({ res, body: { message: "you've reached the user endpoint." } });
+        const result1 = this.UserService.createUser(12, 'hello');
+
+        const result2 = this.User2Service.get();
+
+        SuccessResponse({
+            res,
+            body: { message: "you've reached the user endpoint.", resultOne: result1, resultTwo: result2 },
+        });
     }
 
     // Make a wrapper that returns the function : req: DRequest, res: DResponse, next: DNextFunc
