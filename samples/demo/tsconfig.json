@@ -4,6 +4,7 @@
         "allowJs": false,
         "declaration": false,
         "experimentalDecorators": true,
+        "emitDecoratorMetadata": true,
         "sourceMap": false,
         "useUnknownInCatchVariables": false,
         "strictFunctionTypes": false,
