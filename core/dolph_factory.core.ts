@@ -38,8 +38,10 @@ import { join } from 'path';
 import { fallbackResponseMiddleware } from './fallback_middleware.core';
 import { MVCAdapter } from './adapters/mvc_registrar';
 import { engine as handlebars } from 'express-handlebars';
-import { TryCatchAsyncDec } from '../decorators';
+import { ROUTE_ARGS_METADATA, RouteParamMetadata, routeParamsArr, TryCatchAsyncDec } from '../decorators';
 import httpStatus from 'http-status';
+import { ClassConstructor } from 'class-transformer';
+import { transformAndValidateDto } from './transformer';
 
 const engine = express();
 
@@ -173,6 +175,12 @@ const initializeControllersAsRouter = <T extends Dolph>(
                                 // Apply middleware
                                 for (const middleware of finalMiddlewareList) {
                                     await new Promise<void>((resolve, reject) => {
+                                        if (res.headersSent) {
+                                            /**
+                                             * Todo: Revisit this code
+                                             *  */
+                                            return resolve();
+                                        }
                                         middleware(req, res, (err?: any) => {
                                             if (err) {
                                                 reject(err);
@@ -181,20 +189,125 @@ const initializeControllersAsRouter = <T extends Dolph>(
                                             }
                                         });
                                     });
+                                    if (res.headersSent) {
+                                        return;
+                                    }
+                                }
+
+                                // -- Decorator Resolution Logic --
+                                const controllerMethodItself = controllerInstance.constructor.prototype[methodName];
+                                const expectedArgsCount = controllerMethodItself.length;
+                                const args: any[] = new Array(expectedArgsCount);
+
+                                // Retrieve metadata stored by @DReq, @DRes, etc.
+                                // Metadata is on the prototype's method
+                                const routeArgsMetadata: RouteParamMetadata[] =
+                                    Reflect.getMetadata(
+                                        ROUTE_ARGS_METADATA,
+                                        controllerInstance.constructor.prototype,
+                                        methodName,
+                                    ) || [];
+
+                                let hasCoreParamDecorators = false;
+
+                                if (routeArgsMetadata.length > 0) {
+                                    for (const meta of routeArgsMetadata) {
+                                        if (meta.index < expectedArgsCount) {
+                                            // Ensure index is within bounds
+                                            if (routeParamsArr.includes(meta.type)) {
+                                                hasCoreParamDecorators = true;
+                                            }
+                                            switch (meta.type) {
+                                                case 'req':
+                                                    args[meta.index] = req;
+                                                    break;
+                                                case 'res':
+                                                    args[meta.index] = res;
+                                                    break;
+                                                case 'next':
+                                                    args[meta.index] = next;
+                                                    break;
+                                                case 'param':
+                                                    try {
+                                                        const dtoClass = meta.data?.dtoType as
+                                                            | ClassConstructor<object>
+                                                            | undefined;
+
+                                                        args[meta.index] = await transformAndValidateDto(
+                                                            dtoClass,
+                                                            req.params,
+                                                            // Context for error messages
+                                                            'request params',
+                                                        );
+                                                    } catch (error) {
+                                                        // If transformAndValidateDto throws (e.g., ValidationException or internal error),
+                                                        // pass it to the Express error handling chain.
+                                                        throw error;
+                                                    }
+                                                case 'query':
+                                                    try {
+                                                        const dtoClass = meta.data?.dtoType as
+                                                            | ClassConstructor<object>
+                                                            | undefined;
+
+                                                        args[meta.index] = await transformAndValidateDto(
+                                                            dtoClass,
+                                                            req.query,
+                                                            // Context for error messages
+                                                            'request query',
+                                                        );
+                                                    } catch (error) {
+                                                        // If transformAndValidateDto throws (e.g., ValidationException or internal error),
+                                                        // pass it to the Express error handling chain.
+                                                        throw error;
+                                                    }
+                                                case 'file':
+                                                    args[meta.index] = req.file;
+                                                    break;
+                                                case 'body':
+                                                    try {
+                                                        const dtoClass = meta.data?.dtoType as
+                                                            | ClassConstructor<object>
+                                                            | undefined;
+
+                                                        args[meta.index] = await transformAndValidateDto(
+                                                            dtoClass,
+                                                            req.body,
+                                                            // Context for error messages
+                                                            'request body',
+                                                        );
+                                                    } catch (error) {
+                                                        // If transformAndValidateDto throws (e.g., ValidationException or internal error),
+                                                        // pass it to the Express error handling chain.
+                                                        throw error;
+                                                    }
+                                                    break;
+                                            }
+                                        }
+                                    }
+                                }
+
+                                // If no @DReq, @DRes, @DNext decorators were used on this method,
+                                // fall back to the traditional positional arguments for backward compatibility.
+                                if (!hasCoreParamDecorators) {
+                                    if (expectedArgsCount >= 1) args[0] = req;
+                                    if (expectedArgsCount >= 2) args[1] = res;
+                                    if (expectedArgsCount >= 3) args[2] = next;
+                                    // Any further parameters will remain undefined unless handled by other (future) decorators
+                                }
+
+                                const result = await controllerInstance[methodName].apply(controllerInstance, args);
+
+                                if (result !== undefined && !res.headersSent) {
+                                    // Todo: handle auto sending of response from the controller method's return
                                 }
 
                                 // Invoke the controller method
-                                if (renderTemplate) {
+                                if (renderTemplate && !res.headersSent) {
                                     res.render(
                                         renderTemplate,
                                         await controllerInstance.constructor.prototype[methodName](req, res, next),
                                     );
-                                } else {
-                                    // await controllerInstance.constructor.prototype[methodName](req, res, next);
-                                    /**
-                                     * This allows that the `this` keyword does not lose its context unlike in the previous line used for binding
-                                     */
-                                    await controllerInstance[methodName].call(controllerInstance, req, res, next);
                                 }
                             } catch (error) {
                                 next(error);

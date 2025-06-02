@@ -6,7 +6,7 @@ import clc from 'cli-color';
 import { logger } from '../../utilities';
 import { SHIELD_METADATA_KEY, UN_SHIELD_METADATA_KEY } from './meta_data_keys.decorators';
 import { GlobalInjection } from '../../core';
-// import { serviceRegistry } from '../../core/initializers/service_registries.core';
+import { any } from 'joi';
 
 export const Route = (path: string = ''): ClassDecorator => {
     return (target: any) => {
@@ -251,104 +251,6 @@ export const Component = <T extends Dolph>({ controllers, services }: ComponentP
 
         logger.info(clc.green(`[${target.name}] Component initialized. Services and controllers processed.`));
     };
-
-    // const modifiedControllers = controllers.map((controllerClass: any) => {
-    //     const originalConstructor = controllerClass;
-
-    //     // Create a new constructor that wraps the original
-    //     const newConstructor = function (...args: any[]) {
-    //         // Create instance using the original constructor.
-    //         // 'Reflect.construct' handles 'new.target' correctly if 'controllerClass' is further subclassed.
-    //         const instance = Reflect.construct(originalConstructor, args, new.target || originalConstructor);
-    //         // Alternatively, simpler: const instance = new originalConstructor(...args);
-
-    //         // Inject service instances onto the controller instance
-    //         serviceInstances.forEach((serviceInstance, serviceName) => {
-    //             if (serviceInstance) {
-    //                 // Ensure service was successfully instantiated
-    //                 Object.defineProperty(instance, serviceName, {
-    //                     value: serviceInstance,
-    //                     writable: true,
-    //                     // Allows redefining/deleting if necessary later
-    //                     configurable: true,
-    //                     enumerable: true,
-    //                 });
-    //             }
-    //         });
-
-    //         return instance;
-    //     };
-
-    //     // Ensures the new constructor mimics the original (prototype chain, name, static properties)
-    //     newConstructor.prototype = originalConstructor.prototype;
-    //     // Preserve the original constructor as a property of the prototype for `instanceof` checks
-    //     originalConstructor.prototype.constructor = newConstructor;
-
-    //     Object.defineProperty(newConstructor, 'name', { value: originalConstructor.name, writable: false });
-    //     Object.setPrototypeOf(newConstructor, originalConstructor); // Copy static members
-
-    //     return newConstructor;
-    // });
-
-    // // Updates the metadata with the modified controller constructors
-    // Reflect.defineMetadata('controllers', modifiedControllers, target.prototype);
-
-    /**
-     * The commented code block below has a bug that prevents service instantiation for controllers
-     * making service declarations something that has to be done by the user
-     */
-
-    // const injectServices = (targetPrototype: any, services: any[]) => {
-    //     services.forEach((service) => {
-    //         try {
-    //             const serviceName = service.name;
-    //             if (!injectedServices.has(serviceName)) {
-    //                 const serviceInstance = new service();
-
-    //                 Object.defineProperty(targetPrototype, serviceName, {
-    //                     value: serviceInstance,
-    //                     writable: true,
-    //                     configurable: true,
-    //                     enumerable: true,
-    //                 });
-
-    //                 injectedServices.set(serviceName, serviceInstance);
-
-    //                 services.forEach((otherService) => {
-    //                     const otherServiceName = otherService.name;
-    //                     if (
-    //                         otherService !== service &&
-    //                         !injectedServices.has(`${serviceName}-${otherServiceName}`) &&
-    //                         !injectedServices.has(`${otherServiceName}-${serviceName}`)
-    //                     ) {
-    //                         serviceInstance[otherServiceName] = new otherService();
-    //                         injectedServices.set(`${serviceName}-${otherServiceName}`, true);
-    //                     }
-    //                 });
-    //             }
-    //         } catch (e: any) {
-    //             logger.error(
-    //                 clc.red(
-    //                     `Failed to inject ${service.name} into ${targetPrototype.constructor.name}: ${e.message}`,
-    //                 ),
-    //             );
-    //         }
-    //     });
-    // };
-
-    // controllers.forEach((controller) => {
-
-    // });
-
-    // for (const controller of controllers) {
-    //     injectServices(controller.prototype, services);
-    // }
-
-    // This leads to a bug because the same service gets injected to it'self and Dolph does not really encourage inter service communications.
-    // services.forEach((service) => {
-    //     injectServices(service.prototype, services);
-    // });
-    // };
 };
 
 export const Body = (): ParameterDecorator => {
@@ -392,5 +294,87 @@ const UseDto = (dto: any): MethodDecorator => {
 export function Render(template: string): MethodDecorator {
     return function (target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor) {
         Reflect.defineMetadata('render', template, descriptor.value);
+    };
+}
+
+// Unique symbol for metadata key
+export const ROUTE_ARGS_METADATA = Symbol('dolph:route_args_metadata');
+
+export const routeParamsArr = ['req', 'res', 'next', 'body', 'query', 'param', 'file'];
+
+export interface RouteParamMetadata {
+    // Parameter index
+    index: number;
+    type: 'req' | 'res' | 'next' | 'body' | 'query' | 'param' | 'file';
+    // For DTO type, specific param name, etc.
+    data?: any;
+}
+
+function addParameterMetadata(
+    // Prototype of the controller class
+    target: Object,
+    // Method name
+    propertyKey: string | symbol,
+    parameterIndex: number,
+    type: RouteParamMetadata['type'],
+    data?: any,
+) {
+    const existingMetaData: RouteParamMetadata[] = Reflect.getMetadata(ROUTE_ARGS_METADATA, target, propertyKey) || [];
+
+    // Checks whether a core decorator is already applied to this parameter index
+    const previousParamMeta = existingMetaData.find((p) => p.index === parameterIndex);
+    if (previousParamMeta) {
+        console.warn(
+            `DolphJS: Overwriting route parameter decorator at index ${parameterIndex} for ${
+                target.constructor.name
+            }.${String(propertyKey)}. Previous type: ${previousParamMeta.type}, New type: ${type}`,
+        );
+    }
+
+    const newParamMetadata: RouteParamMetadata = { index: parameterIndex, type, data };
+    // Remove any previous metadata for this specific index before adding the new one
+    const updatedMetadata = existingMetaData.filter((p) => p.index !== parameterIndex);
+    updatedMetadata.push(newParamMetadata);
+
+    // Sort by index to make processing easier later
+    updatedMetadata.sort((a, b) => a.index - b.index);
+
+    Reflect.defineMetadata(ROUTE_ARGS_METADATA, updatedMetadata, target, propertyKey);
+}
+
+export function DReq(): ParameterDecorator {
+    return (target: Object, propertyKey: string | symbol, parameterIndex: number) => {
+        addParameterMetadata(target, propertyKey, parameterIndex, 'req');
+    };
+}
+
+export function DRes(): ParameterDecorator {
+    return (target: Object, propertyKey: string | symbol, parameterIndex: number) => {
+        addParameterMetadata(target, propertyKey, parameterIndex, 'res');
+    };
+}
+
+export function DNext(): ParameterDecorator {
+    return (target: Object, propertyKey: string | symbol, parameterIndex: number) => {
+        addParameterMetadata(target, propertyKey, parameterIndex, 'next');
+    };
+}
+
+// TODO: assign a type to Dto
+export function DBody(dtoType?: any): ParameterDecorator {
+    return (target: Object, propertyKey: string | symbol, parameterIndex: number) => {
+        addParameterMetadata(target, propertyKey, parameterIndex, 'body', { dtoType });
+    };
+}
+
+export function DParam(dtoType?: any): ParameterDecorator {
+    return (target: Object, propertyKey: string | symbol, parameterIndex: number) => {
+        addParameterMetadata(target, propertyKey, parameterIndex, 'param', { dtoType });
+    };
+}
+
+export function DQuery(dtoType?: any): ParameterDecorator {
+    return (target: Object, propertyKey: string | symbol, parameterIndex: number) => {
+        addParameterMetadata(target, propertyKey, parameterIndex, 'query', { dtoType });
     };
 }
