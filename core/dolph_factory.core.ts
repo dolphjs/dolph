@@ -227,6 +227,9 @@ const initializeControllersAsRouter = <T extends Dolph>(
                                                 case 'next':
                                                     args[meta.index] = next;
                                                     break;
+                                                case 'payload':
+                                                    args[meta.index] = req.payload;
+                                                    break;
                                                 case 'param':
                                                     try {
                                                         const dtoClass = meta.data?.dtoType as

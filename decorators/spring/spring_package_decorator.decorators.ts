@@ -300,12 +300,12 @@ export function Render(template: string): MethodDecorator {
 // Unique symbol for metadata key
 export const ROUTE_ARGS_METADATA = Symbol('dolph:route_args_metadata');
 
-export const routeParamsArr = ['req', 'res', 'next', 'body', 'query', 'param', 'file'];
+export const routeParamsArr = ['req', 'res', 'next', 'body', 'query', 'param', 'file', 'payload'];
 
 export interface RouteParamMetadata {
     // Parameter index
     index: number;
-    type: 'req' | 'res' | 'next' | 'body' | 'query' | 'param' | 'file';
+    type: 'req' | 'res' | 'next' | 'body' | 'query' | 'param' | 'file' | 'payload';
     // For DTO type, specific param name, etc.
     data?: any;
 }
@@ -357,6 +357,12 @@ export function DRes(): ParameterDecorator {
 export function DNext(): ParameterDecorator {
     return (target: Object, propertyKey: string | symbol, parameterIndex: number) => {
         addParameterMetadata(target, propertyKey, parameterIndex, 'next');
+    };
+}
+
+export function DPayload(): ParameterDecorator {
+    return (target: Object, propertyKey: string | symbol, parameterIndex: number) => {
+        addParameterMetadata(target, propertyKey, parameterIndex, 'payload');
     };
 }
 

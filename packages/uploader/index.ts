@@ -39,6 +39,8 @@ export const useFileUploader =
             };
         }
 
+        // The bug is here at the fieldname upload 
+
         const uploadMiddleware = fileUploader({
             storage: storage || memoryStorage(),
             limits: {

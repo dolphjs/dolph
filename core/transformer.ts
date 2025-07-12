@@ -11,7 +11,8 @@ export async function transformAndValidateDto<T extends object>(
     contextDescription: string,
 ): Promise<T> {
     // Ensure dtoClass is a valid class constructor for DTOs
-    if (!dtoClass || typeof dtoClass !== 'function' || [String, Number, Boolean, Object].includes(dtoClass as any)) {
+    if (!dtoClass) return;
+    if (typeof dtoClass !== 'function' || [String, Number, Boolean, Object].includes(dtoClass as any)) {
         // Object constructor itself is not a DTO
         // This scenario should ideally be caught by the @DBody decorator's type checking.
         // However, if it somehow gets here, it's an internal error or misconfiguration.
