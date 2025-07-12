@@ -12,4 +12,7 @@ export class CreateUserDto {
     @Type(() => String)
     @IsOptional()
     gender: string;
+
+    @IsString()
+    email: string;
 }
