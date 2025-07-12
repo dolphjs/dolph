@@ -1,6 +1,6 @@
 {
     "name": "@dolphjs/dolph",
-    "version": "1.5.2",
+    "version": "1.5.3",
     "description": "New-Age, developer friendly node.js and bun framework",
     "repository": "https://github.com/dolphjs/dolph",
     "author": "Utee Akaninyene",
