@@ -13,7 +13,6 @@ import { Model, ModelStatic } from 'sequelize';
 function InjectMySQL<T extends { new (...args: any[]): {} }>(propertyName: string, model: ModelStatic<Model<any, any>>) {
     return function (constructor: T) {
         const Wrapped = class extends constructor {
-            //@ts-expect-error - Expecting error due to dynamic property assignment
             [propertyName]: ModelStatic<Model<any, any>> = model;
         };
         // Preserving the original class name after extension

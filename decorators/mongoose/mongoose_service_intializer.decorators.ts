@@ -13,7 +13,6 @@ import { Model } from 'mongoose';
 function InjectMongo(propertyName: string, model: Model<any>) {
     return function <T extends { new (...args: any[]): {} }>(constructor: T) {
         const Wrapped = class extends constructor {
-            //@ts-expect-error
             [propertyName]: Model<any> = model;
         };
         Object.defineProperty(Wrapped, 'name', { value: constructor.name, configurable: true });
