@@ -690,7 +690,7 @@ class DolphFactoryClass<T extends DolphControllerHandler<Dolph>> {
     }
 
     public enableCors(options?: CorsOptions) {
-        enableCorsFunc(options || { origin: '*', methods: ['POST', 'GET', 'PUT', 'DELETE', 'PATCH', 'OPTION'] });
+        enableCorsFunc(options || { origin: '*' });
     }
 
     public enableHemet(options?: HelmetOptions) {

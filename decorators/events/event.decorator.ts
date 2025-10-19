@@ -1,6 +1,10 @@
 import { getInjectedService } from '../../core';
 import { EventEmitterService } from '../../packages/events/events_module.packages';
 
+/**
+ * - currently not released
+ * @version 2.0
+ */
 function OnEvent(eventName: string, priority: number = 0, once: boolean = false) {
     return function (target: any, propertyName: string, descriptor: PropertyDescriptor) {
         const originalMethod = descriptor.value;
@@ -16,10 +20,18 @@ function OnEvent(eventName: string, priority: number = 0, once: boolean = false)
     };
 }
 
+/**
+ * - currently not released
+ * @version 2.0
+ */
 function OnceEvent(eventName: string, priority: number = 0) {
     return OnEvent(eventName, priority, true);
 }
 
+/**
+ * - currently not released
+ * @version 2.0
+ */
 function OffEvent(eventName: string) {
     return function (target: any, propertyName: string, descriptor: PropertyDescriptor) {
         const originalMethod = descriptor.value;

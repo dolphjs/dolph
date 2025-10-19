@@ -5,7 +5,7 @@ import { Model } from 'mongoose';
  * this decorator is used to inject  a mongoose model into the serviceHandler as a method
  *
  * @param propertyName takes the name of the mongoose model
- * @param model  takes the actual mognoose model imported from the models dir
+ * @param model  takes the actual mongoose model imported from the models dir
  *
  *
  * @version 2.0.0

@@ -1,7 +1,6 @@
 import winston from 'winston';
 import clc from 'cli-color';
 import { formatDate } from './formatters/format_date.utilities';
-// import DailyRotateFile from 'winston-daily-rotate-file';
 
 const logger = winston.createLogger({
     levels: {
@@ -41,20 +40,8 @@ const logger = winston.createLogger({
             return logMessage;
         }),
     ),
-    /**
-     * Todo: check if there's need to remove the logger file or fix the formatting issue as a result of clc
-     */
-    transports: [
-        new winston.transports.Console({ level: 'debug' }),
-        // new DailyRotateFile({
-        //   level: 'debug',
-        //   filename: `logs/%DATE%.log`,
-        //   datePattern: 'YYYY-MM-DD',
-        //   zippedArchive: true,
-        //   maxSize: '20m',
-        //   maxFiles: '7d',
-        // }),
-    ],
+
+    transports: [new winston.transports.Console({ level: 'debug' })],
 });
 
 const emojiForLevel = {
@@ -106,9 +93,9 @@ const inAppLogger = winston.createLogger({
                 //   : 'route'; // Default to 'route' if neither Middleware nor Shield is found
 
                 // Construct the formatted message
-                formattedMessage = `${logEmoji} [${formattedTimestamp}] ${levelLog}: ${clc.blueBright(`${action}`)} ${clc.blueBright(
-                    `>>>> ${componentDetails}`,
-                )}`;
+                formattedMessage = `${logEmoji} [${formattedTimestamp}] ${levelLog}: ${clc.blueBright(
+                    `${action}`,
+                )} ${clc.blueBright(`>>>> ${componentDetails}`)}`;
             } else {
                 formattedMessage = `${logEmoji} [${formattedTimestamp}] ${levelLog}: ${formattedMessage}`;
             }
