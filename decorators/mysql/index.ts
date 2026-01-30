@@ -1,1 +1,1 @@
-export * from './mysql_initializer.decorators';
+export * from './mysql_Initialiser.decorators';

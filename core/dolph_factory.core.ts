@@ -32,8 +32,8 @@ import { DolphControllerHandler } from '../classes';
 import { getControllersFromMetadata } from '../utilities/get_controllers_from_component';
 import { getShieldMiddlewares, getUnShieldMiddlewares, stringifyFunction } from '../utilities/spring_helpers.utilities';
 import { DSocketInit } from '../common/interfaces/socket.interfaces';
-import { GlobalInjection } from './initializers';
-import { middlewareRegistry } from './initializers/middleware_registrar';
+import { GlobalInjection } from './initialisers';
+import { middlewareRegistry } from './initialisers/middleware_registrar';
 import { join } from 'path';
 import { fallbackResponseMiddleware } from './fallback_middleware.core';
 import { MVCAdapter } from './adapters/mvc_registrar';
@@ -67,7 +67,7 @@ const enableHelmetFunc = (helmetOptions?: HelmetOptions) => {
 /**
  * Function is used to register express router handlers using the **express routing** architecture
  */
-const initializeRoutes = (routes: Array<{ path?: string; router: import('express').Router }>, basePath: string = '') => {
+const InitialiseRoutes = (routes: Array<{ path?: string; router: import('express').Router }>, basePath: string = '') => {
     routes.forEach((route) => {
         // const path = join(basePath, route.path || '');
         const path = normalizePath(join(basePath, route.path || '')).replace(/\\/g, '/');
@@ -76,9 +76,9 @@ const initializeRoutes = (routes: Array<{ path?: string; router: import('express
 };
 
 /**
- * Initializer is responsible for registering all spring controllers as routers and detaching each method from the controller classes and registering them as handler functions.
+ * Initialiser is responsible for registering all spring controllers as routers and detaching each method from the controller classes and registering them as handler functions.
  */
-const initializeControllersAsRouter = <T extends Dolph>(
+const InitialiseControllersAsRouter = <T extends Dolph>(
     controllers: Array<{ new (): DolphControllerHandler<T> }>,
     basePath: string,
 ) => {
@@ -134,15 +134,6 @@ const initializeControllersAsRouter = <T extends Dolph>(
                         );
 
                         finalMiddlewareList = [...uniqueToShield, ...uniqueToUnShield];
-
-                        // middlewareList.unshift(...finalMiddlewareList);
-
-                        // set to 0
-                        // setOne.clear();
-                        // setTwo.clear();
-
-                        // uniqueToShield.length = 0;
-                        // uniqueToUnShield.length = 0;
                     } else {
                         // middlewareList.unshift(...individualShieldMiddlewares);
                     }
@@ -163,11 +154,6 @@ const initializeControllersAsRouter = <T extends Dolph>(
                      */
 
                     if (method && path) {
-                        /**
-                         * This was commented because of how windows handles paths
-                         */
-                        // const fullPath = normalizePath(join(basePath, controllerBasePath, path));
-                        // const fullPath = normalizePath(`${basePath}/${controllerBasePath}/${path}`);
                         const fullPath = normalizePath(join(basePath, controllerBasePath, path)).replace(/\\/g, '/');
 
                         const handler = async (req: DRequest, res: DResponse, next: DNextFunc) => {
@@ -320,8 +306,6 @@ const initializeControllersAsRouter = <T extends Dolph>(
                         // parse the handler function together with full path to the express router object
                         router[method](fullPath, handler);
                         inAppLogger.info(dolphMessages.routeMessages(methodName, method, fullPath));
-                    } else {
-                        // logger.error(clc.red(`Missing metadata for method ${methodName} in controller ${Controller.name}`));
                     }
                 }
             });
@@ -331,7 +315,7 @@ const initializeControllersAsRouter = <T extends Dolph>(
             engine.use('/', router);
         } catch (e) {
             console.error(e);
-            logger.error(clc.red(`Error initializing controller ${Controller.name}: ${e.message}`));
+            logger.error(clc.red(`Error initialising controller ${Controller.name}: ${e.message}`));
         }
     });
 };
@@ -341,8 +325,8 @@ const incrementHandlers = () => {
     process.setMaxListeners(10);
 };
 
-// initializes middlewares used by dolphjs
-const initializeMiddlewares = ({ jsonLimit }) => {
+// Initialises middlewares used by dolphjs
+const InitialiseMiddlewares = ({ jsonLimit }) => {
     // if (env === 'development') {
     engine.use(successHandler);
     engine.use(morganErrorHandler);
@@ -414,12 +398,12 @@ const initNotFoundError = () => {
 };
 
 // loads configs from env
-const initializeConfigLoader = () => {
+const InitialiseConfigLoader = () => {
     configLoader();
 };
 
-// initializes error handlers and converters
-const initializeErrorHandlers = () => {
+// Initialises error handlers and converters
+const InitialiseErrorHandlers = () => {
     engine.use(errorConverter);
     engine.use(errorHandler);
 };
@@ -488,7 +472,7 @@ class DolphFactoryClass<T extends DolphControllerHandler<Dolph>> {
         middlewares?: RequestHandler[] | DSocketInit<Dolph>,
     ) {
         /**
-         * Start dolphjs initialization time
+         * Start dolphjs initialisation time
          */
         const startTime = process.hrtime();
 
@@ -519,11 +503,6 @@ class DolphFactoryClass<T extends DolphControllerHandler<Dolph>> {
                         this.controllers.push(item);
                     }
                 }
-
-                /**
-                 * Uncomment this line of code if the controllers are duplicated
-                 */
-                // this.controllers = Array.from(new Set(this.controllers));
             });
 
             if (Array.isArray(middlewares) && middlewares.length > 0 && 'handle' in middlewares[0]) {
@@ -652,15 +631,15 @@ class DolphFactoryClass<T extends DolphControllerHandler<Dolph>> {
 
     private intiDolphEngine(startTime: [number, number]) {
         this.dolph = engine;
-        initializeConfigLoader();
+        InitialiseConfigLoader();
         incrementHandlers();
-        initializeMiddlewares({ jsonLimit: this.jsonLimit });
+        InitialiseMiddlewares({ jsonLimit: this.jsonLimit });
         initExternalMiddlewares(this.externalMiddlewares || []);
         initGlobalMiddlewares();
         initMvcAdapter();
-        initializeRoutes(this.routes, this.routingBase);
-        initializeControllersAsRouter(this.controllers, this.routingBase);
-        initializeErrorHandlers();
+        InitialiseRoutes(this.routes, this.routingBase);
+        InitialiseControllersAsRouter(this.controllers, this.routingBase);
+        InitialiseErrorHandlers();
 
         if (!this.isGraphQL) {
             initNotFoundError();
@@ -681,7 +660,7 @@ class DolphFactoryClass<T extends DolphControllerHandler<Dolph>> {
 
         const durationInMilliseconds = Math.round(endTime[0] * 1000 + endTime[1] / 1e6);
 
-        logger.info(`${clc.blueBright('Initialized application in')} ${clc.white(`${durationInMilliseconds}ms`)}`);
+        logger.info(`${clc.blueBright('Initialised application in')} ${clc.white(`${durationInMilliseconds}ms`)}`);
     }
 
     @TryCatchAsyncDec()
@@ -707,7 +686,7 @@ class DolphFactoryClass<T extends DolphControllerHandler<Dolph>> {
 
             GlobalInjection(this.sockets.socketService.name, this.socketService);
 
-            logger.info(`${clc.blue(`SocketIO Initialized Successfully`)}`);
+            logger.info(`${clc.blue(`SocketIO Initialised Successfully`)}`);
 
             const socketsMetadata = Reflect.getMetadata('sockets', this.sockets.component.constructor.prototype);
 
@@ -729,7 +708,7 @@ class DolphFactoryClass<T extends DolphControllerHandler<Dolph>> {
     public socket = () => this.socketService;
 
     /**
-     * Initializes and returns the dolphjs engine
+     * Initialises and returns the dolphjs engine
      */
     public start() {
         if (!this.isGraphQL) {

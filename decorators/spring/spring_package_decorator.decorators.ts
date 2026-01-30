@@ -201,7 +201,7 @@ export const Component = <T extends Dolph>({ controllers, services }: ComponentP
                 }
             });
         } catch (error: any) {
-            logger.error(clc.red(`[${target.name}] Failed to initialize services: ${error.message}`));
+            logger.error(clc.red(`[${target.name}] Failed to Initialise services: ${error.message}`));
         }
 
         // services.forEach((serviceClass) => {
@@ -247,7 +247,7 @@ export const Component = <T extends Dolph>({ controllers, services }: ComponentP
         // Update metadata with modified (wrapped) controllers if the framework uses this to instantiate
         Reflect.defineMetadata('controllers', modifiedControllers, target.prototype);
 
-        logger.info(clc.green(`[${target.name}] Component initialized. Services and controllers processed.`));
+        logger.info(clc.green(`[${target.name}] Component Initialised. Services and controllers processed.`));
     };
 };
 

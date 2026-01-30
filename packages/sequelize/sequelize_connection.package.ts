@@ -4,7 +4,7 @@ import { Sequelize } from 'sequelize';
 
 /**
  *
- * Used to initialize mysql with sequelize ORM
+ * Used to Initialise mysql with sequelize ORM
  * @returns the mogoose promise
  *
  * @version 1.0.0

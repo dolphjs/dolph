@@ -5,7 +5,7 @@ import clc from 'cli-color';
 
 /**
  *
- * Used to initialize mongodb with mogoose ORM
+ * Used to Initialise mongodb with mogoose ORM
  * @returns the mogoose promise
  *
  * @version 1.0.0
