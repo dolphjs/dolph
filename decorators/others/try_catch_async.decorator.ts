@@ -1,6 +1,7 @@
 /**
- * An asynchronous class-method decorator which wraps a method in a try-catch block
+ * An asynchronous class-method decorator which wrxaps a method in a try-catch block
  * @version 1.4.3
+ * @deprecated
  */
 export const TryCatchAsyncDec = () => {
     return (target: any, propertyKey: string, descriptor: PropertyDescriptor) => {

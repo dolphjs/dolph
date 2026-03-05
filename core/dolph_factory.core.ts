@@ -727,7 +727,7 @@ class DolphFactoryClass<T extends DolphControllerHandler<Dolph>> {
             };
 
             start()
-                .then((res) => {
+                .then((_) => {
                     logger.info(
                         clc.blueBright(
                             `Dolph app running on port ${clc.white(`${this.port}`)} in ${this.env.toUpperCase()} mode`,
@@ -740,6 +740,8 @@ class DolphFactoryClass<T extends DolphControllerHandler<Dolph>> {
                     logger.error(clc.red(`Cannot start Dolph Server: ${err}`));
                 });
         }
+
+        //Todo: implement automated control of popular databases including MySQl and PostgreSQL. Currently ony MongoDB is supported.
         // if (this.configs.database?.mysql?.host.length > 1) {
         //   autoInitMySql(
         //     this.configs.database.mysql.database,
