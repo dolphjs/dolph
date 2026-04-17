@@ -13,10 +13,10 @@ const logger = winston.createLogger({
         winston.format.timestamp(),
         winston.format.printf((info) => {
             const { timestamp, level, message, stack } = info;
-            const formattedTimestamp = clc.white(formatDate(timestamp));
+            const formattedTimestamp = clc.white(formatDate(timestamp as Date));
             let formattedLevel: string;
 
-            let newMessage: string = message;
+            let newMessage: string = message as string;
 
             if (level === 'info') {
                 formattedLevel = clc.blue(`[${level.toUpperCase()}]`);
@@ -68,9 +68,9 @@ const inAppLogger = winston.createLogger({
         winston.format.timestamp(),
         winston.format.printf((info) => {
             const { timestamp, level, message } = info;
-            const formattedTimestamp = formatDate(timestamp);
+            const formattedTimestamp = formatDate(timestamp as Date);
             const logEmoji = emojiForLevel[level] || '🔹';
-            let formattedMessage = message;
+            let formattedMessage = message as string;
 
             let levelLog = `${clc.blue([`${level.toUpperCase()}`])}`;
             if (level === 'warn') {
@@ -81,9 +81,9 @@ const inAppLogger = winston.createLogger({
                 levelLog = `${clc.red([`${level}`])}`;
             }
 
-            if (message.startsWith('Registered')) {
+            if (formattedMessage.startsWith('Registered')) {
                 // Split the message to extract the relevant parts
-                const [action, componentDetails] = message.split('>>>>').map((part) => part.trim());
+                const [action, componentDetails] = formattedMessage.split('>>>>').map((part) => part.trim());
 
                 // Determine the component type based on the presence of specific keywords
                 // const componentType = componentDetails.includes('Middleware')

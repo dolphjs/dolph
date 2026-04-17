@@ -31,7 +31,8 @@
         "copy:license": "gulp copy:license",
         "copy:npm-ignore": "gulp copy:npm-ignore",
         "copy:all": "npm run copy:package-json && npm run copy:readme && npm run copy:license && npm run copy:npm-ignore",
-        "pre:release": "npm run test && npm run build && npm run copy:all"
+        "pre:release": "npm run test && npm run build && npm run copy:all",
+        "before:release": "npm run build && npm run copy:all"
     },
     "lint-staged": {
         "**/*.ts": [
