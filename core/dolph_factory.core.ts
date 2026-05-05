@@ -46,14 +46,11 @@ import { transformAndValidateDto } from './transformer';
 const engine = express();
 
 // declare core variables
-let env = configs.NODE_ENV;
 let port = configs.PORT;
 let server: Server<typeof IncomingMessage, typeof ServerResponse> = createServer(engine);
 
 // disable the x-powered-by header returned by express
 engine.disable('x-powered-by');
-
-engine.options('*', cors());
 
 // function add cors middleware to express
 const enableCorsFunc = (corsOptions: CorsOptions) => {
@@ -67,7 +64,7 @@ const enableHelmetFunc = (helmetOptions?: HelmetOptions) => {
 /**
  * Function is used to register express router handlers using the **express routing** architecture
  */
-const InitialiseRoutes = (routes: Array<{ path?: string; router: import('express').Router }>, basePath: string = '') => {
+const InitialiseRoutes = (routes: Array<{ path?: string; router: import('express').Router }>, basePath = '') => {
     routes.forEach((route) => {
         // const path = join(basePath, route.path || '');
         const path = normalizePath(join(basePath, route.path || '')).replace(/\\/g, '/');
@@ -94,7 +91,7 @@ const InitialiseControllersAsRouter = <T extends Dolph>(
             /**
              * Retrieve shield middleware if present
              */
-            let shieldMiddlewares = getShieldMiddlewares(Controller) || [];
+            const shieldMiddlewares = getShieldMiddlewares(Controller) || [];
 
             /**
              * register each controller method
@@ -285,7 +282,7 @@ const InitialiseControllersAsRouter = <T extends Dolph>(
                                     // Any further parameters will remain undefined unless handled by other (future) decorators
                                 }
 
-                                const result = await controllerInstance[methodName].apply(controllerInstance, args);
+                                const result = await controllerInstance[methodName](...args);
 
                                 if (result !== undefined && !res.headersSent) {
                                     // Todo: handle auto sending of response from the controller method's return
@@ -335,7 +332,7 @@ const InitialiseMiddlewares = ({ jsonLimit }) => {
     engine.use(express.json({ limit: jsonLimit }));
     engine.use(express.urlencoded({ extended: true }));
     engine.use((req, res, next) => {
-        //@ts-expect-error
+        //@ts-expect-error -- req.handlerArgs is a custom property not in the type definition
         req.handlerArgs = [];
         next();
     });
@@ -443,13 +440,13 @@ const initClosureHandler = () => {
  *
  * @version 1.4.0
  */
-class DolphFactoryClass<T extends DolphControllerHandler<Dolph>> {
+class DolphFactoryClass {
     private routes = [];
     private controllers = [];
     private sockets?: DSocketInit<Dolph>;
     private socketService?: SocketService;
-    private routingBase: string = '';
-    private isGraphQL: boolean = false;
+    private routingBase = '';
+    private isGraphQL = false;
 
     port: dolphPort = process.env.PORT || 3030;
     env = process.env.NODE_ENV || 'development';
@@ -482,6 +479,7 @@ class DolphFactoryClass<T extends DolphControllerHandler<Dolph>> {
             if (adapter.graphql) {
                 this.isGraphQL = adapter.graphql;
 
+                // eslint-disable-next-line @typescript-eslint/no-var-requires
                 const { GraphQLAdapter } = require('@dolphjs/graphql');
 
                 GraphQLAdapter.apolloServer(server, adapter.schema, adapter.context)
@@ -590,7 +588,7 @@ class DolphFactoryClass<T extends DolphControllerHandler<Dolph>> {
             }
 
             if (config.middlewares) {
-                if (config.middlewares.cors.activate) {
+                if (config.middlewares.cors?.activate) {
                     const {
                         optionsSuccessStatus,
                         allowedHeaders,
@@ -602,8 +600,8 @@ class DolphFactoryClass<T extends DolphControllerHandler<Dolph>> {
                     } = config.middlewares.cors;
                     this.enableCors({
                         optionsSuccessStatus,
-                        allowedHeaders,
-                        exposedHeaders,
+                        allowedHeaders: allowedHeaders ?? undefined,
+                        exposedHeaders: exposedHeaders ?? undefined,
                         credentials,
                         maxAge,
                         origin: origin || '*',
@@ -651,7 +649,6 @@ class DolphFactoryClass<T extends DolphControllerHandler<Dolph>> {
         }
 
         port = +this.port;
-        env = this.env;
 
         /**
          * End the time recording and obtain duration
@@ -722,12 +719,12 @@ class DolphFactoryClass<T extends DolphControllerHandler<Dolph>> {
             });
         } else {
             const start = async () => {
-                //@ts-expect-error
+                //@ts-expect-error -- server.listen callback typing does not match Promise resolve
                 await new Promise((resolve) => server.listen({ port }, resolve));
             };
 
             start()
-                .then((_) => {
+                .then(() => {
                     logger.info(
                         clc.blueBright(
                             `Dolph app running on port ${clc.white(`${this.port}`)} in ${this.env.toUpperCase()} mode`,
