@@ -598,7 +598,7 @@ class DolphFactoryClass {
                         origin,
                         preflightContinue,
                     } = config.middlewares.cors;
-                    this.enableCors({
+                    enableCorsFunc({
                         optionsSuccessStatus,
                         allowedHeaders: allowedHeaders ?? undefined,
                         exposedHeaders: exposedHeaders ?? undefined,
@@ -665,7 +665,16 @@ class DolphFactoryClass {
         next();
     }
 
+    /**
+     * @deprecated Configure CORS via the `middlewares.cors` section in `dolph_config.yaml` instead.
+     * This method will be removed in the next major version.
+     */
     public enableCors(options?: CorsOptions) {
+        inAppLogger.warn(
+            clc.yellow(
+                '`enableCors()` is deprecated and will be removed in the next major version. Use the `middlewares.cors` section in `dolph_config.yaml` instead.',
+            ),
+        );
         enableCorsFunc(options || { origin: '*' });
     }
 
