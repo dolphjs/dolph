@@ -32,7 +32,6 @@ import { DSocketInit } from '../common/interfaces/socket.interfaces';
 import { GlobalInjection } from './initialisers';
 import { middlewareRegistry } from './initialisers/middleware_registrar';
 import { join } from 'path';
-import { fallbackResponseMiddleware } from './fallback_middleware.core';
 import { MVCAdapter } from './adapters/mvc_registrar';
 import { engine as handlebars } from 'express-handlebars';
 import { ROUTE_ARGS_METADATA, RouteParamMetadata, routeParamsArr, TryCatchAsyncDec } from '../decorators';
@@ -158,6 +157,20 @@ const InitialiseControllersAsRouter = <T extends Dolph>(
                         const hasCoreParamDecorators = routeArgsMetadata.some(
                             (meta) => meta.index < expectedArgsCount && routeParamsArr.includes(meta.type),
                         );
+
+                        // Fast path: no per-route middleware, no param decorators, no MVC template
+                        // Registers a plain synchronous handler — avoids Promise/async/array overhead on every request
+                        if (finalMiddlewareList.length === 0 && !hasCoreParamDecorators && !renderTemplate) {
+                            router[method](fullPath, (req: DRequest, res: DResponse, next: DNextFunc) => {
+                                try {
+                                    controllerInstance[methodName](req, res, next);
+                                } catch (error) {
+                                    next(error);
+                                }
+                            });
+                            inAppLogger.info(dolphMessages.routeMessages(methodName, method, fullPath));
+                            return;
+                        }
 
                         const handler = async (req: DRequest, res: DResponse, next: DNextFunc) => {
                             try {
@@ -297,7 +310,6 @@ const incrementHandlers = () => {
 const InitialiseMiddlewares = ({ jsonLimit }) => {
     engine.use(express.json({ limit: jsonLimit }));
     engine.use(express.urlencoded({ extended: true }));
-    engine.use(fallbackResponseMiddleware);
 };
 
 // registers middlewares defined by user

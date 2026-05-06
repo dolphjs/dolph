@@ -37,42 +37,37 @@ export const UseMiddleware = (middleware: Middleware): MethodDecorator => {
 };
 
 export const Get = (path: string = ''): MethodDecorator => {
-    return (target: any, propertyKey: string, descriptor: PropertyDescriptor) => {
-        const classPath = Reflect.getMetadata('basePath', target.constructor.prototype) || '';
+    return (_target: any, _propertyKey: string, descriptor: PropertyDescriptor) => {
         Reflect.defineMetadata('method', 'get', descriptor.value);
-        Reflect.defineMetadata('path', normalizePath(classPath + path), descriptor.value);
+        Reflect.defineMetadata('path', normalizePath(path), descriptor.value);
     };
 };
 
 export const Post = (path: string = ''): MethodDecorator => {
-    return (target: any, propertyKey: string, descriptor: PropertyDescriptor) => {
-        const classPath = Reflect.getMetadata('basePath', target.constructor.prototype) || '';
+    return (_target: any, _propertyKey: string, descriptor: PropertyDescriptor) => {
         Reflect.defineMetadata('method', 'post', descriptor.value);
-        Reflect.defineMetadata('path', normalizePath(classPath + path), descriptor.value);
+        Reflect.defineMetadata('path', normalizePath(path), descriptor.value);
     };
 };
 
 export const Patch = (path: string = ''): MethodDecorator => {
-    return (target: any, propertyKey: string, descriptor: PropertyDescriptor) => {
-        const classPath = Reflect.getMetadata('basePath', target.constructor.prototype) || '';
+    return (_target: any, _propertyKey: string, descriptor: PropertyDescriptor) => {
         Reflect.defineMetadata('method', 'patch', descriptor.value);
-        Reflect.defineMetadata('path', normalizePath(classPath + path), descriptor.value);
+        Reflect.defineMetadata('path', normalizePath(path), descriptor.value);
     };
 };
 
 export const Put = (path: string = ''): MethodDecorator => {
-    return (target: any, propertyKey: string, descriptor: PropertyDescriptor) => {
-        const classPath = Reflect.getMetadata('basePath', target.constructor.prototype) || '';
+    return (_target: any, _propertyKey: string, descriptor: PropertyDescriptor) => {
         Reflect.defineMetadata('method', 'put', descriptor.value);
-        Reflect.defineMetadata('path', normalizePath(classPath + path), descriptor.value);
+        Reflect.defineMetadata('path', normalizePath(path), descriptor.value);
     };
 };
 
 export const Delete = (path: string = ''): MethodDecorator => {
-    return (target: any, propertyKey: string, descriptor: PropertyDescriptor) => {
-        const classPath = Reflect.getMetadata('basePath', target.constructor.prototype) || '';
+    return (_target: any, _propertyKey: string, descriptor: PropertyDescriptor) => {
         Reflect.defineMetadata('method', 'delete', descriptor.value);
-        Reflect.defineMetadata('path', normalizePath(classPath + path), descriptor.value);
+        Reflect.defineMetadata('path', normalizePath(path), descriptor.value);
     };
 };
 
@@ -113,7 +108,7 @@ export const Component = <T extends Dolph>({ controllers, services }: ComponentP
             }
 
             // Check if this service class is a registered service in the component
-            if (!services.includes(serviceClass)) {
+            if (!services?.includes(serviceClass)) {
                 throw new Error(
                     `Resolution error: Service '${serviceClass.name}' is not registered in the component '${target.name}'.`,
                 );
@@ -219,10 +214,19 @@ export const Component = <T extends Dolph>({ controllers, services }: ComponentP
         const originalControllers = [...controllers];
         const modifiedControllers = originalControllers.map((controllerClass: any) => {
             const originalConstructor = controllerClass;
-            const newConstructor = function (...args: any[]) {
-                const instance = Reflect.construct(originalConstructor, args, new.target || originalConstructor);
+            // Read constructor param types once at component setup time, not per-instantiation
+            const paramTypes: any[] = Reflect.getMetadata('design:paramtypes', originalConstructor) || [];
+            const useConstructorInjection = paramTypes.length > 0;
 
-                // Inject all resolved service instances onto the controller instance
+            const newConstructor = function (...args: any[]) {
+                if (useConstructorInjection) {
+                    // Resolve only the services this controller explicitly declares in its constructor
+                    const resolvedArgs = paramTypes.map((paramType: any) => serviceInstances.get(paramType));
+                    return Reflect.construct(originalConstructor, resolvedArgs, new.target || newConstructor);
+                }
+
+                // Fallback: no constructor params — inject all component services as named properties
+                const instance = Reflect.construct(originalConstructor, args, new.target || newConstructor);
                 serviceInstances.forEach((serviceInstance, sc) => {
                     Object.defineProperty(instance, sc.name, {
                         value: serviceInstance,
@@ -234,9 +238,10 @@ export const Component = <T extends Dolph>({ controllers, services }: ComponentP
                 return instance;
             };
 
-            newConstructor.prototype = originalConstructor.prototype;
-            originalConstructor.prototype.constructor = newConstructor;
-            // Object.defineProperty(newConstructor, 'name', { value: `Wrapped${originalConstructor.name}` });
+            // Use Object.create so newConstructor gets its own prototype object that
+            // inherits from the original — avoids mutating originalConstructor.prototype.
+            newConstructor.prototype = Object.create(originalConstructor.prototype);
+            newConstructor.prototype.constructor = newConstructor;
             Object.defineProperty(newConstructor, 'name', { value: originalConstructor.name, writable: false });
             // Copy static members
             Object.setPrototypeOf(newConstructor, originalConstructor);

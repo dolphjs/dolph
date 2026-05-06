@@ -13,6 +13,9 @@ const ONLY = onlyIdx !== -1 ? argv[onlyIdx + 1] : null;
 const DURATION = QUICK ? 5 : 15;
 const CONNECTIONS = 100;
 const PIPELINING = 1;
+// Slow async endpoints use fewer connections so the pool doesn't overwhelm the event loop
+// but still measures concurrency handling under realistic load.
+const ASYNC_CONNECTIONS = 50;
 const READY_TIMEOUT_MS = 90_000;
 
 const BENCH_DIR = __dirname;
@@ -72,7 +75,9 @@ const ALL_FRAMEWORKS = [
 const FRAMEWORKS = ONLY ? ALL_FRAMEWORKS.filter((f) => f.name === ONLY) : ALL_FRAMEWORKS;
 
 // Endpoints
+// Each entry may have an optional `connections` override (defaults to CONNECTIONS).
 const ENDPOINTS = [
+    // ── Baseline sync endpoints ───────────────────────────────────────────
     {
         id: 'ping',
         title: 'GET /ping',
@@ -92,6 +97,90 @@ const ENDPOINTS = [
         method: 'POST',
         body: JSON.stringify({ hello: 'world', num: 42 }),
         headers: { 'content-type': 'application/json' },
+    },
+
+    // ── Async workload endpoints ──────────────────────────────────────────
+    // 1. Pure async overhead (Promise.resolve, no timer)
+    {
+        id: 'async-instant',
+        title: 'GET /async/instant',
+        path: '/async/instant',
+        method: 'GET',
+        connections: CONNECTIONS,
+    },
+    // 2. 10 ms — micro I/O latency
+    {
+        id: 'async-micro',
+        title: 'GET /async/micro (10ms)',
+        path: '/async/micro',
+        method: 'GET',
+        connections: CONNECTIONS,
+    },
+    // 3. 50 ms — light I/O
+    {
+        id: 'async-light',
+        title: 'GET /async/light (50ms)',
+        path: '/async/light',
+        method: 'GET',
+        connections: CONNECTIONS,
+    },
+    // 4. 150 ms — typical remote API call
+    {
+        id: 'async-medium',
+        title: 'GET /async/medium (150ms)',
+        path: '/async/medium',
+        method: 'GET',
+        connections: ASYNC_CONNECTIONS,
+    },
+    // 5. 500 ms — heavy I/O
+    {
+        id: 'async-heavy',
+        title: 'GET /async/heavy (500ms)',
+        path: '/async/heavy',
+        method: 'GET',
+        connections: ASYNC_CONNECTIONS,
+    },
+    // 6. 1 s delay
+    {
+        id: 'async-1s',
+        title: 'GET /async/1s',
+        path: '/async/1s',
+        method: 'GET',
+        connections: ASYNC_CONNECTIONS,
+    },
+    // 7. 2 s delay
+    {
+        id: 'async-2s',
+        title: 'GET /async/2s',
+        path: '/async/2s',
+        method: 'GET',
+        connections: ASYNC_CONNECTIONS,
+    },
+    // 8. 3 s delay
+    {
+        id: 'async-3s',
+        title: 'GET /async/3s',
+        path: '/async/3s',
+        method: 'GET',
+        connections: ASYNC_CONNECTIONS,
+    },
+    // 9. Fan-out — 3 parallel 100 ms tasks (~100 ms wall-time)
+    {
+        id: 'async-fanout',
+        title: 'GET /async/fanout (3×100ms)',
+        path: '/async/fanout',
+        method: 'GET',
+        connections: ASYNC_CONNECTIONS,
+    },
+    // 10. Pipeline — body parse + enrich + 75 ms persist
+    {
+        id: 'async-pipeline',
+        title: 'POST /async/pipeline (75ms)',
+        path: '/async/pipeline',
+        method: 'POST',
+        body: JSON.stringify({ user: 'bench', value: 42 }),
+        headers: { 'content-type': 'application/json' },
+        connections: ASYNC_CONNECTIONS,
     },
 ];
 
@@ -146,7 +235,7 @@ function runAutocannon(url, opts) {
         const instance = autocannon(
             {
                 url,
-                connections: CONNECTIONS,
+                connections: opts.connections || CONNECTIONS,
                 pipelining: PIPELINING,
                 duration: DURATION,
                 method: opts.method || 'GET',
@@ -235,12 +324,36 @@ function printTable(endpointTitle, rows) {
 }
 
 function printSummary(allResults) {
+    const baselineIds = ['ping', 'param', 'post'];
+    const asyncIds = ENDPOINTS.filter((e) => !baselineIds.includes(e.id)).map((e) => e.id);
+
     console.log('\n\n══════════════════════════════════════════════════════');
-    console.log('  BENCHMARK SUMMARY');
+    console.log('  BENCHMARK SUMMARY — BASELINE (sync)');
     console.log(`  ${CONNECTIONS} connections · ${PIPELINING} pipelining · ${DURATION}s duration`);
     console.log('══════════════════════════════════════════════════════');
 
-    for (const endpoint of ENDPOINTS) {
+    for (const endpoint of ENDPOINTS.filter((e) => baselineIds.includes(e.id))) {
+        const rows = FRAMEWORKS.map((fw) => {
+            const r = allResults[fw.name]?.[endpoint.id];
+            if (!r) return { name: fw.name };
+            return {
+                name: fw.name,
+                reqps: r.requests?.average,
+                latAvg: r.latency?.average,
+                latP99: r.latency?.p99,
+                throughput: r.throughput?.average,
+                errors: r.errors,
+            };
+        });
+        printTable(endpoint.title, rows);
+    }
+
+    console.log('\n\n══════════════════════════════════════════════════════');
+    console.log('  BENCHMARK SUMMARY — ASYNC WORKLOADS');
+    console.log(`  ${ASYNC_CONNECTIONS}–${CONNECTIONS} connections · ${PIPELINING} pipelining · ${DURATION}s duration`);
+    console.log('══════════════════════════════════════════════════════');
+
+    for (const endpoint of ENDPOINTS.filter((e) => asyncIds.includes(e.id))) {
         const rows = FRAMEWORKS.map((fw) => {
             const r = allResults[fw.name]?.[endpoint.id];
             if (!r) return { name: fw.name };
@@ -308,6 +421,7 @@ async function main() {
                     method: ep.method,
                     body: ep.body,
                     headers: ep.headers,
+                    connections: ep.connections,
                 });
                 allResults[fw.name][ep.id] = result;
                 console.log(`${fmt(result.requests.average).padStart(8)} req/s   p99 ${fmt(result.latency.p99, 1)}ms`);
