@@ -10,9 +10,16 @@
         "bench:express": "node runner.js --only express",
         "bench:hono": "node runner.js --only hono",
         "bench:nest-express": "node runner.js --only nest-express",
-        "bench:nest-fastify": "node runner.js --only nest-fastify"
+        "bench:nest-fastify": "node runner.js --only nest-fastify",
+        "bench:files": "node file-runner.js",
+        "bench:files:quick": "node file-runner.js --quick",
+        "bench:files:dolph": "node file-runner.js --only dolph",
+        "bench:files:express": "node file-runner.js --only express+multer",
+        "bench:files:nest-express": "node file-runner.js --only nest-express",
+        "bench:files:nest-fastify": "node file-runner.js --only nest-fastify"
     },
     "dependencies": {
+        "@fastify/multipart": "^8.3.0",
         "@hono/node-server": "^1.13.0",
         "@nestjs/common": "^10.4.0",
         "@nestjs/core": "^10.4.0",
