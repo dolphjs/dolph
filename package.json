@@ -79,6 +79,7 @@
         "@types/bcryptjs": "^2.4.2",
         "@types/busboy": "^1.5.4",
         "@types/cli-color": "^2.0.2",
+        "@types/concat-stream": "^2.0.3",
         "@types/cookie-parser": "^1.4.6",
         "@types/cors": "^2.8.13",
         "@types/ejs": "^3.1.5",
