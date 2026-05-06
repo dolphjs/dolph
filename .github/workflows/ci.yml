@@ -28,4 +28,4 @@ jobs:
         run: npx eslint core/dolph_factory.core.ts common/types/spring.types.ts common/middlewares/default_middleware.middleware.ts
 
       - name: Test
-        run: npm test -- --runInBand tests/core.test.ts tests/middleware.test.ts tests/try_catch.test.ts tests/decorator_args.test.ts tests/jwt_auth_parity.test.ts tests/multipart_upload_route.test.ts tests/socket_smoke.test.ts
+        run: npm test -- --runInBand

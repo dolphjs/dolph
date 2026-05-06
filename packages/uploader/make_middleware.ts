@@ -69,8 +69,13 @@ export function makeMiddleware(getOptions: () => UploadConfig & { fields?: Array
             // clear all  pending timeout
             if (uploadTimeOut) clearTimeout(uploadTimeOut);
 
-            req.unpipe(busboy);
-            drainStream(req);
+            const reqStream = req as NodeJS.ReadableStream & { unpipe?: (dest: unknown) => void };
+            if (typeof reqStream.unpipe === 'function') {
+                reqStream.unpipe(busboy);
+            }
+            if (typeof reqStream.on === 'function') {
+                drainStream(reqStream);
+            }
             busboy.removeAllListeners();
 
             // onRequestFinished(req, () => next(err));

@@ -1,4 +1,4 @@
-import { unlinkSync } from 'fs';
+import { unlinkSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { Readable } from 'stream';
 import { diskStorage } from '../../packages';
@@ -44,6 +44,8 @@ describe('Disk Storage Test', () => {
 
     test('should remove file correctly', (done) => {
         const filePath = join(testDestination, 'test-file.txt');
+        writeFileSync(filePath, 'remove-me');
+
         const mockFile = {
             fieldname: 'testFile',
             originalname: 'test-file.txt',
