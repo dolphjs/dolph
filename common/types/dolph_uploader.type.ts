@@ -19,6 +19,8 @@ export interface UploadConfig {
     storage: Storage;
     fileFilter: FileFilter;
     fileStrategy: FileStrategy;
+    /** Upload processing timeout in milliseconds. Defaults to 30 000 ms. */
+    timeout?: number;
 }
 
 export type UploadOptionAndConfig = UploadConfig & Omit<UploadOptions, 'fileFilter'> & {};
@@ -86,6 +88,12 @@ export type UploadOptions = {
      * only works when `type` is of *array*
      */
     maxCount?: number;
+
+    /**
+     * Upload processing timeout in milliseconds.
+     * Defaults to 30 000 ms.
+     */
+    timeout?: number;
 
     /**
      * @type {UploadFields}

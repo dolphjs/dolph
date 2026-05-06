@@ -25,10 +25,8 @@ export const errorHandler = (err: any, req: DRequest, res: DResponse, next: DNex
     let message = err.message || 'An unexpected server error occurred';
 
     if (configs.NODE_ENV === 'production' && !err.isOperational) {
-        if (!statusCode) {
-            statusCode = httpStatus.INTERNAL_SERVER_ERROR;
-            message = 'Internal Server Error';
-        }
+        statusCode = httpStatus.INTERNAL_SERVER_ERROR;
+        message = 'Internal Server Error';
     }
 
     res.locals.errorMessage = message;

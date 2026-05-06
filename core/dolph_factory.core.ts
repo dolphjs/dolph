@@ -34,7 +34,7 @@ import { middlewareRegistry } from './initialisers/middleware_registrar';
 import { join } from 'path';
 import { MVCAdapter } from './adapters/mvc_registrar';
 import { engine as handlebars } from 'express-handlebars';
-import { ROUTE_ARGS_METADATA, RouteParamMetadata, routeParamsArr, TryCatchAsyncDec } from '../decorators';
+import { ROUTE_ARGS_METADATA, RouteParamMetadata, routeParamsArr } from '../decorators';
 import httpStatus from 'http-status';
 import { ClassConstructor } from 'class-transformer';
 import { transformAndValidateDto } from './transformer';
@@ -247,6 +247,7 @@ const InitialiseControllersAsRouter = <T extends Dolph>(
                                                     } catch (error) {
                                                         throw error;
                                                     }
+                                                    break;
                                                 case 'query':
                                                     try {
                                                         const dtoClass = meta.data?.dtoType as
@@ -418,9 +419,14 @@ const initClosureHandler = () => {
     process.on('unhandledRejection', unexpectedErrorHandler);
 
     process.on('SIGTERM', () => {
-        // logger.error(clc.red(DolphErrors.sigtermReceived));
         if (server) {
-            server.close();
+            server.close(() => {
+                process.exit(0);
+            });
+            // Force exit after 10 s if keep-alive connections don't drain
+            setTimeout(() => {
+                process.exit(0);
+            }, 10_000).unref();
         }
     });
 };
@@ -628,15 +634,16 @@ class DolphFactoryClass {
         initMvcAdapter();
         InitialiseRoutes(this.routes, this.routingBase);
         InitialiseControllersAsRouter(this.controllers, this.routingBase);
-        InitialiseErrorHandlers();
-
-        if (!this.isGraphQL) {
-            initNotFoundError();
-        }
 
         if (this.globalFilter) {
             this.dolph.use(this.attachGlobalExceptionFilter);
             logger.info(clc.blueBright(`Dolph app using global exception filter`));
+        }
+
+        InitialiseErrorHandlers();
+
+        if (!this.isGraphQL) {
+            initNotFoundError();
         }
 
         port = +this.port;
@@ -653,9 +660,8 @@ class DolphFactoryClass {
         middlewareRegistry.seal();
     }
 
-    @TryCatchAsyncDec()
-    private attachGlobalExceptionFilter(req: DRequest, res: DResponse, next: DNextFunc) {
-        next();
+    private attachGlobalExceptionFilter(err: any, req: DRequest, res: DResponse, next: DNextFunc) {
+        next(err);
     }
 
     /**

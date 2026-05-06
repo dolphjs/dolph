@@ -10,6 +10,7 @@ const errorMessages = {
 };
 
 export class DolphFIleUploaderError extends Error {
+    readonly statusCode: number = 400;
     private code: string;
     private field: string;
 

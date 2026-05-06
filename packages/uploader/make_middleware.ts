@@ -88,13 +88,9 @@ export function makeMiddleware(getOptions: () => UploadConfig & { fields?: Array
             });
         }
 
-        /**
-         * Todo: allow developer to set the modify the timeout from outside.
-         */
         uploadTimeOut = setTimeout(() => {
-            console.error('Upload middleware timed out');
             done(new Error('Upload process timed out'));
-        }, 3000);
+        }, options.timeout ?? 30_000);
 
         function indicateDone(): void {
             if (readFinished && pendingWrites.isZero() && !errorOccurred) {
