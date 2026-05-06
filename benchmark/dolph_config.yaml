@@ -1,0 +1,2 @@
+env: development
+jsonLimit: 5mb

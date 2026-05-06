@@ -3,6 +3,7 @@ import { RequestHandler } from 'express';
 class MiddlewareRegistry {
     private static instance: MiddlewareRegistry;
     private middlewares: RequestHandler[] = [];
+    private sealed = false;
 
     private constructor() {}
 
@@ -15,11 +16,23 @@ class MiddlewareRegistry {
     }
 
     public register(middleware: RequestHandler) {
+        if (this.sealed) {
+            console.warn(
+                '[dolphjs] middlewareRegistry.register() called after DolphFactory was initialised — ' +
+                    'this middleware will NOT be applied. Register all middleware before constructing DolphFactory.',
+            );
+            return;
+        }
         this.middlewares.push(middleware);
     }
 
     public getMiddlewares(): RequestHandler[] {
         return this.middlewares;
+    }
+
+    /** Called internally by DolphFactory once the engine is set up. */
+    public seal() {
+        this.sealed = true;
     }
 }
 

@@ -1,0 +1,13 @@
+{
+    "compilerOptions": {
+        "experimentalDecorators": true,
+        "emitDecoratorMetadata": true,
+        "esModuleInterop": true,
+        "allowSyntheticDefaultImports": true,
+        "target": "ES2022",
+        "module": "commonjs",
+        "strict": false,
+        "skipLibCheck": true,
+        "useUnknownInCatchVariables": false
+    }
+}

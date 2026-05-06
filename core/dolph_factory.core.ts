@@ -21,12 +21,10 @@ import { DolphErrors, dolphMessages } from '../common/constants';
 import express from 'express';
 import cors from 'cors';
 import { configLoader, configs } from './config.core';
-import { morganErrorHandler, successHandler } from './morgan.core';
 import helmet, { HelmetOptions } from 'helmet';
 import { errorConverter, errorHandler } from './error.core';
 import { createServer, IncomingMessage, Server, ServerResponse } from 'http';
 import xss from 'xss';
-import cookieParser from 'cookie-parser';
 import { normalizePath } from '../utilities/normalize_path.utilities';
 import { DolphControllerHandler } from '../classes';
 import { getControllersFromMetadata } from '../utilities/get_controllers_from_component';
@@ -324,11 +322,6 @@ const incrementHandlers = () => {
 
 // Initialises middlewares used by dolphjs
 const InitialiseMiddlewares = ({ jsonLimit }) => {
-    // if (env === 'development') {
-    engine.use(successHandler);
-    engine.use(morganErrorHandler);
-    // }
-
     engine.use(express.json({ limit: jsonLimit }));
     engine.use(express.urlencoded({ extended: true }));
     engine.use((req, res, next) => {
@@ -336,7 +329,6 @@ const InitialiseMiddlewares = ({ jsonLimit }) => {
         req.handlerArgs = [];
         next();
     });
-    engine.use(cookieParser());
     xss('<script>alert("xss");</script>');
 
     engine.use(fallbackResponseMiddleware);
@@ -503,9 +495,9 @@ class DolphFactoryClass {
                 }
             });
 
-            if (Array.isArray(middlewares) && middlewares.length > 0 && 'handle' in middlewares[0]) {
+            if (Array.isArray(middlewares)) {
                 this.externalMiddlewares = middlewares as RequestHandler[];
-            } else if (typeof middlewares === 'object' && 'socketService' in middlewares) {
+            } else if (typeof middlewares === 'object' && middlewares !== null && 'socketService' in middlewares) {
                 this.sockets = middlewares as DSocketInit<Dolph>;
             }
         }
@@ -658,6 +650,8 @@ class DolphFactoryClass {
         const durationInMilliseconds = Math.round(endTime[0] * 1000 + endTime[1] / 1e6);
 
         logger.info(`${clc.blueBright('Initialised application in')} ${clc.white(`${durationInMilliseconds}ms`)}`);
+
+        middlewareRegistry.seal();
     }
 
     @TryCatchAsyncDec()
