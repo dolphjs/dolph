@@ -91,8 +91,16 @@ const InitialiseControllersAsRouter = <T extends Dolph>(
 
             /**
              * register each controller method
+             * Walk the full prototype chain so methods inherited through wrapping
+             * (e.g. the Object.create layer added by @Component) are also discovered.
              */
-            Object.getOwnPropertyNames(Object.getPrototypeOf(controllerInstance)).forEach((methodName) => {
+            const allMethodNames = new Set<string>();
+            let proto = Object.getPrototypeOf(controllerInstance);
+            while (proto && proto !== Object.prototype) {
+                Object.getOwnPropertyNames(proto).forEach((name) => allMethodNames.add(name));
+                proto = Object.getPrototypeOf(proto);
+            }
+            Array.from(allMethodNames).filter((name) => name !== 'constructor').forEach((methodName) => {
                 if (methodName !== 'constructor') {
                     const method = Reflect.getMetadata('method', controllerInstance.constructor.prototype[methodName]);
 
@@ -159,15 +167,28 @@ const InitialiseControllersAsRouter = <T extends Dolph>(
                         );
 
                         // Fast path: no per-route middleware, no param decorators, no MVC template
-                        // Registers a plain synchronous handler — avoids Promise/async/array overhead on every request
+                        const isAsyncMethod = controllerMethod.constructor.name === 'AsyncFunction';
+
                         if (finalMiddlewareList.length === 0 && !hasCoreParamDecorators && !renderTemplate) {
-                            router[method](fullPath, (req: DRequest, res: DResponse, next: DNextFunc) => {
-                                try {
-                                    controllerInstance[methodName](req, res, next);
-                                } catch (error) {
-                                    next(error);
-                                }
-                            });
+                            if (isAsyncMethod) {
+                                // Async fast-path — awaits the handler so errors propagate and delays are observed
+                                router[method](fullPath, async (req: DRequest, res: DResponse, next: DNextFunc) => {
+                                    try {
+                                        await controllerInstance[methodName](req, res, next);
+                                    } catch (error) {
+                                        next(error);
+                                    }
+                                });
+                            } else {
+                                // Sync fast-path — plain handler, avoids Promise/async overhead on every request
+                                router[method](fullPath, (req: DRequest, res: DResponse, next: DNextFunc) => {
+                                    try {
+                                        controllerInstance[methodName](req, res, next);
+                                    } catch (error) {
+                                        next(error);
+                                    }
+                                });
+                            }
                             inAppLogger.info(dolphMessages.routeMessages(methodName, method, fullPath));
                             return;
                         }
