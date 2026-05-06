@@ -90,6 +90,11 @@ class MemoryStorage implements Storage {
     }
 }
 
+// Default file filter — accepts all files unless the caller provides their own
+function defaultFileFilter(_req: DRequest, _file: FileInfo, callback: (error: Error | null, acceptFile: boolean) => void): void {
+    callback(null, true);
+}
+
 // Helper functions
 function defaultGetFilename(
     _req: DRequest,
@@ -123,11 +128,14 @@ function createDirectory(destination: string): void {
 function createUploadMiddleware(options: Partial<UploadOptionAndConfig> = {}) {
     if (!options.fieldname) throw new Error('Provide the `fieldname` option');
 
+    const fileFilter = options.fileFilter ?? defaultFileFilter;
+
     if (options.type == 'single') {
         return makeMiddleware(
             () =>
                 ({
                     ...options,
+                    fileFilter,
                     fileStrategy: 'VALUE',
                     fields: [{ name: options.fieldname, maxCount: 1 }],
                 }) as UploadConfig,
@@ -138,6 +146,7 @@ function createUploadMiddleware(options: Partial<UploadOptionAndConfig> = {}) {
             () =>
                 ({
                     ...options,
+                    fileFilter,
                     fileStrategy: 'ARRAY',
                     fields: [{ name: options.fieldname, maxCount: options.maxCount }],
                 }) as UploadConfig,
@@ -148,6 +157,7 @@ function createUploadMiddleware(options: Partial<UploadOptionAndConfig> = {}) {
             () =>
                 ({
                     ...options,
+                    fileFilter,
                     fileStrategy: 'OBJECT',
                     fields: options.fields,
                 }) as UploadConfig,

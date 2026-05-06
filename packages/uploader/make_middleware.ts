@@ -123,10 +123,10 @@ export function makeMiddleware(getOptions: () => UploadConfig & { fields?: Array
             abortWithError(new DolphFIleUploaderError(code, field));
         }
 
-        busboy.on('field', (fieldname: string, value: any, fieldNameTruncated: boolean, valueTruncated: boolean) => {
+        busboy.on('field', (fieldname: string, value: any, info: { nameTruncated: boolean; valueTruncated: boolean }) => {
             if (!fieldname) return abortWithCode('MISSING_FIELD_NAME');
-            if (fieldNameTruncated) return abortWithCode('LIMIT_FIELD_KEY');
-            if (valueTruncated) return abortWithCode('LIMIT_FIELD_VALUE', fieldname);
+            if (info.nameTruncated) return abortWithCode('LIMIT_FIELD_KEY');
+            if (info.valueTruncated) return abortWithCode('LIMIT_FIELD_VALUE', fieldname);
 
             if (options.limits?.fieldNameSize && fieldname.length > options.limits.fieldNameSize) {
                 return abortWithCode('LIMIT_FIELD_KEY');
@@ -137,7 +137,7 @@ export function makeMiddleware(getOptions: () => UploadConfig & { fields?: Array
 
         busboy.on(
             'file',
-            (fieldname: string, fileStream: NodeJS.ReadableStream, filename: any, encoding: string, mimetype: string) => {
+            (fieldname: string, fileStream: NodeJS.ReadableStream, info: { filename: string; encoding: string; mimeType: string }) => {
                 if (!fieldname) return fileStream.resume();
 
                 if (options.limits?.fieldNameSize && fieldname.length > options.limits.fieldNameSize) {
@@ -146,9 +146,9 @@ export function makeMiddleware(getOptions: () => UploadConfig & { fields?: Array
 
                 const file: FileInfo = {
                     fieldname,
-                    originalname: filename.filename || filename,
-                    encoding: filename.encoding || encoding || '7bit',
-                    mimetype: filename.mimeType || mimetype || 'application/octet-stream',
+                    originalname: info.filename || '',
+                    encoding: info.encoding || '7bit',
+                    mimetype: info.mimeType || 'application/octet-stream',
                 };
 
                 const placeholder = appender.insertPlaceholder(file);

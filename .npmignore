@@ -13,6 +13,7 @@ tsconfig.spec.json
 
 views
 samples
+benchmark
 
 README.md
 renovate.json

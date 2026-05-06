@@ -32,7 +32,20 @@
         "copy:npm-ignore": "gulp copy:npm-ignore",
         "copy:all": "npm run copy:package-json && npm run copy:readme && npm run copy:license && npm run copy:npm-ignore",
         "pre:release": "npm run test && npm run build && npm run copy:all",
-        "before:release": "npm run build && npm run copy:all"
+        "before:release": "npm run build && npm run copy:all",
+        "bench": "node benchmark/runner.js",
+        "bench:quick": "node benchmark/runner.js --quick",
+        "bench:dolph": "node benchmark/runner.js --only dolph",
+        "bench:express": "node benchmark/runner.js --only express",
+        "bench:hono": "node benchmark/runner.js --only hono",
+        "bench:nest-express": "node benchmark/runner.js --only nest-express",
+        "bench:nest-fastify": "node benchmark/runner.js --only nest-fastify",
+        "bench:files": "node benchmark/file-runner.js",
+        "bench:files:quick": "node benchmark/file-runner.js --quick",
+        "bench:files:dolph": "node benchmark/file-runner.js --only dolph",
+        "bench:files:express": "node benchmark/file-runner.js --only express+multer",
+        "bench:files:nest-express": "node benchmark/file-runner.js --only nest-express",
+        "bench:files:nest-fastify": "node benchmark/file-runner.js --only nest-fastify"
     },
     "lint-staged": {
         "**/*.ts": [
