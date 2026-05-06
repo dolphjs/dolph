@@ -4,9 +4,6 @@ const { spawn } = require('child_process');
 const http = require('http');
 const path = require('path');
 
-// ---------------------------------------------------------------------------
-// CLI args
-// ---------------------------------------------------------------------------
 const argv = process.argv.slice(2);
 const QUICK = argv.includes('--quick');
 const VERBOSE = argv.includes('--verbose');
@@ -25,9 +22,8 @@ const ROOT_DIR = path.resolve(BENCH_DIR, '..');
 const BENCH_TS_NODE = path.join(BENCH_DIR, 'node_modules', '.bin', 'ts-node');
 const ROOT_TS_NODE = path.join(ROOT_DIR, 'node_modules', '.bin', 'ts-node');
 
-// ---------------------------------------------------------------------------
 // Framework definitions
-// ---------------------------------------------------------------------------
+
 const ALL_FRAMEWORKS = [
     {
         name: 'dolph',
@@ -75,9 +71,7 @@ const ALL_FRAMEWORKS = [
 
 const FRAMEWORKS = ONLY ? ALL_FRAMEWORKS.filter((f) => f.name === ONLY) : ALL_FRAMEWORKS;
 
-// ---------------------------------------------------------------------------
 // Endpoints
-// ---------------------------------------------------------------------------
 const ENDPOINTS = [
     {
         id: 'ping',
@@ -101,9 +95,7 @@ const ENDPOINTS = [
     },
 ];
 
-// ---------------------------------------------------------------------------
 // Helpers
-// ---------------------------------------------------------------------------
 function waitForServer(port, timeout = READY_TIMEOUT_MS) {
     return new Promise((resolve, reject) => {
         const deadline = Date.now() + timeout;
@@ -186,9 +178,7 @@ function killProcess(proc) {
     });
 }
 
-// ---------------------------------------------------------------------------
 // Formatting
-// ---------------------------------------------------------------------------
 function fmt(n, decimals = 0) {
     if (n === undefined || n === null) return 'N/A';
     return Number(n).toLocaleString('en-US', {
@@ -269,9 +259,7 @@ function printSummary(allResults) {
     console.log('');
 }
 
-// ---------------------------------------------------------------------------
 // Main
-// ---------------------------------------------------------------------------
 async function main() {
     if (FRAMEWORKS.length === 0) {
         console.error(`Unknown framework: ${ONLY}`);

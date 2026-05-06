@@ -24,7 +24,6 @@ import { configLoader, configs } from './config.core';
 import helmet, { HelmetOptions } from 'helmet';
 import { errorConverter, errorHandler } from './error.core';
 import { createServer, IncomingMessage, Server, ServerResponse } from 'http';
-import xss from 'xss';
 import { normalizePath } from '../utilities/normalize_path.utilities';
 import { DolphControllerHandler } from '../classes';
 import { getControllersFromMetadata } from '../utilities/get_controllers_from_component';
@@ -151,15 +150,21 @@ const InitialiseControllersAsRouter = <T extends Dolph>(
                     if (method && path) {
                         const fullPath = normalizePath(join(basePath, controllerBasePath, path)).replace(/\\/g, '/');
 
+                        // Hoist constant per-route values — evaluated once at registration, not on every request
+                        const controllerMethod = controllerInstance.constructor.prototype[methodName];
+                        const expectedArgsCount = controllerMethod.length;
+                        const routeArgsMetadata: RouteParamMetadata[] =
+                            Reflect.getMetadata(ROUTE_ARGS_METADATA, controllerInstance.constructor.prototype, methodName) || [];
+                        const hasCoreParamDecorators = routeArgsMetadata.some(
+                            (meta) => meta.index < expectedArgsCount && routeParamsArr.includes(meta.type),
+                        );
+
                         const handler = async (req: DRequest, res: DResponse, next: DNextFunc) => {
                             try {
                                 // Apply middleware
                                 for (const middleware of finalMiddlewareList) {
                                     await new Promise<void>((resolve, reject) => {
                                         if (res.headersSent) {
-                                            /**
-                                             * Todo: Revisit this code
-                                             *  */
                                             return resolve();
                                         }
                                         middleware(req, res, (err?: any) => {
@@ -176,28 +181,11 @@ const InitialiseControllersAsRouter = <T extends Dolph>(
                                 }
 
                                 // -- Decorator Resolution Logic --
-                                const controllerMethodItself = controllerInstance.constructor.prototype[methodName];
-                                const expectedArgsCount = controllerMethodItself.length;
                                 const args: any[] = new Array(expectedArgsCount);
-
-                                // Retrieve metadata stored by @DReq, @DRes, etc.
-                                // Metadata is on the prototype's method
-                                const routeArgsMetadata: RouteParamMetadata[] =
-                                    Reflect.getMetadata(
-                                        ROUTE_ARGS_METADATA,
-                                        controllerInstance.constructor.prototype,
-                                        methodName,
-                                    ) || [];
-
-                                let hasCoreParamDecorators = false;
 
                                 if (routeArgsMetadata.length > 0) {
                                     for (const meta of routeArgsMetadata) {
                                         if (meta.index < expectedArgsCount) {
-                                            // Ensure index is within bounds
-                                            if (routeParamsArr.includes(meta.type)) {
-                                                hasCoreParamDecorators = true;
-                                            }
                                             switch (meta.type) {
                                                 case 'req':
                                                     args[meta.index] = req;
@@ -220,12 +208,9 @@ const InitialiseControllersAsRouter = <T extends Dolph>(
                                                         args[meta.index] = await transformAndValidateDto(
                                                             dtoClass,
                                                             req.params,
-                                                            // Context for error messages
                                                             'request params',
                                                         );
                                                     } catch (error) {
-                                                        // If transformAndValidateDto throws (e.g., ValidationException or internal error),
-                                                        // pass it to the Express error handling chain.
                                                         throw error;
                                                     }
                                                 case 'query':
@@ -237,12 +222,9 @@ const InitialiseControllersAsRouter = <T extends Dolph>(
                                                         args[meta.index] = await transformAndValidateDto(
                                                             dtoClass,
                                                             req.query,
-                                                            // Context for error messages
                                                             'request query',
                                                         );
                                                     } catch (error) {
-                                                        // If transformAndValidateDto throws (e.g., ValidationException or internal error),
-                                                        // pass it to the Express error handling chain.
                                                         throw error;
                                                     }
                                                 case 'file':
@@ -257,12 +239,9 @@ const InitialiseControllersAsRouter = <T extends Dolph>(
                                                         args[meta.index] = await transformAndValidateDto(
                                                             dtoClass,
                                                             req.body,
-                                                            // Context for error messages
                                                             'request body',
                                                         );
                                                     } catch (error) {
-                                                        // If transformAndValidateDto throws (e.g., ValidationException or internal error),
-                                                        // pass it to the Express error handling chain.
                                                         throw error;
                                                     }
                                                     break;
@@ -271,13 +250,11 @@ const InitialiseControllersAsRouter = <T extends Dolph>(
                                     }
                                 }
 
-                                // If no @DReq, @DRes, @DNext decorators were used on this method,
-                                // fall back to the traditional positional arguments for backward compatibility.
+                                // Fall back to positional arguments for routes not using param decorators
                                 if (!hasCoreParamDecorators) {
                                     if (expectedArgsCount >= 1) args[0] = req;
                                     if (expectedArgsCount >= 2) args[1] = res;
                                     if (expectedArgsCount >= 3) args[2] = next;
-                                    // Any further parameters will remain undefined unless handled by other (future) decorators
                                 }
 
                                 const result = await controllerInstance[methodName](...args);
@@ -286,12 +263,8 @@ const InitialiseControllersAsRouter = <T extends Dolph>(
                                     // Todo: handle auto sending of response from the controller method's return
                                 }
 
-                                // Invoke the controller method
                                 if (renderTemplate && !res.headersSent) {
-                                    res.render(
-                                        renderTemplate,
-                                        await controllerInstance.constructor.prototype[methodName](req, res, next),
-                                    );
+                                    res.render(renderTemplate, await controllerMethod(req, res, next));
                                 }
                             } catch (error) {
                                 next(error);
@@ -324,13 +297,6 @@ const incrementHandlers = () => {
 const InitialiseMiddlewares = ({ jsonLimit }) => {
     engine.use(express.json({ limit: jsonLimit }));
     engine.use(express.urlencoded({ extended: true }));
-    engine.use((req, res, next) => {
-        //@ts-expect-error -- req.handlerArgs is a custom property not in the type definition
-        req.handlerArgs = [];
-        next();
-    });
-    xss('<script>alert("xss");</script>');
-
     engine.use(fallbackResponseMiddleware);
 };
 
