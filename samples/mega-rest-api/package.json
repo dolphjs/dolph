@@ -1,0 +1,11 @@
+{
+  "name": "dolph-mega-rest-api-sample",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "backend": "ts-node src/server.ts",
+    "start": "ts-node src/server.ts",
+    "dev": "nodemon --watch src --exec ts-node src/server.ts",
+    "playground": "node scripts/run-playground.mjs"
+  }
+}

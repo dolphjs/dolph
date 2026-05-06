@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Dolph Mega API Playground</title>
+        <style>
+            body {
+                margin: 0;
+                font-family: Arial, sans-serif;
+                background: #0f172a;
+                color: #e2e8f0;
+            }
+            .wrap {
+                max-width: 1280px;
+                margin: 0 auto;
+                padding: 20px;
+            }
+            h1 {
+                margin: 0 0 8px;
+            }
+            .hint {
+                margin-bottom: 16px;
+                color: #93c5fd;
+            }
+            .grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+                gap: 14px;
+            }
+            .card {
+                background: #111827;
+                border: 1px solid #1f2937;
+                border-radius: 10px;
+                padding: 12px;
+            }
+            .card h3 {
+                margin: 0 0 10px;
+            }
+            input,
+            textarea,
+            button {
+                width: 100%;
+                box-sizing: border-box;
+                margin: 6px 0;
+                border-radius: 8px;
+                border: 1px solid #334155;
+                background: #0b1220;
+                color: #e2e8f0;
+                padding: 9px;
+                font-size: 14px;
+            }
+            button {
+                background: #1d4ed8;
+                border-color: #2563eb;
+                cursor: pointer;
+                font-weight: 600;
+            }
+            button.secondary {
+                background: #334155;
+                border-color: #475569;
+            }
+            .row {
+                display: flex;
+                gap: 8px;
+            }
+            .row > * {
+                flex: 1;
+            }
+            #log {
+                margin-top: 16px;
+                height: 380px;
+                overflow: auto;
+                background: #020617;
+                border: 1px solid #1e293b;
+                border-radius: 10px;
+                padding: 10px;
+                white-space: pre-wrap;
+                font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+                font-size: 12px;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="wrap">
+            <h1>Dolph Mega REST/API + Socket Playground</h1>
+            <div class="hint">Backend: <code>http://localhost:3040</code>. Use login first to get token/cookie.</div>
+
+            <div class="grid">
+                <section class="card">
+                    <h3>Auth</h3>
+                    <input id="username" value="admin-master" placeholder="username" />
+                    <input id="password" value="secret-pass" placeholder="password" />
+                    <button id="loginBtn">POST /auth/login</button>
+                    <button id="refreshBtn">POST /auth/refresh</button>
+                    <button id="meBtn">GET /auth/me</button>
+                    <button id="cookieMeBtn">GET /auth/cookie-me</button>
+                </section>
+
+                <section class="card">
+                    <h3>Health + Public</h3>
+                    <button id="healthBtn">GET /health</button>
+                    <button id="docsBtn">GET /public/docs</button>
+                    <textarea id="echoMessage">hello from playground</textarea>
+                    <button id="echoBtn">POST /public/echo</button>
+                </section>
+
+                <section class="card">
+                    <h3>Users</h3>
+                    <input id="newUsername" value="qa-user" placeholder="username" />
+                    <input id="newRole" value="user" placeholder="role" />
+                    <input id="newAge" type="number" value="26" placeholder="age" />
+                    <button id="listUsersBtn">GET /users</button>
+                    <button id="createUserBtn">POST /users</button>
+                    <div class="row">
+                        <button id="getUserBtn" class="secondary">GET /users/:id</button>
+                        <button id="updateUserBtn" class="secondary">PUT /users/:id</button>
+                        <button id="deleteUserBtn" class="secondary">DELETE /users/:id</button>
+                    </div>
+                    <input id="targetUserId" placeholder="user id (auto-filled on create)" />
+                </section>
+
+                <section class="card">
+                    <h3>Admin</h3>
+                    <button id="adminLogsBtn">GET /admin/logs</button>
+                    <button id="adminReindexBtn">POST /admin/tasks/reindex</button>
+                </section>
+
+                <section class="card">
+                    <h3>Files</h3>
+                    <input id="singleFileInput" type="file" />
+                    <button id="uploadSingleBtn">POST /files/single</button>
+                    <input id="arrayFileInput" type="file" multiple />
+                    <button id="uploadArrayBtn">POST /files/array</button>
+                    <div>Fields upload:</div>
+                    <input id="avatarInput" type="file" />
+                    <input id="galleryInput" type="file" multiple />
+                    <input id="docsInput" type="file" multiple />
+                    <button id="uploadFieldsBtn">POST /files/fields</button>
+                    <button id="uploadHistoryBtn">GET /files/history</button>
+                </section>
+
+                <section class="card">
+                    <h3>Sockets</h3>
+                    <button id="connectSocketBtn">Connect Socket</button>
+                    <button id="disconnectSocketBtn" class="secondary">Disconnect Socket</button>
+                    <textarea id="chatMessage">hello room</textarea>
+                    <button id="sendChatBtn">Emit chat:message</button>
+                    <button id="pingBtn">Emit notification:ping</button>
+                </section>
+
+                <section class="card">
+                    <h3>Automation</h3>
+                    <button id="runAllBtn">Run Full Automated Sequence</button>
+                    <button id="clearLogBtn" class="secondary">Clear Log</button>
+                    <div id="runSummary"></div>
+                </section>
+            </div>
+
+            <div id="log"></div>
+        </div>
+
+        <script src="./main.js"></script>
+    </body>
+</html>

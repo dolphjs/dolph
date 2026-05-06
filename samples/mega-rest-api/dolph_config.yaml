@@ -1,0 +1,13 @@
+port: 3040
+env: development
+jsonLimit: 20mb
+routing:
+  base: /api/v1
+middlewares:
+  cors:
+    activate: true
+    origin: "*"
+database:
+  mongo:
+    url: ""
+    autoCreate: false

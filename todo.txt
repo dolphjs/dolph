@@ -1,30 +1,34 @@
-1. Add the globalExceptionFilter documentation to the docs which means no need to wrap methods with TryCatchAsync anymore
-2. Add notice that the moment library has been removed on release of v2.
-3. The former hashing functions have been deprecated and replaced with new ones, should be added to the README
-4. maxCount field on fileUploader is useless atm and should be worked on
-5. Add documentation for the fileUploader function as MediaParser has been removed
-
-
-----------
-Write tests for:
-
-- Routing and Controllers
-- Middleware
-- Request and Response Handling
-- Database Integration
-- Error Handling
-- Authentication and Authorization
-- Testing Edge Cases
-- Concurrency and Scalability
-- Configuration
-- Dependency Injection
-- Logging and Debugging
-----------
-
-
- * const payload: IPayload = {
-     iat: Math.floor(Date.now() / 1000),
-     exp: Math.floor(exp.getTime() / 1000),
-     sub: sub,
-     info: info,
-   };
+Prioritized refactor plan (high impact, low risk first)
+Fix config parsing correctness in core/dolph_factory.core.ts
+Why high impact: affects every app startup path.
+Low-risk change: replace faulty typeof 'string' branch with real numeric coercion guard.
+Outcome: reliable port handling from YAML/env.
+Stabilize TypeScript type environment
+Why high impact: currently global type conflicts can break contributor workflows.
+Low-risk change: constrain types/typeRoots and align @types/node duplication sources.
+Outcome: deterministic builds and less CI/local mismatch.
+Replace deprecated sample APIs (MediaParser) with current uploader APIs
+Why high impact: examples are primary onboarding path.
+Low-risk change: migrate old sample code to useFileUploader/fileUploader.
+Outcome: docs/samples reflect current framework behavior.
+Unify controller DI contract
+Why high impact: constructor-vs-property injection currently has ergonomic/type friction.
+Low-risk change: either relax component type signatures or formalize one DI style.
+Outcome: less confusion, cleaner typings for users.
+Harden and expand integration tests for decorator argument injection
+Why high impact: @DBody/@DQuery/@DParam/@DPayload is core API.
+Low-risk change: add focused tests around transform/validation/error paths.
+Outcome: safer refactors in routing/transformer internals.
+Add CI workflow for test + type-check + lint
+Why high impact: catches regressions early.
+Low-risk change: introduce minimal GitHub Actions pipeline.
+Outcome: merge confidence and reproducible quality gate.
+Document canonical architecture + sample conventions
+Why high impact: reduces contributor and user onboarding time.
+Low-risk change: improve README and add architecture doc with component patterns.
+Outcome: fewer implementation divergences across samples/apps.
+Audit middleware stubs/no-op code paths
+Why high impact: hidden behavior gaps in production apps.
+Low-risk change: either implement or deprecate clearly.
+Outcome: more predictable runtime behavior.
+If you want, next I can add a README.md inside samples/mega-rest-api with endpoint catalog and cURL scripts for all auth, upload, admin, and socket test flows.
