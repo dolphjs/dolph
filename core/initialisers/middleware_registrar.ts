@@ -26,6 +26,10 @@ class MiddlewareRegistry {
         this.middlewares.push(middleware);
     }
 
+    public registerMany(middlewares: RequestHandler[]) {
+        middlewares.forEach((middleware) => this.register(middleware));
+    }
+
     public getMiddlewares(): RequestHandler[] {
         return this.middlewares;
     }
