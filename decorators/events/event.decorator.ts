@@ -5,7 +5,7 @@ import { EventEmitterService } from '../../packages/events/events_module.package
  * - currently not released
  * @version 2.0
  */
-function OnEvent(eventName: string, priority: number = 0, once: boolean = false) {
+function OnEvent(eventName: string, priority = 0, once = false) {
     return function (target: any, propertyName: string, descriptor: PropertyDescriptor) {
         const originalMethod = descriptor.value;
 
@@ -24,7 +24,7 @@ function OnEvent(eventName: string, priority: number = 0, once: boolean = false)
  * - currently not released
  * @version 2.0
  */
-function OnceEvent(eventName: string, priority: number = 0) {
+function OnceEvent(eventName: string, priority = 0) {
     return OnEvent(eventName, priority, true);
 }
 

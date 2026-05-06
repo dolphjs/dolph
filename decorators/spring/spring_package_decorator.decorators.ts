@@ -6,7 +6,7 @@ import clc from 'cli-color';
 import { logger } from '../../utilities';
 import { SHIELD_METADATA_KEY, UN_SHIELD_METADATA_KEY } from './meta_data_keys.decorators';
 
-export const Route = (path: string = ''): ClassDecorator => {
+export const Route = (path = ''): ClassDecorator => {
     return (target: any) => {
         Reflect.defineMetadata('basePath', normalizePath(path), target.prototype);
     };
@@ -14,7 +14,7 @@ export const Route = (path: string = ''): ClassDecorator => {
 
 export const Shield = (middlewares: Middleware | Middleware[]): ClassDecorator => {
     return (target: any) => {
-        let middlewareList: Middleware[] = Array.isArray(middlewares) ? middlewares : [middlewares];
+        const middlewareList: Middleware[] = Array.isArray(middlewares) ? middlewares : [middlewares];
 
         Reflect.defineMetadata(SHIELD_METADATA_KEY, middlewareList, target.prototype);
     };
@@ -22,7 +22,7 @@ export const Shield = (middlewares: Middleware | Middleware[]): ClassDecorator =
 
 export const UnShield = (middlewares: Middleware | Middleware[]): MethodDecorator => {
     return (target: any, propertyKey: string, descriptor: PropertyDescriptor) => {
-        let middlewareList: Middleware[] = Array.isArray(middlewares) ? middlewares : [middlewares];
+        const middlewareList: Middleware[] = Array.isArray(middlewares) ? middlewares : [middlewares];
 
         Reflect.defineMetadata(UN_SHIELD_METADATA_KEY, middlewareList, descriptor.value);
     };
@@ -36,35 +36,35 @@ export const UseMiddleware = (middleware: Middleware): MethodDecorator => {
     };
 };
 
-export const Get = (path: string = ''): MethodDecorator => {
+export const Get = (path = ''): MethodDecorator => {
     return (_target: any, _propertyKey: string, descriptor: PropertyDescriptor) => {
         Reflect.defineMetadata('method', 'get', descriptor.value);
         Reflect.defineMetadata('path', normalizePath(path), descriptor.value);
     };
 };
 
-export const Post = (path: string = ''): MethodDecorator => {
+export const Post = (path = ''): MethodDecorator => {
     return (_target: any, _propertyKey: string, descriptor: PropertyDescriptor) => {
         Reflect.defineMetadata('method', 'post', descriptor.value);
         Reflect.defineMetadata('path', normalizePath(path), descriptor.value);
     };
 };
 
-export const Patch = (path: string = ''): MethodDecorator => {
+export const Patch = (path = ''): MethodDecorator => {
     return (_target: any, _propertyKey: string, descriptor: PropertyDescriptor) => {
         Reflect.defineMetadata('method', 'patch', descriptor.value);
         Reflect.defineMetadata('path', normalizePath(path), descriptor.value);
     };
 };
 
-export const Put = (path: string = ''): MethodDecorator => {
+export const Put = (path = ''): MethodDecorator => {
     return (_target: any, _propertyKey: string, descriptor: PropertyDescriptor) => {
         Reflect.defineMetadata('method', 'put', descriptor.value);
         Reflect.defineMetadata('path', normalizePath(path), descriptor.value);
     };
 };
 
-export const Delete = (path: string = ''): MethodDecorator => {
+export const Delete = (path = ''): MethodDecorator => {
     return (_target: any, _propertyKey: string, descriptor: PropertyDescriptor) => {
         Reflect.defineMetadata('method', 'delete', descriptor.value);
         Reflect.defineMetadata('path', normalizePath(path), descriptor.value);
@@ -283,8 +283,8 @@ export const Param = (): ParameterDecorator => {
 };
 
 // Todo: implement later in future version
-const UseDto = (dto: any): MethodDecorator => {
-    return (target: Object, propertyKey: string | symbol, descriptor: PropertyDescriptor) => {
+export const UseDto = (dto: any): MethodDecorator => {
+    return (target: Object, propertyKey: string | symbol, _descriptor: PropertyDescriptor) => {
         Reflect.defineMetadata('dto', dto, target, propertyKey);
     };
 };

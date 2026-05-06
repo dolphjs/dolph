@@ -4,14 +4,13 @@
  * @deprecated
  */
 export const TryCatchAsyncDec = () => {
-    return (target: any, propertyKey: string, descriptor: PropertyDescriptor) => {
+    return (_target: any, _propertyKey: string, descriptor: PropertyDescriptor) => {
         const originalMethod = descriptor.value;
 
         descriptor.value = async function (...args: any[]) {
-            const context = this;
-            const [req, res, next] = args;
+            const [, , next] = args;
             try {
-                await originalMethod.apply(context, args);
+                await originalMethod.apply(this, args);
             } catch (err) {
                 next(err);
             }

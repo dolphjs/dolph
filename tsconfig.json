@@ -19,6 +19,7 @@
         "strictFunctionTypes": false,
         "emitDeclarationOnly": false,
         "emitDecoratorMetadata": true,
+        "skipLibCheck": true,
         "declarationMap": false,
         "target": "ES2022",
         "rootDir": ".",

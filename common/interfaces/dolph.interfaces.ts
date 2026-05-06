@@ -56,11 +56,11 @@ export type DResponse<T = any> = Response &
         body?: T;
     };
 
-export interface DRequestHandler extends RequestHandler {}
+export type DRequestHandler = RequestHandler;
 
 export type DNextFunc = NextFunction & {};
 
-export interface DRouter extends Router {}
+export type DRouter = Router;
 
 export interface OtherParams {
     passportConfigs?: passportConfigs;

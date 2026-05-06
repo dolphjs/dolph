@@ -20,7 +20,7 @@ export const errorConverter = (err: any, req: DRequest, res: DResponse, next: DN
     next(error);
 };
 
-export const errorHandler = (err: any, req: DRequest, res: DResponse, next: DNextFunc) => {
+export const errorHandler = (err: any, req: DRequest, res: DResponse, _next: DNextFunc) => {
     let statusCode = err.statusCode || httpStatus.INTERNAL_SERVER_ERROR;
     let message = err.message || 'An unexpected server error occurred';
 

@@ -1,6 +1,5 @@
 import { IncomingMessage, Server, ServerResponse } from 'http';
 import { ServerOptions } from 'socket.io';
-import { Dolph, SocketServicesParams } from '../types';
 import { SocketComponent, SocketService } from '../../packages';
 
 export interface DSocket {
@@ -8,7 +7,7 @@ export interface DSocket {
     options?: Partial<ServerOptions>;
 }
 
-export interface DSocketInit<T extends Dolph> {
+export interface DSocketInit {
     options?: Partial<ServerOptions>;
     component: SocketComponent;
     socketService?: typeof SocketService;

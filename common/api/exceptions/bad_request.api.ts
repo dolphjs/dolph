@@ -6,7 +6,7 @@ import { DefaultException } from './default_exception.api';
  */
 class BadRequestException extends DefaultException {
     statusCode: number = HttpStatus.BAD_REQUEST;
-    name: string = 'Bad Request';
+    name = 'Bad Request';
 }
 
 export { BadRequestException };

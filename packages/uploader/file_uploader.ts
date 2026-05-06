@@ -38,7 +38,7 @@ class DiskStorage implements Storage {
     }
 
     handleFile(req: DRequest, file: FileInfo, callback: (error: Error | null, info?: Partial<FileInfo>) => void): void {
-        //@ts-expect-error
+        // @ts-expect-error legacy typing compatibility
         this.getDestination(req, file, (err, destination) => {
             if (err) return callback(err);
 
@@ -48,7 +48,8 @@ class DiskStorage implements Storage {
                 const finalPath = join(destination, filename);
                 const outStream = createWriteStream(finalPath);
 
-                file.stream!.pipe(outStream);
+                if (!file.stream) return callback(new Error('file stream is missing'));
+                file.stream.pipe(outStream);
                 outStream.on('error', callback);
                 outStream.on('finish', () => {
                     callback(null, {
@@ -64,17 +65,19 @@ class DiskStorage implements Storage {
 
     removeFile(req: DRequest, file: FileInfo, callback: (error: Error | null) => void): void {
         const path = file.path;
+        if (!path) return callback(new Error('file path is missing'));
         delete file.destination;
         delete file.filename;
         delete file.path;
-        unlink(path!, callback);
+        unlink(path, callback);
     }
 }
 
 // MemoryStorage Implementation
 class MemoryStorage implements Storage {
     handleFile(req: DRequest, file: FileInfo, callback: (error: Error | null, info?: Partial<FileInfo>) => void): void {
-        file.stream!.pipe(
+        if (!file.stream) return callback(new Error('file stream is missing'));
+        file.stream.pipe(
             concat_stream({ encoding: 'buffer' }, (data: Buffer) => {
                 callback(null, {
                     buffer: data,

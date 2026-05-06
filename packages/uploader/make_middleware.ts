@@ -12,11 +12,6 @@ export function isMultipart(req: IncomingMessage): boolean {
     return contentType.startsWith('multipart/');
 }
 
-function onRequestFinished(req: IncomingMessage, callback: () => void): void {
-    req.on('end', callback);
-    req.on('close', callback);
-}
-
 function appendField(target: Record<string, any>, key: string, value: any): void {
     if (Object.prototype.hasOwnProperty.call(target, key)) {
         if (!Array.isArray(target[key])) {
@@ -67,8 +62,6 @@ export function makeMiddleware(getOptions: () => UploadConfig & { fields?: Array
         let readFinished = false;
         let errorOccurred = false;
 
-        let uploadTimeOut: NodeJS.Timeout;
-
         function done(err?: any): void {
             if (isDone) return;
             isDone = true;
@@ -88,7 +81,7 @@ export function makeMiddleware(getOptions: () => UploadConfig & { fields?: Array
             });
         }
 
-        uploadTimeOut = setTimeout(() => {
+        const uploadTimeOut = setTimeout(() => {
             done(new Error('Upload process timed out'));
         }, options.timeout ?? 30_000);
 
@@ -128,7 +121,7 @@ export function makeMiddleware(getOptions: () => UploadConfig & { fields?: Array
                 return abortWithCode('LIMIT_FIELD_KEY');
             }
 
-            appendField(req.body!, fieldname, value);
+            appendField(req.body as Record<string, any>, fieldname, value);
         });
 
         busboy.on(

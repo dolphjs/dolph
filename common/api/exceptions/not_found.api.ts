@@ -7,7 +7,7 @@ import { DefaultException } from './default_exception.api';
 
 class NotFoundException extends DefaultException {
     statusCode: number = HttpStatus.NOT_FOUND;
-    name: string = 'Not Found';
+    name = 'Not Found';
 }
 
 export { NotFoundException };

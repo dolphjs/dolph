@@ -54,10 +54,8 @@ export const cookieAuthVerify = (tokenSecret: string) => (req: DRequest, _res: D
 
     if (!xAuthToken) return next(new ErrorException('user not authorized, login and try again', HttpStatus.UNAUTHORIZED));
 
-    let payload: IPayload;
-
-    //@ts-expect-error
-    payload = verifyJWTwithHMAC({ token: xAuthToken, secret: tokenSecret });
+    // @ts-expect-error legacy typing compatibility
+    const payload: IPayload = verifyJWTwithHMAC({ token: xAuthToken, secret: tokenSecret });
 
     req.payload = payload;
     next();

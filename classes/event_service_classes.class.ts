@@ -10,7 +10,7 @@ abstract class DolphSocketServiceHandler<T extends Dolph> {
 
     public get socketService(): SocketService {
         if (!this._socketService) {
-            //@ts-expect-error
+            // @ts-expect-error legacy typing compatibility
             this._socketService = getInjectedService(SocketService.name);
             this.initSocketEvents();
         }

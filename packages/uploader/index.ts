@@ -26,7 +26,7 @@ export const useFileUploader =
         let _filter = fileFilter;
 
         if (!_filter) {
-            let _extensions = extensions?.length ? extensions : defaultFileExtensions;
+            const _extensions = extensions?.length ? extensions : defaultFileExtensions;
 
             _filter = (req: DRequest, file: FileInfo, callback) => {
                 const extensionCheck = _extensions.includes(extname(file.originalname).toLowerCase());

@@ -7,13 +7,13 @@ import { DolphConstructor, DolphServiceMapping } from '../../common';
  * - top-level class
  * @version 1.0.0
  */
-function InjectServiceHandler<T>(serivceMappings: DolphServiceMapping<any>[]) {
+function InjectServiceHandler(serivceMappings: DolphServiceMapping<any>[]) {
     return function <Base extends DolphConstructor>(BaseClass: Base): Base {
         return class extends BaseClass {
             constructor(...args: any[]) {
                 super(...args);
                 for (const mapping of serivceMappings) {
-                    //@ts-expect-error
+                    // @ts-expect-error legacy typing compatibility
                     this[mapping.serviceName] = new mapping.serviceHandler();
                 }
             }

@@ -1,6 +1,5 @@
 import { genSalt, hashSync, compareSync } from 'bcryptjs';
 import { bcryptCompareParam, bcryptHashParam } from '../../common';
-import { boolean } from 'joi';
 
 /**
  *
@@ -22,7 +21,7 @@ const hashWithBcrypt = async ({ pureString, salt }: bcryptHashParam): Promise<st
  *
  * @version 2.0
  */
-const hashString = async (pureString: string, salt: number = 11): Promise<string> => {
+const hashString = async (pureString: string, salt = 11): Promise<string> => {
     return hashSync(pureString, await genSalt(salt));
 };
 

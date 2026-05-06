@@ -5,7 +5,7 @@ import { Dolph } from './dolph.types';
 export type Middleware = (req: DRequest, res: DResponse, next: DNextFunc) => void;
 
 export type ComponentParams<T extends Dolph> = {
-    controllers: Array<{ new (): DolphControllerHandler<T> }>;
+    controllers: Array<{ new (...args: any[]): DolphControllerHandler<T> }>;
     services?: Array<{ new (...args: any[]): {} }>;
 };
 

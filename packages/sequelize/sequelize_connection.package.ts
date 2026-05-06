@@ -29,7 +29,7 @@ const initMySql = (name: string, user: string, password: string, host: string) =
 const autoInitMySql = (sequelize: Sequelize) => {
     sequelize
         .sync()
-        .then((_res) => {
+        .then(() => {
             logger.info(clc.blueBright('MYSQL CONNECTED'));
         })
         .catch((err: any) => {

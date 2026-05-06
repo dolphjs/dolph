@@ -5,7 +5,9 @@ class MiddlewareRegistry {
     private middlewares: RequestHandler[] = [];
     private sealed = false;
 
-    private constructor() {}
+    private constructor() {
+        // singleton
+    }
 
     public static getInstance(): MiddlewareRegistry {
         if (!MiddlewareRegistry.instance) {

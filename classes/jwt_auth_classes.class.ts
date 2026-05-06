@@ -40,11 +40,11 @@ class JwtBasicAuth {
             return next(new ErrorException('provide a valid token header', HttpStatus.UNAUTHORIZED));
         }
         let payload: IPayload;
-        if (authHeader === 'Authorization') {
-            //@ts-expect-error
+        if (authHeader === authHeaderName[1]) {
+            // @ts-expect-error verify util supports token string at runtime.
             payload = verifyJWTwithHMAC({ token: authToken, secret: this.tokenSecret });
-        } else if (authHeader === 'x-auth-token') {
-            //@ts-expect-error
+        } else if (authHeader === authHeaderName[0]) {
+            // @ts-expect-error verify util supports token string at runtime.
             payload = verifyJWTwithRSA({ pathToPublicKey: this.tokenSecret, token: authToken });
         }
 
@@ -63,9 +63,8 @@ const JWTAuthVerifyDec = (tokenSecret: string) => {
         const originalMethod = descriptor.value;
 
         // convert to normal func
-        descriptor.value = (req: DRequest, res: DResponse, next: DNextFunc) => {
+        descriptor.value = function (req: DRequest, res: DResponse, next: DNextFunc) {
             try {
-                const context = this;
                 let authToken: string | string[];
                 let authHeader: string;
 
@@ -82,15 +81,15 @@ const JWTAuthVerifyDec = (tokenSecret: string) => {
 
                 let payload: IPayload;
                 if (authHeader === authHeaderName[1]) {
-                    //@ts-expect-error
+                    // @ts-expect-error verify util supports token string at runtime.
                     payload = verifyJWTwithHMAC({ token: authToken, secret: tokenSecret });
                 } else if (authHeader === authHeaderName[0]) {
-                    //@ts-expect-error
+                    // @ts-expect-error verify util supports token string at runtime.
                     payload = verifyJWTwithRSA({ pathToPublicKey: tokenSecret, token: authToken });
                 }
                 req.payload = payload;
 
-                return originalMethod.apply(context, [req, res, next]);
+                return originalMethod.apply(this, [req, res, next]);
             } catch (e) {
                 throw e;
             }
@@ -104,9 +103,8 @@ const JWTAuthorizeDec = (tokenSecret: string, authorize?: AuthorizationFunction)
     return (_target: any, _propertyKey: string, descriptor?: TypedPropertyDescriptor<any>) => {
         const originalMethod = descriptor.value;
 
-        descriptor.value = async (req: DRequest, res: DResponse, next: DNextFunc) => {
+        descriptor.value = async function (req: DRequest, res: DResponse, next: DNextFunc) {
             try {
-                const context = this;
                 let authToken: string | string[];
                 let authHeader: string;
 
@@ -123,10 +121,10 @@ const JWTAuthorizeDec = (tokenSecret: string, authorize?: AuthorizationFunction)
 
                 let payload: IPayload;
                 if (authHeader === authHeaderName[1]) {
-                    //@ts-expect-error
+                    // @ts-expect-error verify util supports token string at runtime.
                     payload = verifyJWTwithHMAC({ token: authToken, secret: tokenSecret });
                 } else if (authHeader === authHeaderName[0]) {
-                    //@ts-expect-error
+                    // @ts-expect-error verify util supports token string at runtime.
                     payload = verifyJWTwithRSA({ pathToPublicKey: tokenSecret, token: authToken });
                 }
                 req.payload = payload;
@@ -139,7 +137,7 @@ const JWTAuthorizeDec = (tokenSecret: string, authorize?: AuthorizationFunction)
                     }
                 }
 
-                return originalMethod.apply(context, [req, res, next]);
+                return originalMethod.apply(this, [req, res, next]);
             } catch (e) {
                 throw e;
             }

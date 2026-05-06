@@ -3,3 +3,11 @@
 DolphJs runs on both Node and Bun.
 
 See [documentation](https://dolphjs.com)
+
+## Architecture
+
+- Runtime overview and module boundaries: `docs/architecture.md`
+
+## Samples
+
+- Large feature-coverage REST sample + test playground: `samples/mega-rest-api`

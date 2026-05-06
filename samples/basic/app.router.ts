@@ -4,6 +4,7 @@ import { reqValidatorMiddleware } from '../../common/middlewares';
 import { createUser } from './app.validator';
 import { Dolph } from '../../common';
 import { cookieAuthVerify } from '../../utilities';
+import { useFileUploader } from '../../packages';
 
 class AppRouter extends DolphRouteHandler<Dolph> {
     constructor() {
@@ -16,7 +17,12 @@ class AppRouter extends DolphRouteHandler<Dolph> {
 
     initRoutes() {
         this.router.post(`${this.path}`, this.controller.sendGreeting);
-        this.router.post(`${this.path}/user`, reqValidatorMiddleware(createUser), this.controller.createUser);
+        this.router.post(
+            `${this.path}/user`,
+            reqValidatorMiddleware(createUser),
+            useFileUploader({ fieldname: 'upload', type: 'single', extensions: ['.png'] }),
+            this.controller.createUser,
+        );
         this.router.post(`${this.path}/register`, this.controller.register);
         this.router.post(`${this.path}/sql`, this.controller.testMysql);
         this.router.get(`${this.path}/cookie`, this.controller.testCookieFn);

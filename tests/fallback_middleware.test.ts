@@ -1,4 +1,4 @@
-import { DRequest, DRequestHandler } from '../common';
+import { DRequestHandler } from '../common';
 import { middlewareRegistry } from '../core';
 import helmet from 'helmet';
 

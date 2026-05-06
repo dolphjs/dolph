@@ -35,8 +35,8 @@ export class EventEmitterService extends EventEmitter {
     onEvent<T extends (...args: any[]) => void | boolean>(
         eventName: string,
         listener: T,
-        priority: number = 0,
-        once: boolean = false,
+        priority = 0,
+        once = false,
     ): void {
         const listeners = this.listenerRegistry.get(eventName) || [];
         listeners.push({ listener, priority, once });
@@ -49,7 +49,7 @@ export class EventEmitterService extends EventEmitter {
         }
     }
 
-    onceEvent<T extends (...args: any[]) => void>(eventName: string, listener: T, priority: number = 0): void {
+    onceEvent<T extends (...args: any[]) => void>(eventName: string, listener: T, priority = 0): void {
         this.onEvent(eventName, listener, priority, true);
     }
 

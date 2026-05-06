@@ -25,7 +25,7 @@ const initMongo = (config: MongooseConfig): Promise<typeof mongoose> => {
  */
 const autoInitMongo = (config: MongooseConfig): void => {
     initMongo(config)
-        .then((_res) => {
+        .then(() => {
             logger.info(clc.blueBright('MONGODB CONNECTED'));
         })
         .catch((err) => {

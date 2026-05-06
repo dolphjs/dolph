@@ -11,7 +11,7 @@ import { DNextFunc, DRequest, DResponse } from '../interfaces';
 const TryCatchAsyncFn =
     <TryCatchAsyncFn>(fn: (req: DRequest, res: DResponse, next: DNextFunc) => Promise<TryCatchAsyncFn>) =>
     (req: DRequest, res: DResponse, next: DNextFunc) => {
-        Promise.resolve(fn(req, res, next)).catch((err) => next(err));
+        return Promise.resolve(fn(req, res, next)).catch((err) => next(err));
     };
 
 /**
@@ -26,11 +26,9 @@ const TryCatchAsyncDec = (target: any, propertyKey: string, descriptor: Property
     const originalMethod = descriptor.value;
 
     descriptor.value = async function (...args: any[]) {
-        const context = this;
-        // console.log(this);
-        const [req, res, next] = args;
+        const [, , next] = args;
         try {
-            await originalMethod.apply(context, args);
+            await originalMethod.apply(this, args);
         } catch (err) {
             next(err);
         }
@@ -51,11 +49,9 @@ const TryCatchDec = (target: any, propertyKey: string, descriptor: PropertyDescr
     const originalMethod = descriptor.value;
 
     descriptor.value = function (...args: any[]) {
-        const context = this;
-        // console.log(this);
-        const [req, res, next] = args;
+        const [, , next] = args;
         try {
-            originalMethod.apply(context, args);
+            originalMethod.apply(this, args);
         } catch (err) {
             next(err);
         }

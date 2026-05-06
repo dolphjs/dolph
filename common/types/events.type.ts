@@ -4,7 +4,7 @@ export type Listener<T = any> = {
     once: boolean;
 };
 
-export type ListenerDecType<T = any> = {
+export type ListenerDecType = {
     listener: Function;
     priority: number;
     once: boolean;

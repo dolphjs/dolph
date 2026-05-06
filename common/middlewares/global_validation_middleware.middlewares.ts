@@ -1,4 +1,3 @@
-//@ts-nocheck
 import { plainToClass } from 'class-transformer';
 import { DNextFunc, DRequest, DResponse } from '../interfaces';
 import { validate, ValidationError } from 'class-validator';
@@ -12,9 +11,9 @@ export const validationMiddlewareOne = async (req: DRequest, res: DResponse, nex
         return next();
     }
 
-    const bodyObject = plainToClass(dto, req.body);
-    const queryObject = plainToClass(dto, req.query);
-    const paramObject = plainToClass(dto, req.params);
+    const bodyObject = plainToClass(dto, req.body) as object;
+    const queryObject = plainToClass(dto, req.query) as object;
+    const paramObject = plainToClass(dto, req.params) as object;
 
     const errors: ValidationError[] = await Promise.all([
         validate(bodyObject),
@@ -34,11 +33,11 @@ export const validationMiddlewareOne = async (req: DRequest, res: DResponse, nex
     }
 
     if (req.params) {
-        req.params = paramObject;
+        req.params = paramObject as any;
     }
 
     if (req.query) {
-        req.query = queryObject;
+        req.query = queryObject as any;
     }
 
     next();
@@ -65,7 +64,7 @@ export const validateBodyMiddleware = (dto: any) => {
 
 export const validateQueryMiddleware = (dto: any) => {
     return async (req: DRequest, res: DResponse, next: DNextFunc) => {
-        const object = plainToClass(dto, req.query);
+        const object = plainToClass(dto, req.query) as object;
 
         const errors: ValidationError[] = await validate(object);
 
@@ -84,7 +83,7 @@ export const validateQueryMiddleware = (dto: any) => {
 
 export const validateParamMiddleware = (dto: any) => {
     return async (req: DRequest, res: DResponse, next: DNextFunc) => {
-        const object = plainToClass(dto, req.query);
+        const object = plainToClass(dto, req.query) as object;
 
         const errors: ValidationError[] = await validate(object);
 

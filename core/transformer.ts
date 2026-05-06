@@ -4,32 +4,34 @@ import clc from 'cli-color';
 import { logger } from '../utilities';
 import { ValidationException } from './adapters/exception_handlers';
 
+export type TransformDtoOptions = {
+    forbidNonWhitelisted?: boolean;
+};
+
 export async function transformAndValidateDto<T extends object>(
     dtoClass: ClassConstructor<T> | undefined,
     plainObject: any,
-    // e.g., "request body", "query parameters"
     contextDescription: string,
+    options?: TransformDtoOptions,
 ): Promise<T> {
-    // Ensure dtoClass is a valid class constructor for DTOs
-    if (!dtoClass) return;
+    const source = plainObject ?? {};
+    if (!dtoClass) {
+        return source as T;
+    }
     if (typeof dtoClass !== 'function' || [String, Number, Boolean, Object].includes(dtoClass as any)) {
-        // Object constructor itself is not a DTO
-        // This scenario should ideally be caught by the @DBody decorator's type checking.
-        // However, if it somehow gets here, it's an internal error or misconfiguration.
         logger.error(clc.red(`Invalid DTO class provided for ${contextDescription}. Received:, dtoClass`));
         throw new Error(`Dolph: Misconfigured DTO type for ${contextDescription}.`);
     }
 
-    const dtoInstance = plainToInstance(dtoClass, plainObject, {
+    const dtoInstance = plainToInstance(dtoClass, source, {
         enableImplicitConversion: true,
     });
 
+    const forbidNonWhitelisted = options?.forbidNonWhitelisted ?? true;
+
     const errors: ValidationError[] = await validate(dtoInstance, {
-        // Remove properties that do not have any validation decorators
         whitelist: true,
-        // Throw an error if non-whitelisted properties are present
-        forbidNonWhitelisted: true,
-        // validationError: { target: false }, // Optionally hide the target object in errors
+        forbidNonWhitelisted,
     });
 
     if (errors.length > 0) {

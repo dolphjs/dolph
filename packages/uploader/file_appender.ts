@@ -49,10 +49,13 @@ export class FileAppender {
                 break;
             case 'OBJECT':
                 const filesObj = this.request.files as Record<string, FileInfo[]>;
-                if (filesObj[placeholder.fieldname!].length === 1) {
-                    delete filesObj[placeholder.fieldname!];
+                if (!placeholder.fieldname || !filesObj[placeholder.fieldname]) {
+                    break;
+                }
+                if (filesObj[placeholder.fieldname].length === 1) {
+                    delete filesObj[placeholder.fieldname];
                 } else {
-                    arrayRemove(filesObj[placeholder.fieldname!], placeholder);
+                    arrayRemove(filesObj[placeholder.fieldname], placeholder);
                 }
                 break;
         }

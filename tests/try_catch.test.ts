@@ -1,4 +1,3 @@
-//@ts-nocheck
 import { DRequest, DResponse, DNextFunc } from '../common';
 import { TryCatchAsyncDec, TryCatchAsyncFn, TryCatchDec, TryCatchFn } from '../common';
 
@@ -19,7 +18,7 @@ describe('TryCatch Utilities', () => {
     describe('TryCatchAsyncFn', () => {
         it('should call the next function with an error if the function throws', async () => {
             const error = new Error('Test error');
-            const asyncFunction = TryCatchAsyncFn(async (req, res, next) => {
+            const asyncFunction = TryCatchAsyncFn(async (_req, _res, _next) => {
                 throw error;
             });
 
@@ -29,7 +28,7 @@ describe('TryCatch Utilities', () => {
         });
 
         it('should call the original function if no error is thrown', async () => {
-            const asyncFunction = TryCatchAsyncFn(async (req, res, next) => {
+            const asyncFunction = TryCatchAsyncFn(async (_req, res, _next) => {
                 res.status(200).json({ message: 'Success' });
             });
 
@@ -54,7 +53,7 @@ describe('TryCatch Utilities', () => {
         //     });
 
         it('should call the original function if no error is thrown', () => {
-            const syncFunction = TryCatchFn((req, res, next) => {
+            const syncFunction = TryCatchFn((_req, res, _next) => {
                 res.status(200).json({ message: 'Success' });
             });
 
@@ -71,7 +70,7 @@ describe('TryCatch Utilities', () => {
             const error = new Error('Test error');
             class TestClass {
                 @TryCatchAsyncDec
-                async method(req: DRequest, res: DResponse, next: DNextFunc) {
+                async method(_req: DRequest, _res: DResponse, _next: DNextFunc) {
                     throw error;
                 }
             }
@@ -85,7 +84,7 @@ describe('TryCatch Utilities', () => {
         it('should call the original method if no error is thrown', async () => {
             class TestClass {
                 @TryCatchAsyncDec
-                async method(req: DRequest, res: DResponse, next: DNextFunc) {
+                async method(_req: DRequest, res: DResponse, _next: DNextFunc) {
                     res.status(200).json({ message: 'Success' });
                 }
             }
@@ -104,7 +103,7 @@ describe('TryCatch Utilities', () => {
             const error = new Error('Test error');
             class TestClass {
                 @TryCatchDec
-                method(req: DRequest, res: DResponse, next: DNextFunc) {
+                method(_req: DRequest, _res: DResponse, _next: DNextFunc) {
                     throw error;
                 }
             }
@@ -118,7 +117,7 @@ describe('TryCatch Utilities', () => {
         it('should call the original method if no error is thrown', () => {
             class TestClass {
                 @TryCatchDec
-                method(req: DRequest, res: DResponse, next: DNextFunc) {
+                method(_req: DRequest, res: DResponse, _next: DNextFunc) {
                     res.status(200).json({ message: 'Success' });
                 }
             }

@@ -1,0 +1,31 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Typecheck
+        run: npx tsc -p tsconfig.json --noEmit --pretty false
+
+      - name: Lint
+        run: npx eslint core/dolph_factory.core.ts common/types/spring.types.ts common/middlewares/default_middleware.middleware.ts
+
+      - name: Test
+        run: npm test -- --runInBand tests/core.test.ts tests/middleware.test.ts tests/try_catch.test.ts tests/decorator_args.test.ts tests/jwt_auth_parity.test.ts tests/multipart_upload_route.test.ts tests/socket_smoke.test.ts

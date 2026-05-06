@@ -6,7 +6,7 @@ import { DefaultException } from './default_exception.api';
  */
 class TimeOutException extends DefaultException {
     statusCode: number = HttpStatus.GATEWAY_TIMEOUT;
-    name: string = 'Gateway Time Out';
+    name = 'Gateway Time Out';
 }
 
 export { TimeOutException };

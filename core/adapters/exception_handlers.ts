@@ -7,7 +7,7 @@ export class ValidationException extends Error {
     public errors: ValidationError[];
     public status: number;
 
-    constructor(errors: ValidationError[], message: string = 'Input validation failed') {
+    constructor(errors: ValidationError[], message = 'Input validation failed') {
         super(message); // Message for the error
         this.name = 'ValidationException';
         this.errors = errors; // Array of validation errors from class-validator

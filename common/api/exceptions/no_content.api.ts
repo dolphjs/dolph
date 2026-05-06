@@ -6,7 +6,7 @@ import { DefaultException } from './default_exception.api';
  */
 class NoContentException extends DefaultException {
     statusCode: number = HttpStatus.NO_CONTENT;
-    name: string = 'No Content';
+    name = 'No Content';
 }
 
 export { NoContentException };

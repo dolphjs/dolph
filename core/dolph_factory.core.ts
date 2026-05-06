@@ -39,6 +39,11 @@ import httpStatus from 'http-status';
 import { ClassConstructor } from 'class-transformer';
 import { transformAndValidateDto } from './transformer';
 
+type ExpressHttpMethod = 'get' | 'post' | 'patch' | 'put' | 'delete';
+
+const isExpressHttpMethod = (value: unknown): value is ExpressHttpMethod =>
+    typeof value === 'string' && ['get', 'post', 'patch', 'put', 'delete'].includes(value);
+
 const engine = express();
 
 // declare core variables
@@ -154,7 +159,7 @@ const InitialiseControllersAsRouter = <T extends Dolph>(
                      * Todo: check the relevance of this code-block -- end
                      */
 
-                    if (method && path) {
+                    if (isExpressHttpMethod(method) && path) {
                         const fullPath = normalizePath(join(basePath, controllerBasePath, path)).replace(/\\/g, '/');
 
                         // Hoist constant per-route values — evaluated once at registration, not on every request
@@ -256,12 +261,14 @@ const InitialiseControllersAsRouter = <T extends Dolph>(
 
                                                         args[meta.index] = await transformAndValidateDto(
                                                             dtoClass,
-                                                            req.query,
+                                                            req.query ?? {},
                                                             'request query',
+                                                            { forbidNonWhitelisted: false },
                                                         );
                                                     } catch (error) {
                                                         throw error;
                                                     }
+                                                    break;
                                                 case 'file':
                                                     args[meta.index] = req.file;
                                                     break;
@@ -435,35 +442,35 @@ const initClosureHandler = () => {
  * The main engine for the dolph framework
  *
  *
- * @version 1.4.0
+ * @version 1.6.0
  */
 class DolphFactoryClass {
-    private routes = [];
-    private controllers = [];
-    private sockets?: DSocketInit<Dolph>;
+    private routes: Array<{ path?: string; router: Router }> = [];
+    private controllers: Array<{ new (): any }> = [];
+    private sockets?: DSocketInit;
     private socketService?: SocketService;
     private routingBase = '';
     private isGraphQL = false;
 
     port: dolphPort = process.env.PORT || 3030;
     env = process.env.NODE_ENV || 'development';
-    configs: DolphConfig;
-    externalMiddlewares: RequestHandler[];
+    configs: DolphConfig = {};
+    externalMiddlewares: RequestHandler[] = [];
     jsonLimit = '5mb';
     globalFilter = false;
-    private dolph: typeof engine;
+    private dolph: typeof engine = engine;
 
     constructor(adapter: { graphql: boolean; schema: any; context?: any });
     constructor(
         routes: Array<{ new (): any } | { path?: string; router: Router }>,
-        middlewares?: RequestHandler[] | DSocketInit<Dolph>,
+        middlewares?: RequestHandler[] | DSocketInit,
     );
 
     constructor(
         adapterOrRoutes?:
             | Array<{ new (): any } | { path?: string; router: Router }>
             | { graphql: boolean; schema: any; context?: any },
-        middlewares?: RequestHandler[] | DSocketInit<Dolph>,
+        middlewares?: RequestHandler[] | DSocketInit,
     ) {
         /**
          * Start dolphjs initialisation time
@@ -503,7 +510,7 @@ class DolphFactoryClass {
             if (Array.isArray(middlewares)) {
                 this.externalMiddlewares = middlewares as RequestHandler[];
             } else if (typeof middlewares === 'object' && middlewares !== null && 'socketService' in middlewares) {
-                this.sockets = middlewares as DSocketInit<Dolph>;
+                this.sockets = middlewares as DSocketInit;
             }
         }
 
@@ -545,7 +552,14 @@ class DolphFactoryClass {
             this.configs = config;
 
             if (config.port) {
-                this.changePort((config.port = typeof 'string' ? +config.port : config.port));
+                const parsedPort = typeof config.port === 'string' ? Number(config.port) : config.port;
+                if (Number.isFinite(parsedPort) && parsedPort > 0) {
+                    this.changePort(parsedPort);
+                } else {
+                    inAppLogger.warn(
+                        clc.yellow(`Invalid port '${String(config.port)}' in dolph_config.yaml; using current/default port.`),
+                    );
+                }
             }
 
             if (config.env?.length) {

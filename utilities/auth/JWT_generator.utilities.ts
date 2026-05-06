@@ -20,7 +20,7 @@ const generateJWTwithHMAC = ({ payload, secret }: { payload: IPayload; secret: s
  * @version 1.0.0
  */
 const verifyJWTwithHMAC = ({ token, secret }: { token: string | string[]; secret: string }): string | JWT.JwtPayload => {
-    //@ts-expect-error
+    // @ts-expect-error legacy typing compatibility
     const payload = JWT.verify(token, secret);
     return payload;
 };
@@ -52,7 +52,7 @@ const verifyJWTwithRSA = ({
 }): string | JWT.JwtPayload => {
     const publicKey = readFileSync(pathToPublicKey, 'utf8');
     try {
-        //@ts-expect-error
+        // @ts-expect-error legacy typing compatibility
         const payload = JWT.verify(token, publicKey, { algorithms: ['RS256'] });
         return payload;
     } catch (e) {

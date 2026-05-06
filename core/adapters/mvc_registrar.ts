@@ -6,7 +6,9 @@ class MVCAdapterClass {
     private pathToAssets: string;
     private pathToViews: string;
 
-    private constructor() {}
+    private constructor() {
+        // singleton
+    }
 
     public static getInstance(): MVCAdapterClass {
         if (!MVCAdapterClass.instance) {

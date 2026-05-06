@@ -10,7 +10,9 @@ import { Dolph } from '../common';
  *
  */
 // Note: string generic would be useful in the future
-abstract class DolphControllerHandler<T extends Dolph> {}
+abstract class DolphControllerHandler<T extends Dolph> {
+    protected readonly _dolphType?: T;
+}
 
 export { DolphControllerHandler };
 /**

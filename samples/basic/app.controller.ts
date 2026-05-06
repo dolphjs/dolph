@@ -4,7 +4,6 @@ import { AppService } from './app.service';
 import { BadRequestException, DNextFunc, DRequest, DResponse, Dolph, SuccessResponse } from '../../common';
 import { generateJWTwithHMAC, newAuthCookie } from '../../utilities';
 import moment from 'moment';
-import { MediaParser } from '../../utilities';
 import { CookieAuthVerifyDec, InjectServiceHandler } from '../../decorators';
 import { authFunc } from './app.auth_function';
 
@@ -29,7 +28,6 @@ class AppController extends DolphControllerHandler<Dolph> {
     @TryCatchAsyncDec
     @JWTAuthVerifyDec('random_secret')
     // @JWTAuthorizeDec('random_secret', authFunc)
-    @MediaParser({ fieldname: 'upload', type: 'single', extensions: ['.png'] })
     public async createUser(req: DRequest, res: DResponse) {
         const { body, file } = req;
         if (body.height < 1.7) throw new BadRequestException('sorry, you are too short for this program');

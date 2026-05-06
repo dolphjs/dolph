@@ -6,7 +6,7 @@ import { DefaultException } from './default_exception.api';
  */
 class GoneException extends DefaultException {
     statusCode: number = HttpStatus.GONE;
-    name: string = 'Gone';
+    name = 'Gone';
 }
 
 export { GoneException };

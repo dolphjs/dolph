@@ -1,15 +1,6 @@
 import clc from 'cli-color';
-import { DolphServiceHandler, DolphSocketServiceHandler } from '../../classes';
 import { Dolph, SocketServicesParams } from '../../common';
 import { logger } from '../../utilities';
-
-function isDolphServiceHandler(classOrInstance: any): classOrInstance is typeof DolphServiceHandler {
-    return classOrInstance.prototype instanceof DolphServiceHandler || classOrInstance === DolphServiceHandler;
-}
-
-function isDolphSocketServiceHandler(classOrInstance: any): classOrInstance is typeof DolphSocketServiceHandler {
-    return classOrInstance.prototype instanceof DolphSocketServiceHandler || classOrInstance === DolphSocketServiceHandler;
-}
 
 export const Socket = <T extends Dolph>({ services, socketServices }: SocketServicesParams<T>): ClassDecorator => {
     if (Array.isArray(socketServices)) {
