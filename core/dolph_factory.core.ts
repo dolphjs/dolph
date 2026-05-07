@@ -336,7 +336,7 @@ const incrementHandlers = () => {
 };
 
 // Initialises middlewares used by dolphjs
-const InitialiseMiddlewares = ({ jsonLimit }) => {
+const InitialiseMiddlewares = ({ jsonLimit }: { jsonLimit: string }) => {
     engine.use(express.json({ limit: jsonLimit }));
     engine.use(express.urlencoded({ extended: true }));
 };
@@ -487,15 +487,17 @@ class DolphFactoryClass {
                 const { GraphQLAdapter } = require('@dolphjs/graphql');
 
                 GraphQLAdapter.apolloServer(server, adapter.schema, adapter.context)
-                    .then((middleware) => {
+                    .then((middleware: RequestHandler) => {
                         engine.use(middleware);
                     })
-                    .catch((err) => {
+                    .catch((err: Error) => {
                         logger.error(`${clc.red('DOLPH ERROR: ')}`, err);
                     });
             }
         } else {
             const routes = adapterOrRoutes;
+
+            if(!routes || !Array.isArray(routes)) return;
 
             routes.forEach((item) => {
                 if ('router' in item) {
@@ -548,7 +550,8 @@ class DolphFactoryClass {
         try {
             const configContents = readFileSync('dolph_config.yaml', 'utf8');
 
-            const config: DolphConfig = yaml.load(configContents);
+            const config: DolphConfig = yaml.load(configContents) as unknown as DolphConfig;
+
             this.configs = config;
 
             if (config.port) {
@@ -588,14 +591,14 @@ class DolphFactoryClass {
                 );
             }
 
-            if (this.configs.database?.mongo?.url.length > 1) {
-                if (this.configs.database.mongo.url === 'sensitive') {
+            if (this.configs?.database?.mongo?.url?.length > 1) {
+                if (this.configs?.database?.mongo?.url === 'sensitive') {
                     if (!configs.MONGO_URL) {
                         logger.error('cannot find `MONGO_URL` in the projects `.env` file');
                     }
-                    this.configs.database.mongo.url = configs.MONGO_URL;
+                    this.configs?.database?.mongo?.url = configs.MONGO_URL;
                 }
-                autoInitMongo(this.configs.database.mongo);
+                autoInitMongo(this.configs?.database?.mongo);
             }
 
             if (config.middlewares) {
@@ -635,7 +638,7 @@ class DolphFactoryClass {
     }
 
     public middlewares(middlewares?: RequestHandler[]) {
-        initExternalMiddlewares(middlewares);
+        initExternalMiddlewares(middlewares ?? []);
     }
 
     private intiDolphEngine(startTime: [number, number]) {
