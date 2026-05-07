@@ -6,7 +6,7 @@ export type Middleware = (req: DRequest, res: DResponse, next: DNextFunc) => voi
 
 export type ComponentParams<T extends Dolph> = {
     controllers: Array<{ new (...args: any[]): DolphControllerHandler<T> }>;
-    services?: Array<{ new (...args: any[]): {} }>;
+    services?: Array<{ new (...args: any[]): unknown }>;
 };
 
 export type DolphComponent<T extends DolphControllerHandler<Dolph>> = {

@@ -11,7 +11,7 @@ import { Model } from 'mongoose';
  * @version 2.0.0
  */
 function InjectMongo(propertyName: string, model: Model<any>) {
-    return function <T extends { new (...args: any[]): {} }>(constructor: T) {
+    return function <T extends { new (...args: any[]): object }>(constructor: T) {
         const Wrapped = class extends constructor {
             [propertyName]: Model<any> = model;
         };

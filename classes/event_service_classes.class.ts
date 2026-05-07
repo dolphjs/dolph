@@ -4,7 +4,7 @@ import { getInjectedService } from '../core';
 import { SocketService } from '../packages';
 import { Server } from 'socket.io';
 
-abstract class DolphSocketServiceHandler<T extends Dolph> {
+abstract class DolphSocketServiceHandler<_T extends Dolph> {
     private _socketService?: SocketService;
     public socket?: Server<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any>;
 

@@ -15,7 +15,7 @@ describe('Disk Storage Test', () => {
     afterEach(() => {
         try {
             unlinkSync(join(testDestination, 'test-file.txt'));
-        } catch (err) {
+        } catch (_err) {
             // Ignore cleanup errors
         }
     });

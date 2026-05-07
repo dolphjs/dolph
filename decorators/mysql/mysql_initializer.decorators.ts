@@ -10,7 +10,7 @@ import { Model, ModelStatic } from 'sequelize';
  * @version 2.0.0
  */
 
-function InjectMySQL<T extends { new (...args: any[]): {} }>(propertyName: string, model: ModelStatic<Model<any, any>>) {
+function InjectMySQL<T extends { new (...args: any[]): object }>(propertyName: string, model: ModelStatic<Model<any, any>>) {
     return function (constructor: T) {
         const Wrapped = class extends constructor {
             [propertyName]: ModelStatic<Model<any, any>> = model;

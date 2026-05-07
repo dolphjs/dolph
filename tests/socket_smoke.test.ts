@@ -9,7 +9,6 @@ import { SocketComponent, SocketService } from '../packages';
 class SmokePingSocketService extends DolphSocketServiceHandler<Dolph> {
     constructor() {
         super();
-        this.socketService;
         this.register();
     }
 
