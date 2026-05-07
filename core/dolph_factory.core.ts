@@ -9,10 +9,12 @@ import {
     DRequest,
     DRequestHandler,
     DResponse,
+    DSocket,
     Dolph,
     DolphConfig,
     ErrorResponse,
     Middleware,
+    MongooseConfig,
     dolphPort,
 } from '../common';
 import { inAppLogger, logger } from '../utilities';
@@ -591,14 +593,15 @@ class DolphFactoryClass {
                 );
             }
 
-            if (this.configs?.database?.mongo?.url?.length > 1) {
-                if (this.configs?.database?.mongo?.url === 'sensitive') {
+            let mongoCfg: MongooseConfig | undefined = this.configs?.database?.mongo;
+            if (mongoCfg?.url?.length && mongoCfg.url.length > 1) {
+                if (mongoCfg.url === 'sensitive') {
                     if (!configs.MONGO_URL) {
                         logger.error('cannot find `MONGO_URL` in the projects `.env` file');
                     }
-                    this.configs?.database?.mongo?.url = configs.MONGO_URL;
+                    mongoCfg.url = configs.MONGO_URL || '';
                 }
-                autoInitMongo(this.configs?.database?.mongo);
+                autoInitMongo(mongoCfg);
             }
 
             if (config.middlewares) {
@@ -703,26 +706,30 @@ class DolphFactoryClass {
     }
 
     private initSockets(server: Server<typeof IncomingMessage, typeof ServerResponse>) {
-        if (this.sockets) {
-            this.socketService = new this.sockets.socketService({ server, options: this.sockets.options });
+        const socketInit = this.sockets;
+        if (!socketInit?.socketService) {
+            return;
+        }
 
-            GlobalInjection(this.sockets.socketService.name, this.socketService);
+        const SocketServiceCtor = socketInit.socketService;
+        this.socketService = new SocketServiceCtor({ server, options: socketInit.options ?? {} });
 
-            logger.info(`${clc.blue(`SocketIO Initialised Successfully`)}`);
+        GlobalInjection(SocketServiceCtor.name, this.socketService);
 
-            const socketsMetadata = Reflect.getMetadata('sockets', this.sockets.component.constructor.prototype);
+        logger.info(`${clc.blue(`SocketIO Initialised Successfully`)}`);
 
-            if (socketsMetadata && Array.isArray(socketsMetadata)) {
-                socketsMetadata.forEach((socketServiceClass) => {
-                    new socketServiceClass();
+        const socketsMetadata = Reflect.getMetadata('sockets', socketInit.component.constructor.prototype);
 
-                    logger.info(
-                        `${clc.blue(
-                            `${clc.white(`${socketServiceClass.name}`)} can now receive and send websocket events`,
-                        )}`,
-                    );
-                });
-            }
+        if (socketsMetadata && Array.isArray(socketsMetadata)) {
+            socketsMetadata.forEach((socketServiceClass) => {
+                new socketServiceClass();
+
+                logger.info(
+                    `${clc.blue(
+                        `${clc.white(`${socketServiceClass.name}`)} can now receive and send websocket events`,
+                    )}`,
+                );
+            });
         }
     }
 
