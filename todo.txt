@@ -1,34 +1,29 @@
-Prioritized refactor plan (high impact, low risk first)
-Fix config parsing correctness in core/dolph_factory.core.ts
-Why high impact: affects every app startup path.
-Low-risk change: replace faulty typeof 'string' branch with real numeric coercion guard.
-Outcome: reliable port handling from YAML/env.
-Stabilize TypeScript type environment
-Why high impact: currently global type conflicts can break contributor workflows.
-Low-risk change: constrain types/typeRoots and align @types/node duplication sources.
-Outcome: deterministic builds and less CI/local mismatch.
-Replace deprecated sample APIs (MediaParser) with current uploader APIs
-Why high impact: examples are primary onboarding path.
-Low-risk change: migrate old sample code to useFileUploader/fileUploader.
-Outcome: docs/samples reflect current framework behavior.
-Unify controller DI contract
-Why high impact: constructor-vs-property injection currently has ergonomic/type friction.
-Low-risk change: either relax component type signatures or formalize one DI style.
-Outcome: less confusion, cleaner typings for users.
-Harden and expand integration tests for decorator argument injection
-Why high impact: @DBody/@DQuery/@DParam/@DPayload is core API.
-Low-risk change: add focused tests around transform/validation/error paths.
-Outcome: safer refactors in routing/transformer internals.
-Add CI workflow for test + type-check + lint
-Why high impact: catches regressions early.
-Low-risk change: introduce minimal GitHub Actions pipeline.
-Outcome: merge confidence and reproducible quality gate.
-Document canonical architecture + sample conventions
-Why high impact: reduces contributor and user onboarding time.
-Low-risk change: improve README and add architecture doc with component patterns.
-Outcome: fewer implementation divergences across samples/apps.
-Audit middleware stubs/no-op code paths
-Why high impact: hidden behavior gaps in production apps.
-Low-risk change: either implement or deprecate clearly.
-Outcome: more predictable runtime behavior.
-If you want, next I can add a README.md inside samples/mega-rest-api with endpoint catalog and cURL scripts for all auth, upload, admin, and socket test flows.
+Prioritized refactor plan — status (May 2026)
+
+[x] Fix config parsing correctness in core/dolph_factory.core.ts
+    Port from YAML coerced with Number() + Number.isFinite + > 0.
+
+[x] Stabilize TypeScript type environment
+    skipLibCheck in tsconfig.json; contributor notes in docs/architecture.md (TypeScript section).
+
+[x] Replace deprecated sample APIs (MediaParser) with current uploader APIs
+    Samples use useFileUploader / fileUploader; architecture doc calls this out.
+
+[x] Unify controller DI contract
+    ComponentParams typings relaxed; canonical patterns documented in docs/architecture.md (DI section).
+
+[x] Harden and expand integration tests for decorator argument injection
+    tests/decorator_args.test.ts (incl. DQuery), jwt_auth_parity, multipart_upload_route, socket_smoke, uploader tests.
+
+[x] Add CI workflow for test + type-check + lint
+    .github/workflows/ci.yml
+
+[x] Document canonical architecture + sample conventions
+    docs/architecture.md + main README; samples/mega-rest-api/README.md includes cURL catalog.
+
+[x] Audit middleware stubs/no-op code paths
+    DolphAsyncMiddleware, DolphAsyncMiddlewareDec, DolphMiddleware execute and return Promises where applicable; notes in architecture.md.
+
+Future (optional)
+- Consider eslint --fix across the whole repo in CI when noise is acceptable.
+- Long-term: optional GraphQL stack alignment if @dolphjs/graphql peer graph changes again.

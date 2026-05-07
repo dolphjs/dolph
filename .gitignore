@@ -21,3 +21,4 @@ logs
 !.env.example
 
 tests/uploads/
+tests/uploader/uploads

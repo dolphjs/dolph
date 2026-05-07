@@ -3,7 +3,7 @@ import { DNextFunc, DRequest, DResponse } from '../interfaces';
 const DolphAsyncMiddleware =
     <DolphMiddleware>(fn: (req: DRequest, res: DResponse, next: DNextFunc) => Promise<DolphMiddleware>) =>
     (req: DRequest, res: DResponse, next: DNextFunc) => {
-        Promise.resolve(fn(req, res, next)).catch((err) => next(err));
+        return Promise.resolve(fn(req, res, next)).catch((err) => next(err));
     };
 
 /**
@@ -25,7 +25,7 @@ const DolphMiddleware = (fn: any) => (req: DRequest, res: DResponse, next: DNext
 function DolphAsyncMiddlewareDec(fn: (...args: any[]) => Promise<void>): (...args: any[]) => void {
     return function (...args: any[]) {
         const [, , next] = args;
-        Promise.resolve(fn(...args)).catch((err) => next(err));
+        return Promise.resolve(fn(...args)).catch((err) => next(err));
     };
 }
 
