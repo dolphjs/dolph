@@ -245,23 +245,8 @@ const InitialiseControllersAsRouter = <T extends Dolph>(
 
                             const handler = async (req: DRequest, res: DResponse, next: DNextFunc) => {
                                 try {
-                                    // Apply middleware
-                                    for (const middleware of finalMiddlewareList) {
-                                        await new Promise<void>((resolve, reject) => {
-                                            if (res.headersSent) {
-                                                return resolve();
-                                            }
-                                            middleware(req, res, (err?: any) => {
-                                                if (err) {
-                                                    reject(err);
-                                                } else {
-                                                    resolve();
-                                                }
-                                            });
-                                        });
-                                        if (res.headersSent) {
-                                            return;
-                                        }
+                                    if (res.headersSent) {
+                                        return;
                                     }
 
                                     // -- Decorator Resolution Logic --
@@ -368,7 +353,7 @@ const InitialiseControllersAsRouter = <T extends Dolph>(
                             };
 
                             // parse the handler function together with full path to the express router object
-                            router[method](fullPath, handler);
+                            router[method](fullPath, ...finalMiddlewareList, handler);
                             inAppLogger.info(dolphMessages.routeMessages(methodName, method, fullPath));
                         }
                     }
