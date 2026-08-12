@@ -2,6 +2,8 @@
     "name": "@dolphjs/dolph",
     "version": "2.0.0",
     "description": "New-Age, developer friendly node.js and bun framework",
+    "main": "index.js",
+    "types": "index.d.ts",
     "repository": "https://github.com/dolphjs/dolph",
     "author": "Utee Akaninyene",
     "license": "MIT",
