@@ -5,6 +5,7 @@ import { DolphControllerHandler } from '../../classes';
 import clc from 'cli-color';
 import { logger } from '../../utilities';
 import { SHIELD_METADATA_KEY, UN_SHIELD_METADATA_KEY } from './meta_data_keys.decorators';
+import { GlobalServiceRegistry } from '../../core/initialisers/global_service_registry';
 
 export const Route = (path = ''): ClassDecorator => {
     return (target: any) => {
@@ -102,19 +103,33 @@ export const Component = <T extends Dolph>({ controllers, services }: ComponentP
         const serviceInstances = new Map<any, any>();
 
         function resolveService<S_TYPE>(serviceClass: new (...args: any[]) => S_TYPE): S_TYPE {
-            // Check if instance already exists
+            // 1. Check the application-wide global registry first.
+            //    This is the key change that makes services true singletons across components.
+            if (GlobalServiceRegistry.has(serviceClass)) {
+                // Populate local map so controller injection still works via serviceInstances
+                if (!serviceInstances.has(serviceClass)) {
+                    serviceInstances.set(serviceClass, GlobalServiceRegistry.get(serviceClass));
+                }
+                return GlobalServiceRegistry.get(serviceClass) as S_TYPE;
+            }
+
+            // 2. Check if instance already exists in local component map (within current resolution pass)
             if (serviceInstances.has(serviceClass)) {
                 return serviceInstances.get(serviceClass) as S_TYPE;
             }
 
-            // Check if this service class is a registered service in the component
+            // 3. Check if this service class is a registered service in the component.
+            //    We allow cross-component resolution: if a service is already in the global
+            //    registry from another component, it was already handled by step 1.
+            //    If it's not registered here AND not in the global registry, that's an error.
             if (!services?.includes(serviceClass)) {
                 throw new Error(
-                    `Resolution error: Service '${serviceClass.name}' is not registered in the component '${target.name}'.`,
+                    `Resolution error: Service '${serviceClass.name}' is not registered in the component '${target.name}' ` +
+                    `and has not been registered by any other component.`,
                 );
             }
 
-            // Check for circular dependency
+            // 4. Check for circular dependency
             if (servicesBeingResolved.has(serviceClass)) {
                 const cyclePath =
                     Array.from(servicesBeingResolved)
@@ -125,7 +140,7 @@ export const Component = <T extends Dolph>({ controllers, services }: ComponentP
                 );
             }
 
-            // Mark as being resolved (no circular dependency)
+            // Mark as being resolved
             servicesBeingResolved.add(serviceClass);
 
             // Get constructor parameter types (requires 'emitDecoratorMetadata: true')
@@ -133,7 +148,6 @@ export const Component = <T extends Dolph>({ controllers, services }: ComponentP
 
             const resolvedArgs = constructorParamTypes.map((paramType: any, index: number) => {
                 if (!paramType) {
-                    // Clean up before throwing
                     servicesBeingResolved.delete(serviceClass);
                     throw new Error(
                         `Cannot resolve constructor parameter ${index} for service '${serviceClass.name}' due to missing type information. ` +
@@ -143,7 +157,6 @@ export const Component = <T extends Dolph>({ controllers, services }: ComponentP
 
                 // Prevent self-injection in constructor
                 if (paramType === serviceClass) {
-                    // Clean up
                     servicesBeingResolved.delete(serviceClass);
                     throw new Error(
                         `Service '${serviceClass.name}' cannot inject itself into its own constructor (parameter ${index}).`,
@@ -155,13 +168,11 @@ export const Component = <T extends Dolph>({ controllers, services }: ComponentP
                     return resolveService(paramType);
                 } catch (e: any) {
                     servicesBeingResolved.delete(serviceClass);
-                    // Augment the error with context if it's a resolution error from a deeper call
                     if (
                         e.message.startsWith('Circular dependency detected') ||
                         e.message.startsWith('Resolution error:') ||
                         (e.message.startsWith('Service ') && e.message.includes('cannot inject itself'))
                     ) {
-                        // Re-throw specific DI errors
                         throw e;
                     }
                     throw new Error(
@@ -175,13 +186,14 @@ export const Component = <T extends Dolph>({ controllers, services }: ComponentP
             try {
                 instance = new serviceClass(...resolvedArgs);
             } catch (e: any) {
-                // Clean up
                 servicesBeingResolved.delete(serviceClass);
                 throw new Error(`Error instantiating service '${serviceClass.name}': ${e.message}`);
             }
 
-            // Store instance and clean up resolution tracking
+            // 5. Store in BOTH the local component map and the global registry.
+            //    The global registry ensures cross-component singleton behaviour.
             serviceInstances.set(serviceClass, instance);
+            GlobalServiceRegistry.set(serviceClass, instance);
             servicesBeingResolved.delete(serviceClass);
 
             return instance;
@@ -191,23 +203,12 @@ export const Component = <T extends Dolph>({ controllers, services }: ComponentP
         try {
             services.forEach((serviceClass) => {
                 if (!serviceInstances.has(serviceClass)) {
-                    // This populates `serviceInstances`
                     resolveService(serviceClass);
                 }
             });
         } catch (error: any) {
             logger.error(clc.red(`[${target.name}] Failed to Initialise services: ${error.message}`));
         }
-
-        // services.forEach((serviceClass) => {
-        //     if (!serviceInstances.has(serviceClass.name)) {
-        //         try {
-        //             serviceInstances.set(serviceClass.name, new serviceClass());
-        //         } catch (e: any) {
-        //             logger.error(clc.red(`Failed to instantiate service ${serviceClass.name}: ${e.message}`));
-        //         }
-        //     }
-        // });
 
         // Modify controllers to inject resolved service instances
         // Keep original for metadata if needed
