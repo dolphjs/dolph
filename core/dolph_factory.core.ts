@@ -14,11 +14,13 @@ import {
     ErrorResponse,
     Middleware,
     MongooseConfig,
+    TypeOrmConfig,
+    SqlConfig,
     dolphPort,
     ResponseInterceptor,
 } from '../common';
 import { inAppLogger, logger } from '../utilities';
-import { autoInitMongo, SocketService } from '../packages';
+import { autoInitMongo, autoInitSql, autoInitTypeOrm, SocketService } from '../packages';
 import { DolphErrors, dolphMessages } from '../common/constants';
 import express from 'express';
 import cors from 'cors';
@@ -669,6 +671,30 @@ class DolphFactoryClass {
                 autoInitMongo(mongoCfg);
             }
 
+            const typeOrmConfig: TypeOrmConfig | undefined = this.configs?.database?.typeorm;
+            if (typeOrmConfig?.options) {
+                if ((typeOrmConfig.options as any).url === 'sensitive') (typeOrmConfig.options as any).url = configs.SQL_URL;
+                if ((typeOrmConfig.options as any).username === 'sensitive') (typeOrmConfig.options as any).username = configs.SQL_USER;
+                if ((typeOrmConfig.options as any).password === 'sensitive') (typeOrmConfig.options as any).password = configs.SQL_PASSWORD;
+                if ((typeOrmConfig.options as any).host === 'sensitive') (typeOrmConfig.options as any).host = configs.SQL_HOST;
+                autoInitTypeOrm(typeOrmConfig);
+            }
+
+            const sequelizeConfig: SqlConfig | undefined = this.configs?.database?.sequelize;
+            if (sequelizeConfig?.database) {
+                if (sequelizeConfig.user === 'sensitive') sequelizeConfig.user = configs.SQL_USER;
+                if (sequelizeConfig.pass === 'sensitive') sequelizeConfig.pass = configs.SQL_PASSWORD;
+                if (sequelizeConfig.host === 'sensitive') sequelizeConfig.host = configs.SQL_HOST;
+                
+                if (sequelizeConfig.options) {
+                    if ((sequelizeConfig.options as any).username === 'sensitive') (sequelizeConfig.options as any).username = configs.SQL_USER;
+                    if ((sequelizeConfig.options as any).password === 'sensitive') (sequelizeConfig.options as any).password = configs.SQL_PASSWORD;
+                    if (sequelizeConfig.options.host === 'sensitive') sequelizeConfig.options.host = configs.SQL_HOST;
+                }
+
+                autoInitSql(sequelizeConfig);
+            }
+
             if (config.middlewares) {
                 if (config.middlewares.cors?.activate) {
                     const {
@@ -844,16 +870,6 @@ class DolphFactoryClass {
                     logger.error(clc.red(`Cannot start Dolph Server: ${err}`));
                 });
         }
-
-        //Todo: implement automated control of popular databases including MySQl and PostgreSQL. Currently ony MongoDB is supported.
-        // if (this.configs.database?.mysql?.host.length > 1) {
-        //   autoInitMySql(
-        //     this.configs.database.mysql.database,
-        //     this.configs.database.mysql.user,
-        //     this.configs.database.mysql.pass,
-        //     this.configs.database.mysql.host,
-        //   );
-        // }
 
         initClosureHandler(this.server);
         return this.server;

@@ -1,5 +1,11 @@
-import { initMySql } from '../../packages';
+import { initSql } from '../../packages';
 
-const mysql = initMySql('dolph', 'root', 'password', 'localhost');
+const mysql = initSql({
+    dialect: 'mysql',
+    database: 'dolph',
+    user: 'root',
+    pass: 'password',
+    host: 'localhost',
+});
 
 export { mysql };

@@ -1,0 +1,101 @@
+---
+title: TypeORM Integration
+description: Using SQL databases with TypeORM in DolphJS
+editUrl: https://github.com/dolphjs/dolph/edit/main/docs/content/docs/techniques/database/typeorm.mdx
+sidebar:
+  label: TypeORM
+  order: 2
+---
+
+DolphJS provides full integration for SQL databases via **TypeORM**. You get auto-initialization from the `dolph_config.yaml` file, and direct access to the `DataSource` object without having to build boilerplate setup scripts.
+
+## Configuration
+
+To connect to your database via TypeORM, simply declare the `typeorm` block in your `dolph_config.yaml`. 
+
+The `options` object provided maps **exactly** to TypeORM's official `DataSourceOptions`. This guarantees that you can use every single TypeORM feature, such as `synchronize`, `logging`, `subscribers`, `migrations`, and more.
+
+```yaml
+# dolph_config.yaml
+database:
+  typeorm:
+    options:
+      type: postgres
+      host: localhost
+      port: 5432
+      username: root
+      password: sensitive
+      database: dolph_db
+      synchronize: true
+      logging: false
+      entities:
+        - "src/models/*.ts"
+```
+
+:::note
+**Sensitive Credentials:** Notice we set `password: sensitive` in the config above. When you set properties like `username`, `password`, `host`, or `url` to `"sensitive"`, DolphJS automatically intercepts this and injects the corresponding environment variable from your `.env` file (`SQL_USER`, `SQL_PASSWORD`, `SQL_HOST`, `SQL_URL`). This ensures your credentials never leak into your source code!
+:::
+
+When you start your DolphJS application, the `DolphFactory` reads this block and automatically connects the `DataSource` prior to mounting your services and routes.
+
+## Defining the Entity
+
+Let's create a standard TypeORM entity. 
+
+```typescript
+// src/models/user.entity.ts
+import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+
+@Entity()
+export class User {
+    @PrimaryGeneratedColumn()
+    id: number;
+
+    @Column()
+    firstName: string;
+
+    @Column()
+    lastName: string;
+
+    @Column({ default: true })
+    isActive: boolean;
+}
+```
+
+## Using TypeORM in Services
+
+Since TypeORM is globally auto-initialized by DolphJS, you can easily access the underlying `DataSource` anywhere inside your services using the `getDataSource()` function from `@dolphjs/dolph/packages/typeorm`.
+
+```typescript
+// src/user/user.service.ts
+import { DService } from '@dolphjs/dolph/decorators';
+import { getDataSource } from '@dolphjs/dolph/packages/typeorm';
+import { User } from '../models/user.entity';
+
+@DService('userService')
+export class UserService {
+  
+  // Retrieve the TypeORM DataSource globally
+  private dataSource = getDataSource();
+  private userRepo = this.dataSource.getRepository(User);
+
+  async createUser(firstName: string, lastName: string) {
+    const user = new User();
+    user.firstName = firstName;
+    user.lastName = lastName;
+    
+    // Save to the database
+    return await this.userRepo.save(user);
+  }
+
+  async getAllActiveUsers() {
+    return await this.userRepo.find({
+      where: { isActive: true },
+    });
+  }
+}
+```
+
+### Wrapping Up
+
+By passing configuration down via the native options block, your `dolph_config.yaml` becomes the central source of truth, and TypeORM fits naturally into your standard DolphJS architecture.

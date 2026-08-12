@@ -3,6 +3,8 @@ import { IPayload, MongooseConfig } from '.';
 import { NextFunction, Request, RequestHandler, Response, Router } from 'express';
 import { IncomingMessage, ServerResponse } from 'http';
 import { FileInfo, UploadConfig } from '../types/dolph_uploader.type';
+import { Options as SequelizeOptions } from 'sequelize';
+import { DataSourceOptions } from 'typeorm';
 
 export interface DolphConfig {
     database?: DolphConfigDbOption;
@@ -15,15 +17,22 @@ export interface DolphConfig {
 }
 
 export interface DolphConfigDbOption {
-    mongo: MongooseConfig;
-    mysql: MySqlConfig;
+    mongo?: MongooseConfig;
+    typeorm?: TypeOrmConfig;
+    sequelize?: SqlConfig;
 }
 
-export interface MySqlConfig {
-    host: string;
+export interface SqlConfig {
+    dialect: 'mysql' | 'postgres' | 'sqlite' | 'mariadb' | 'mssql';
     database: string;
-    user: string;
+    host?: string;
+    user?: string;
     pass?: string | null;
+    options?: SequelizeOptions;
+}
+
+export interface TypeOrmConfig {
+    options: DataSourceOptions;
 }
 
 export interface DolphConfigMiddlewares {

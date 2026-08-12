@@ -367,7 +367,8 @@ Supported keys include:
 - `jsonLimit`
 - `middlewares.cors`
 - `database.mongo`
-- `database.mysql` (declared type, active bootstrap focus is Mongo)
+- `database.typeorm` (auto-initializes a TypeORM DataSource)
+- `database.sequelize` (auto-initializes a Sequelize instance)
 - `globalExceptionFilter`
 
 Example:

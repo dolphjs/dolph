@@ -1,40 +1,51 @@
 import { logger } from '../../utilities';
 import clc from 'cli-color';
 import { Sequelize } from 'sequelize';
+import { SqlConfig } from '../../common';
+
+let DolphSequelize: Sequelize | null = null;
 
 /**
+ * Used to Initialise SQL with sequelize ORM
+ * @returns the Sequelize instance
  *
- * Used to Initialise mysql with sequelize ORM
- * @returns the mogoose promise
- *
- * @version 1.0.0
+ * @version 2.0.0
  */
-const initMySql = (name: string, user: string, password: string, host: string) => {
-    const sequelize = new Sequelize(name, user, password, {
-        dialect: 'mysql',
-        host: host || 'localhost',
+const initSql = (config: SqlConfig): Sequelize => {
+    DolphSequelize = new Sequelize(config.database, config.user || '', config.pass || '', {
+        dialect: config.dialect as any,
+        host: config.host || 'localhost',
+        ...config.options,
     });
-    // DolphSequelize = sequelize;
-    return sequelize;
+    return DolphSequelize;
 };
 
 /**
+ * Used to initialise SQL with sequelize ORM and connect
  *
- * Used to intiialize mysql with sequelize ORM
- *
- * It accepts the return value from the `initSquelize` function  and calls the `sync` function on it
- *
- * @version 1.0.0
+ * @version 2.0.0
  */
-const autoInitMySql = (sequelize: Sequelize) => {
+const autoInitSql = (config: SqlConfig) => {
+    const sequelize = initSql(config);
     sequelize
         .sync()
         .then(() => {
-            logger.info(clc.blueBright('MYSQL CONNECTED'));
+            logger.info(clc.blueBright(`SEQUELIZE (${config.dialect.toUpperCase()}) CONNECTED`));
         })
         .catch((err: any) => {
             logger.error(clc.red(err));
         });
 };
 
-export { initMySql, autoInitMySql };
+/**
+ * Retrieve the global Sequelize instance
+ * @returns {Sequelize}
+ */
+const getSequelize = (): Sequelize => {
+    if (!DolphSequelize) {
+        throw new Error('Sequelize has not been initialized. Ensure autoInitSql is called or sequelize config is provided.');
+    }
+    return DolphSequelize;
+};
+
+export { initSql, autoInitSql, getSequelize, DolphSequelize };
