@@ -24,7 +24,7 @@ In this pattern:
 4. **DolphFactory** reads the components, resolves dependencies, and boots the application.
 
 ```typescript
-import { Component } from '@dolphjs/decorators';
+import { Component } from '@dolphjs/dolph/decorators';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 
@@ -38,7 +38,8 @@ export class AuthComponent {}
 For developers migrating legacy Express applications or those who prefer manual routing, DolphJS offers the `DolphRouteHandler`. 
 
 ```typescript
-import { DolphRouteHandler, Dolph } from '@dolphjs/core';
+import { DolphRouteHandler } from '@dolphjs/dolph/classes';
+import { Dolph } from '@dolphjs/dolph/common';
 import { Router } from 'express';
 
 export class AuthRouter extends DolphRouteHandler<Dolph> {

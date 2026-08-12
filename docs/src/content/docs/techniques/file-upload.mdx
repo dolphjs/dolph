@@ -15,7 +15,7 @@ You can configure `useFileUploader` with storage destinations, file filters, and
 
 ```typescript
 // src/utils/uploader.config.ts
-import { useFileUploader, diskStorage } from '@dolphjs/packages';
+import { useFileUploader, diskStorage } from '@dolphjs/dolph/packages';
 import path from 'path';
 
 // Configure storage
@@ -46,9 +46,10 @@ Use the `@UseMiddleware` decorator to apply the newly created `uploadMedia` midd
 
 ```typescript
 // src/upload/upload.controller.ts
-import { DolphControllerHandler, Dolph } from '@dolphjs/core';
-import { Route, Post, DReq, DRes, UseMiddleware } from '@dolphjs/decorators';
-import { SuccessResponse, ErrorResponse, DRequest, DResponse } from '@dolphjs/common';
+import { DolphControllerHandler } from '@dolphjs/dolph/classes';
+import { Dolph } from '@dolphjs/dolph/common';
+import { Route, Post, DReq, DRes, UseMiddleware } from '@dolphjs/dolph/decorators';
+import { SuccessResponse, ErrorResponse, DRequest, DResponse } from '@dolphjs/dolph/common';
 import { uploadMedia } from '../utils/uploader.config';
 
 @Route('files')

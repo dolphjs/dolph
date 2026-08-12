@@ -14,9 +14,10 @@ Controllers are responsible for handling incoming HTTP requests and returning re
 To create a controller, you must extend the `DolphControllerHandler` class and use the `@Route` decorator to define the base path.
 
 ```typescript
-import { DolphControllerHandler, Dolph } from '@dolphjs/core';
-import { Route, Get, DRes, DRequest } from '@dolphjs/decorators';
-import { SuccessResponse } from '@dolphjs/common';
+import { DolphControllerHandler } from '@dolphjs/dolph/classes';
+import { Dolph } from '@dolphjs/dolph/common';
+import { Route, Get, DRes, DRequest } from '@dolphjs/dolph/decorators';
+import { SuccessResponse } from '@dolphjs/dolph/common';
 
 @Route('cats')
 export class CatsController extends DolphControllerHandler<Dolph> {
@@ -67,7 +68,7 @@ DolphJS provides decorators to extract payloads from the incoming request cleanl
 If you integrate a validation library like `class-validator`, you can type your `@DBody()` to automatically enforce payload structures (handled in conjunction with middlewares).
 
 ```typescript
-import { Post, DBody, DRes, DRequest } from '@dolphjs/decorators';
+import { Post, DBody, DRes, DRequest } from '@dolphjs/dolph/decorators';
 
 class CreateCatDto {
   name: string;

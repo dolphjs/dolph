@@ -50,8 +50,9 @@ export const UserModel = model<IUser>('User', UserSchema);
 Once your model is defined, you inject it into your Service using the `@InjectMongo` or `@InjectMySQL` decorators provided by Dolph.
 
 ```typescript
-import { DolphServiceHandler, Dolph } from '@dolphjs/core';
-import { InjectMongo } from '@dolphjs/decorators';
+import { DolphServiceHandler } from '@dolphjs/dolph/classes';
+import { Dolph } from '@dolphjs/dolph/common';
+import { InjectMongo } from '@dolphjs/dolph/decorators';
 import { Model } from 'mongoose';
 import { UserModel, IUser } from './user.model';
 

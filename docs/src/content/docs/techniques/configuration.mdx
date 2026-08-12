@@ -57,7 +57,8 @@ export const config = {
 You can now import this typed `config` object anywhere in your controllers or services.
 
 ```typescript
-import { DolphServiceHandler, Dolph } from '@dolphjs/core';
+import { DolphServiceHandler } from '@dolphjs/dolph/classes';
+import { Dolph } from '@dolphjs/dolph/common';
 import { config } from '../config/env.config';
 
 export class PaymentService extends DolphServiceHandler<Dolph> {

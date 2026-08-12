@@ -15,7 +15,7 @@ A Component is simply a class decorated with `@Component()`. The decorator accep
 
 ```typescript
 // src/order/order.component.ts
-import { Component } from '@dolphjs/decorators';
+import { Component } from '@dolphjs/dolph/decorators';
 import { OrderController } from './order.controller';
 import { OrderService } from './order.service';
 import { TransactionService } from './transaction.service';
@@ -43,7 +43,7 @@ Once you have defined your components, you must register them in the central ent
 
 ```typescript
 // src/server.ts
-import { DolphFactory } from '@dolphjs/core';
+import { DolphFactory } from '@dolphjs/dolph';
 import { OrderComponent } from './order/order.component';
 import { UserComponent } from './user/user.component';
 

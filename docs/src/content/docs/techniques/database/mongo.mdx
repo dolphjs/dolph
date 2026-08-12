@@ -41,7 +41,7 @@ When you start your application using `DolphFactory`, DolphJS automatically esta
 If you prefer to skip `dolph_config.yaml` or want to manually control the connection timing (e.g. for testing or complex setups), you can initialize the database programmatically using `autoInitMongo` from `@dolphjs/packages`.
 
 ```typescript
-import { autoInitMongo } from '@dolphjs/packages';
+import { autoInitMongo } from '@dolphjs/dolph/packages';
 
 autoInitMongo({
   url: 'mongodb://127.0.0.1:27017/dolph_app',
@@ -84,8 +84,9 @@ Use the `@InjectMongo` decorator to inject the model into your Dolph Service. Th
 
 ```typescript
 // src/product/product.service.ts
-import { DolphServiceHandler, Dolph } from '@dolphjs/core';
-import { InjectMongo } from '@dolphjs/decorators';
+import { DolphServiceHandler } from '@dolphjs/dolph/classes';
+import { Dolph } from '@dolphjs/dolph/common';
+import { InjectMongo } from '@dolphjs/dolph/decorators';
 import { Model } from 'mongoose';
 import { ProductModel, IProduct } from './product.model';
 

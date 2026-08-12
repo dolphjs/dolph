@@ -24,7 +24,7 @@ You should configure the session middleware globally so that it applies to all r
 
 ```typescript
 // src/server.ts
-import { DolphFactory } from '@dolphjs/core';
+import { DolphFactory } from '@dolphjs/dolph';
 import { AppComponent } from './app.component';
 import session from 'express-session';
 
@@ -75,9 +75,10 @@ Now you can build your controller with full type support:
 
 ```typescript
 // src/auth/auth.controller.ts
-import { DolphControllerHandler, Dolph } from '@dolphjs/core';
-import { Route, Post, Get, DReq, DRes, DBody } from '@dolphjs/decorators';
-import { DRequest, DResponse, SuccessResponse, ErrorResponse } from '@dolphjs/common';
+import { DolphControllerHandler } from '@dolphjs/dolph/classes';
+import { Dolph } from '@dolphjs/dolph/common';
+import { Route, Post, Get, DReq, DRes, DBody } from '@dolphjs/dolph/decorators';
+import { DRequest, DResponse, SuccessResponse, ErrorResponse } from '@dolphjs/dolph/common';
 
 @Route('auth')
 export class AuthController extends DolphControllerHandler<Dolph> {

@@ -71,8 +71,9 @@ To keep your business logic clean, use Dependency Injection to provide the model
 
 ```typescript
 // src/user/user.service.ts
-import { DolphServiceHandler, Dolph } from '@dolphjs/core';
-import { InjectMySQL } from '@dolphjs/decorators';
+import { DolphServiceHandler } from '@dolphjs/dolph/classes';
+import { Dolph } from '@dolphjs/dolph/common';
+import { InjectMySQL } from '@dolphjs/dolph/decorators';
 import { ModelStatic, Model as SqlModel } from 'sequelize';
 import { UserModel } from './user.model';
 

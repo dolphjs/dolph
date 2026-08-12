@@ -25,8 +25,8 @@ DolphJS provides an `MVCAdapter` specifically to configure view engines without 
 
 ```typescript
 // src/server.ts
-import { DolphFactory } from '@dolphjs/core';
-import { MVCAdapter } from '@dolphjs/common';
+import { DolphFactory } from '@dolphjs/dolph';
+import { MVCAdapter } from '@dolphjs/dolph/common';
 import { PageComponent } from './page/page.component';
 import * as path from 'path';
 
@@ -74,8 +74,9 @@ To render a view, use the `@Render()` decorator. Instead of using `SuccessRespon
 
 ```typescript
 // src/page/page.controller.ts
-import { DolphControllerHandler, Dolph } from '@dolphjs/core';
-import { Route, Get, Render } from '@dolphjs/decorators';
+import { DolphControllerHandler } from '@dolphjs/dolph/classes';
+import { Dolph } from '@dolphjs/dolph/common';
+import { Route, Get, Render } from '@dolphjs/dolph/decorators';
 
 @Route('pages')
 export class PageController extends DolphControllerHandler<Dolph> {

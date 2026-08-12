@@ -14,9 +14,10 @@ In DolphJS, standard Express middlewares can be seamlessly integrated into your 
 To apply a middleware to a specific route, use the `@UseMiddleware()` decorator. This is useful for data validation, logging, or specific route authentication.
 
 ```typescript
-import { DolphControllerHandler, Dolph } from '@dolphjs/core';
-import { Route, Post, DBody, DRes, UseMiddleware, DRequest } from '@dolphjs/decorators';
-import { DRequest, DResponse, DNextFunc, SuccessResponse } from '@dolphjs/common';
+import { DolphControllerHandler } from '@dolphjs/dolph/classes';
+import { Dolph } from '@dolphjs/dolph/common';
+import { Route, Post, DBody, DRes, UseMiddleware, DRequest } from '@dolphjs/dolph/decorators';
+import { DRequest, DResponse, DNextFunc, SuccessResponse } from '@dolphjs/dolph/common';
 
 // Example custom validation middleware
 const validatePayload = (req: DRequest, res: DResponse, next: DNextFunc) => {
@@ -52,7 +53,7 @@ These middlewares run globally before the request ever reaches your Controller l
 You can chain multiple middlewares on a single route by passing them as a sequence to `@UseMiddleware()`, or by using the decorator multiple times.
 
 ```typescript
-import { UseMiddleware, Post } from '@dolphjs/decorators';
+import { UseMiddleware, Post } from '@dolphjs/dolph/decorators';
 
 @Post('upload')
 @UseMiddleware(checkRateLimit)

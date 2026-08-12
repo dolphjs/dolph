@@ -22,7 +22,8 @@ This separation of concerns makes your services highly reusable and prevents mon
 In DolphJS, a service must extend the `DolphServiceHandler` class. Crucially, you must pass a unique string identifier to the `super()` call in the constructor. This identifier helps the Dependency Injection (DI) system map the service correctly.
 
 ```typescript
-import { DolphServiceHandler, Dolph } from '@dolphjs/core';
+import { DolphServiceHandler } from '@dolphjs/dolph/classes';
+import { Dolph } from '@dolphjs/dolph/common';
 
 export class CatsService extends DolphServiceHandler<Dolph> {
   private readonly cats: any[] = [];
@@ -48,7 +49,7 @@ export class CatsService extends DolphServiceHandler<Dolph> {
 Once your service is defined, you group it with a controller inside a `@Component`.
 
 ```typescript
-import { Component } from '@dolphjs/decorators';
+import { Component } from '@dolphjs/dolph/decorators';
 import { CatsController } from './cats.controller';
 import { CatsService } from './cats.service';
 
@@ -65,8 +66,9 @@ Services often need to interact with a database. DolphJS provides specialized de
 #### MongoDB Example
 
 ```typescript
-import { DolphServiceHandler, Dolph } from '@dolphjs/core';
-import { InjectMongo } from '@dolphjs/decorators';
+import { DolphServiceHandler } from '@dolphjs/dolph/classes';
+import { Dolph } from '@dolphjs/dolph/common';
+import { InjectMongo } from '@dolphjs/dolph/decorators';
 import { Model } from 'mongoose';
 import { catModel, ICatModel } from './cat.model';
 
@@ -92,8 +94,9 @@ export class CatsService extends DolphServiceHandler<Dolph> {
 Similarly, if you are using MySQL (via Sequelize or similar), you can use `@InjectMySQL`.
 
 ```typescript
-import { DolphServiceHandler, Dolph } from '@dolphjs/core';
-import { InjectMySQL } from '@dolphjs/decorators';
+import { DolphServiceHandler } from '@dolphjs/dolph/classes';
+import { Dolph } from '@dolphjs/dolph/common';
+import { InjectMySQL } from '@dolphjs/dolph/decorators';
 import { ModelStatic, Model as SqlModel } from 'sequelize';
 import { catModel, ICatModel } from './cat.model';
 

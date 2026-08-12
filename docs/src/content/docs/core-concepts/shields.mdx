@@ -16,9 +16,10 @@ To apply a shield, use the `@Shield()` class-level decorator. It accepts standar
 A common use case is requiring authentication for every route in a controller.
 
 ```typescript
-import { DolphControllerHandler, Dolph } from '@dolphjs/core';
-import { Route, Get, Shield, DReq, DRes } from '@dolphjs/decorators';
-import { DRequest, DResponse, DNextFunc, SuccessResponse } from '@dolphjs/common';
+import { DolphControllerHandler } from '@dolphjs/dolph/classes';
+import { Dolph } from '@dolphjs/dolph/common';
+import { Route, Get, Shield, DReq, DRes } from '@dolphjs/dolph/decorators';
+import { DRequest, DResponse, DNextFunc, SuccessResponse } from '@dolphjs/dolph/common';
 
 // A basic Express middleware
 const requireAuth = (req: DRequest, res: DResponse, next: DNextFunc) => {
@@ -50,8 +51,8 @@ export class AdminController extends DolphControllerHandler<Dolph> {
 Sometimes you want an entire controller protected, except for one or two specific public routes (like a login endpoint). You can achieve this using the `@UnShield()` method-level decorator.
 
 ```typescript
-import { Route, Get, Post, Shield, UnShield, DReq, DRes } from '@dolphjs/decorators';
-import { SuccessResponse } from '@dolphjs/common';
+import { Route, Get, Post, Shield, UnShield, DReq, DRes } from '@dolphjs/dolph/decorators';
+import { SuccessResponse } from '@dolphjs/dolph/common';
 import { requireAuth } from './auth.middleware';
 
 @Shield(requireAuth)
