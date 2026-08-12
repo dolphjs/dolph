@@ -7,10 +7,37 @@ export default defineConfig({
     integrations: [
         starlight({
             title: 'DolphJS',
+            description: 'The New-Age, developer-friendly Node.js framework for building scalable enterprise applications.',
             logo: {
                 src: './src/assets/logo.svg',
             },
             favicon: '/favicon.ico',
+            head: [
+                {
+                    tag: 'meta',
+                    attrs: { name: 'theme-color', content: '#0a0a0f' },
+                },
+                {
+                    tag: 'link',
+                    attrs: { rel: 'apple-touch-icon', href: '/apple-touch-icon.png' },
+                },
+                {
+                    tag: 'link',
+                    attrs: { rel: 'mask-icon', href: '/safari-pinned-tab.svg', color: '#00e1ff' },
+                },
+                {
+                    tag: 'meta',
+                    attrs: { name: 'msapplication-TileImage', content: '/mstile-150x150.png' },
+                },
+                {
+                    tag: 'meta',
+                    attrs: { property: 'og:image', content: '/android-chrome-144x144.png' },
+                },
+                {
+                    tag: 'meta',
+                    attrs: { property: 'twitter:image', content: '/android-chrome-144x144.png' },
+                }
+            ],
             expressiveCode: {
                 themes: ['one-dark-pro'],
                 styleOverrides: {
