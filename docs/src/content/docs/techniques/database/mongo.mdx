@@ -86,11 +86,12 @@ Use the `@InjectMongo` decorator to inject the model into your Dolph Service. Th
 // src/product/product.service.ts
 import { DolphServiceHandler } from '@dolphjs/dolph/classes';
 import { Dolph } from '@dolphjs/dolph/common';
-import { InjectMongo } from '@dolphjs/dolph/decorators';
+import { InjectMongo, DService } from '@dolphjs/dolph/decorators';
 import { Model } from 'mongoose';
 import { ProductModel, IProduct } from './product.model';
 
 @InjectMongo('productModel', ProductModel)
+@DService()
 export class ProductService extends DolphServiceHandler<Dolph> {
   // Ensure the property name exactly matches the string 'productModel'
   productModel!: Model<IProduct>;

@@ -68,9 +68,11 @@ Since TypeORM is globally auto-initialized by DolphJS, you can easily access the
 
 ```typescript
 // src/user/user.service.ts
+import { DService } from '@dolphjs/dolph/decorators';
 import { getDataSource } from '@dolphjs/dolph/packages/typeorm';
 import { User } from '../models/user.entity';
 
+@DService('userService')
 export class UserService {
   
   // Retrieve the TypeORM DataSource globally
