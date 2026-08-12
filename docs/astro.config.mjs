@@ -84,6 +84,10 @@ export default defineConfig({
                     link: '/cli/',
                 },
                 {
+                    label: 'Testing',
+                    link: '/testing/',
+                },
+                {
                     label: 'GraphQL',
                     link: '/graphql/',
                 },

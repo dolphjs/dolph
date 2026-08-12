@@ -56,3 +56,7 @@ dolph.start();
 :::caution
 If a Service is omitted from the `services` array of a Component, the framework will throw an error at runtime when the Controller attempts to use it, because the DI container will not know how to resolve the dependency.
 :::
+
+## Testing Components
+
+Because a Component's services are resolved the moment its module is first imported, exercising a Component end-to-end (real routing, real `@Route` metadata) with a mocked service requires sequencing the mock *before* that import happens. `@dolphjs/testing`'s `createTestingApp` handles this for you — see [Testing → Tier 3](/testing/#tier-3--component-e2e-tests).

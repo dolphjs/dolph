@@ -112,13 +112,18 @@ async create(@DBody() createCatDto: CreateCatDto, @DRes() res: DRequest) {
 
 ## Dependency Injection
 
-Controllers rarely execute business logic themselves. Instead, they rely on Services. When you declare a service as a private property on your controller class, the `@Component` container automatically injects it.
+Controllers rarely execute business logic themselves. Instead, they rely on Services declared alongside them in a `@Component`. DolphJS supports two ways for a controller to receive them.
+
+### Constructor Injection (recommended)
+
+Declare the service as a constructor parameter, and `@Component` resolves and passes it in automatically:
 
 ```typescript
 @Route('cats')
 export class CatsController extends DolphControllerHandler<Dolph> {
-    // Injected automatically by DolphJS at runtime
-    private catsService!: CatsService;
+    constructor(private readonly catsService: CatsService) {
+        super();
+    }
 
     @Get()
     async findAll(@DRes() res: DRequest) {
@@ -128,10 +133,35 @@ export class CatsController extends DolphControllerHandler<Dolph> {
 }
 ```
 
+This is the preferred style going forward — besides reading naturally, it's the form that lets you construct the controller directly in a unit test (`new CatsController(mockService)`) without reaching into the instance by hand. See [Testing](/testing/#tier-2--controller-unit-tests).
+
+### Field Injection
+
+If the controller has no constructor parameters, `@Component` instead defines a property on the instance for every service declared in the same component — named **after the service's class itself**, not a lowerCamelCase alias:
+
+```typescript
+@Route('cats')
+export class CatsController extends DolphControllerHandler<Dolph> {
+    // The property name must match the class name exactly — DolphJS assigns
+    // it as `instance.CatsService`, not `instance.catsService`.
+    private CatsService!: CatsService;
+
+    @Get()
+    async findAll(@DRes() res: DRequest) {
+        const cats = await this.CatsService.findAll();
+        SuccessResponse({ res, body: cats });
+    }
+}
+```
+
 :::caution
-Do **not** instantiate the service manually (`new CatsService()`) or pass it into the constructor. Let the Dependency Injection container handle it to ensure singleton state and proper memory management.
+Do **not** instantiate the service manually (`new CatsService()`). Let the Dependency Injection container handle it to ensure singleton state and proper memory management. And regardless of which style you use, do not mix the two on the same class — a controller either takes its services as constructor parameters, or declares them as class-name-matched fields, not both.
 :::
 
 ## Asynchronous Handlers
 
 By default, DolphJS wraps your controller methods in an asynchronous try-catch block. If an error is thrown within your method, it will be automatically passed to the next global error handler. You do not need to write verbose `try...catch` blocks inside every route!
+
+## Testing Controllers
+
+A controller built with constructor injection (`constructor(private readonly catsService: CatsService)`) can be unit tested the same way as a service — construct it directly with `new` and a mock, no Express involved. See [Testing → Tier 2](/testing/#tier-2--controller-unit-tests) for the full pattern, including how to mock `DRes()` for handlers that write to the response directly.

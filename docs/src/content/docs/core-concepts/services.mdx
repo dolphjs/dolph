@@ -24,9 +24,7 @@ In DolphJS, a service must extend the `DolphServiceHandler` class. Crucially, yo
 ```typescript
 import { DolphServiceHandler } from '@dolphjs/dolph/classes';
 import { Dolph } from '@dolphjs/dolph/common';
-import { DService } from '@dolphjs/dolph/decorators';
 
-@DService()
 export class CatsService extends DolphServiceHandler<Dolph> {
   private readonly cats: any[] = [];
 
@@ -59,7 +57,7 @@ import { CatsService } from './cats.service';
 export class CatsComponent {}
 ```
 
-The DI container will now instantiate `CatsService` as a singleton. When `CatsController` is initialized, DolphJS automatically maps the singleton instance to the controller's property.
+The DI container will now instantiate `CatsService` as a singleton, shared by every controller in the app that declares it — not just `CatsController`. See [Controllers → Dependency Injection](/core-concepts/controllers/#dependency-injection) for how a controller receives that instance.
 
 ### Database Injection
 
@@ -70,13 +68,12 @@ Services often need to interact with a database. DolphJS provides specialized de
 ```typescript
 import { DolphServiceHandler } from '@dolphjs/dolph/classes';
 import { Dolph } from '@dolphjs/dolph/common';
-import { InjectMongo, DService } from '@dolphjs/dolph/decorators';
+import { InjectMongo } from '@dolphjs/dolph/decorators';
 import { Model } from 'mongoose';
 import { catModel, ICatModel } from './cat.model';
 
 // Inject the model into the 'catModel' property of this class
 @InjectMongo('catModel', catModel)
-@DService()
 export class CatsService extends DolphServiceHandler<Dolph> {
   // Declare the property so TypeScript knows about it
   catModel!: Model<ICatModel>;
@@ -99,12 +96,11 @@ Similarly, if you are using MySQL (via Sequelize or similar), you can use `@Inje
 ```typescript
 import { DolphServiceHandler } from '@dolphjs/dolph/classes';
 import { Dolph } from '@dolphjs/dolph/common';
-import { InjectMySQL, DService } from '@dolphjs/dolph/decorators';
+import { InjectMySQL } from '@dolphjs/dolph/decorators';
 import { ModelStatic, Model as SqlModel } from 'sequelize';
 import { catModel, ICatModel } from './cat.model';
 
 @InjectMySQL('catModel', catModel)
-@DService()
 export class CatsService extends DolphServiceHandler<Dolph> {
   catModel!: ModelStatic<SqlModel<any, any>>;
 
@@ -121,3 +117,7 @@ export class CatsService extends DolphServiceHandler<Dolph> {
 :::tip
 By injecting models this way, you decouple your business logic from hardcoded database imports, making it significantly easier to mock databases during unit testing.
 :::
+
+## Testing Services
+
+Services are plain classes — no framework runtime is needed to unit test one. Construct it directly with `new` and hand in mocked collaborators in place of an injected model or dependency. See [Testing → Tier 1](/testing/#tier-1--service-unit-tests) for a full example.

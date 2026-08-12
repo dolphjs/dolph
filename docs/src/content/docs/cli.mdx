@@ -53,6 +53,7 @@ dolph generate [OPTIONS]
 | `-m` | `--model <NAME>` | Generates a DolphJS models file |
 | `-r` | `--route <NAME>` | Generates a DolphJS routes file |
 | `-s` | `--service <NAME>` | Generates a DolphJS service file |
+| `-t` | `--test <NAME>` | Generates controller and service test spec files |
 | `-v` | `--resolver <NAME>` | Generates a DolphJS resolver file |
 | `-y` | `--component <NAME>` | Generates a DolphJS spring component file |
 
@@ -66,7 +67,33 @@ dolph generate --all users
 # or
 dolph generate -a users
 ```
-This typically generates a bundled controller, service, model, and routes file for that specific domain depending on your architectural choice.
+This typically generates a bundled controller, service, model, dto, test specs, and component file for that specific domain depending on your architectural choice.
+
+#### Generating Tests
+
+Every REST/Spring feature generated with `--all` includes a matching `*.controller.spec.ts` and `*.service.spec.ts`, written to the same component folder and wired to import the exact classes the other generators just produced. You can also generate just the specs for an existing component:
+
+```bash
+dolph generate --test users
+# or
+dolph generate -t users
+```
+
+```text
+src/components/users/
+├── users.component.ts
+├── users.controller.ts
+├── users.controller.spec.ts   # generated
+├── users.service.ts
+├── users.service.spec.ts      # generated
+└── users.dto.ts
+```
+
+The generated specs pass immediately against a freshly scaffolded component — they're a starting point to build real assertions on top of, not just a stub. See the [Testing guide](/testing/) for the full story, including the `*.e2e-spec.ts` tier `dolph generate` doesn't scaffold for you.
+
+:::note
+`dolph new` already adds `jest`, `ts-jest`, `@dolphjs/testing`, and `supertest` to `package.json`'s `devDependencies` for TypeScript projects, along with a `jest.config.js` and a `test` script — there's nothing extra to install for a project scaffolded from scratch.
+:::
 
 #### Generating Individual Files
 
