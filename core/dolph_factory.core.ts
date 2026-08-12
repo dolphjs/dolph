@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import { RequestHandler, Router, urlencoded } from 'express';
+import { ErrorRequestHandler, RequestHandler, Router, urlencoded } from 'express';
 import { CorsOptions } from 'cors';
 import { readFileSync } from 'fs';
 import yaml from 'js-yaml';
@@ -69,7 +69,9 @@ const sendControllerResult = (res: DResponse, result: unknown): void => {
 
     if (typeof result === 'string') {
         const isHtml = result.trimStart().startsWith('<');
-        res.status(200).contentType(isHtml ? 'text/html' : 'text/plain').send(result);
+        res.status(200)
+            .contentType(isHtml ? 'text/html' : 'text/plain')
+            .send(result);
         return;
     }
 
@@ -138,222 +140,236 @@ const InitialiseControllersAsRouter = <T extends Dolph>(
                 Object.getOwnPropertyNames(proto).forEach((name) => allMethodNames.add(name));
                 proto = Object.getPrototypeOf(proto);
             }
-            Array.from(allMethodNames).filter((name) => name !== 'constructor').forEach((methodName) => {
-                if (methodName !== 'constructor') {
-                    const method = Reflect.getMetadata('method', controllerInstance.constructor.prototype[methodName]);
+            Array.from(allMethodNames)
+                .filter((name) => name !== 'constructor')
+                .forEach((methodName) => {
+                    if (methodName !== 'constructor') {
+                        const method = Reflect.getMetadata('method', controllerInstance.constructor.prototype[methodName]);
 
-                    const path = Reflect.getMetadata('path', controllerInstance.constructor.prototype[methodName]);
+                        const path = Reflect.getMetadata('path', controllerInstance.constructor.prototype[methodName]);
 
-                    const middlewareList: Middleware[] =
-                        Reflect.getMetadata('middleware', controllerInstance.constructor.prototype[methodName]) || [];
+                        const middlewareList: Middleware[] =
+                            Reflect.getMetadata('middleware', controllerInstance.constructor.prototype[methodName]) || [];
 
-                    const renderTemplate =
-                        Reflect.getMetadata('render', controllerInstance.constructor.prototype[methodName]) || undefined;
+                        const renderTemplate =
+                            Reflect.getMetadata('render', controllerInstance.constructor.prototype[methodName]) || undefined;
 
-                    let finalMiddlewareList = [...shieldMiddlewares];
-                    /**
-                     * Append any present shield middleware into the middlewares list
-                     */
+                        let finalMiddlewareList = [...shieldMiddlewares];
+                        /**
+                         * Append any present shield middleware into the middlewares list
+                         */
 
-                    /**
-                     * Todo: abstract to helper function
-                     */
+                        /**
+                         * Todo: abstract to helper function
+                         */
 
-                    const unshieldedMiddlewares = getUnShieldMiddlewares(
-                        controllerInstance.constructor.prototype[methodName],
-                    );
-
-                    if (unshieldedMiddlewares?.length) {
-                        const setOne = new Set(finalMiddlewareList.map(stringifyFunction));
-                        const setTwo = new Set(unshieldedMiddlewares.map(stringifyFunction));
-
-                        const uniqueToShield = finalMiddlewareList.filter((func) => !setTwo.has(stringifyFunction(func)));
-                        const uniqueToUnShield = unshieldedMiddlewares.filter(
-                            (func) => !setOne.has(stringifyFunction(func)),
+                        const unshieldedMiddlewares = getUnShieldMiddlewares(
+                            controllerInstance.constructor.prototype[methodName],
                         );
 
-                        finalMiddlewareList = [...uniqueToShield, ...uniqueToUnShield];
-                    } else {
-                        // middlewareList.unshift(...individualShieldMiddlewares);
-                    }
+                        if (unshieldedMiddlewares?.length) {
+                            const setOne = new Set(finalMiddlewareList.map(stringifyFunction));
+                            const setTwo = new Set(unshieldedMiddlewares.map(stringifyFunction));
 
-                    finalMiddlewareList.push(...middlewareList);
+                            const uniqueToShield = finalMiddlewareList.filter(
+                                (func) => !setTwo.has(stringifyFunction(func)),
+                            );
+                            const uniqueToUnShield = unshieldedMiddlewares.filter(
+                                (func) => !setOne.has(stringifyFunction(func)),
+                            );
 
-                    /**
-                     * Todo: check the relevance of this code-block -- start
-                     */
-                    shieldMiddlewares.forEach((middleware: Middleware) => {
-                        if (!registeredShields?.includes(middleware.name)) {
-                            registeredShields.push(middleware.name);
-                            inAppLogger.info(dolphMessages.middlewareMessages('Shield', middleware.name));
+                            finalMiddlewareList = [...uniqueToShield, ...uniqueToUnShield];
+                        } else {
+                            // middlewareList.unshift(...individualShieldMiddlewares);
                         }
-                    });
-                    /**
-                     * Todo: check the relevance of this code-block -- end
-                     */
 
-                    if (isExpressHttpMethod(method) && path) {
-                        const fullPath = normalizePath(join(basePath, controllerBasePath, path)).replace(/\\/g, '/');
+                        finalMiddlewareList.push(...middlewareList);
 
-                        // Hoist constant per-route values — evaluated once at registration, not on every request
-                        const controllerMethod = controllerInstance.constructor.prototype[methodName];
-                        const expectedArgsCount = controllerMethod.length;
-                        const routeArgsMetadata: RouteParamMetadata[] =
-                            Reflect.getMetadata(ROUTE_ARGS_METADATA, controllerInstance.constructor.prototype, methodName) || [];
-                        const hasCoreParamDecorators = routeArgsMetadata.some(
-                            (meta) => meta.index < expectedArgsCount && routeParamsArr.includes(meta.type),
-                        );
-
-                        // Fast path: no per-route middleware, no param decorators, no MVC template
-                        const isAsyncMethod = controllerMethod.constructor.name === 'AsyncFunction';
-
-                        if (finalMiddlewareList.length === 0 && !hasCoreParamDecorators && !renderTemplate) {
-                            if (isAsyncMethod) {
-                                // Async fast-path — awaits the handler so errors propagate and delays are observed
-                                router[method](fullPath, async (req: DRequest, res: DResponse, next: DNextFunc) => {
-                                    try {
-                                        const result = await controllerInstance[methodName](req, res, next);
-                                        if (!res.headersSent) sendControllerResult(res, result);
-                                    } catch (error) {
-                                        next(error);
-                                    }
-                                });
-                            } else {
-                                // Sync fast-path — plain handler, avoids Promise/async overhead on every request
-                                router[method](fullPath, (req: DRequest, res: DResponse, next: DNextFunc) => {
-                                    try {
-                                        const result = controllerInstance[methodName](req, res, next);
-                                        if (!res.headersSent) sendControllerResult(res, result);
-                                    } catch (error) {
-                                        next(error);
-                                    }
-                                });
+                        /**
+                         * Todo: check the relevance of this code-block -- start
+                         */
+                        shieldMiddlewares.forEach((middleware: Middleware) => {
+                            if (!registeredShields?.includes(middleware.name)) {
+                                registeredShields.push(middleware.name);
+                                inAppLogger.info(dolphMessages.middlewareMessages('Shield', middleware.name));
                             }
-                            inAppLogger.info(dolphMessages.routeMessages(methodName, method, fullPath));
-                            return;
-                        }
+                        });
+                        /**
+                         * Todo: check the relevance of this code-block -- end
+                         */
 
-                        const handler = async (req: DRequest, res: DResponse, next: DNextFunc) => {
-                            try {
-                                // Apply middleware
-                                for (const middleware of finalMiddlewareList) {
-                                    await new Promise<void>((resolve, reject) => {
-                                        if (res.headersSent) {
-                                            return resolve();
+                        if (isExpressHttpMethod(method) && path) {
+                            const fullPath = normalizePath(join(basePath, controllerBasePath, path)).replace(/\\/g, '/');
+
+                            // Hoist constant per-route values — evaluated once at registration, not on every request
+                            const controllerMethod = controllerInstance.constructor.prototype[methodName];
+                            const expectedArgsCount = controllerMethod.length;
+                            const routeArgsMetadata: RouteParamMetadata[] =
+                                Reflect.getMetadata(
+                                    ROUTE_ARGS_METADATA,
+                                    controllerInstance.constructor.prototype,
+                                    methodName,
+                                ) || [];
+                            const hasCoreParamDecorators = routeArgsMetadata.some(
+                                (meta) => meta.index < expectedArgsCount && routeParamsArr.includes(meta.type),
+                            );
+
+                            // Fast path: no per-route middleware, no param decorators, no MVC template
+                            const isAsyncMethod = controllerMethod.constructor.name === 'AsyncFunction';
+
+                            if (finalMiddlewareList.length === 0 && !hasCoreParamDecorators && !renderTemplate) {
+                                if (isAsyncMethod) {
+                                    // Async fast-path — awaits the handler so errors propagate and delays are observed
+                                    router[method](fullPath, async (req: DRequest, res: DResponse, next: DNextFunc) => {
+                                        try {
+                                            const result = await controllerInstance[methodName](req, res, next);
+                                            if (!res.headersSent) sendControllerResult(res, result);
+                                        } catch (error) {
+                                            next(error);
                                         }
-                                        middleware(req, res, (err?: any) => {
-                                            if (err) {
-                                                reject(err);
-                                            } else {
-                                                resolve();
-                                            }
-                                        });
                                     });
-                                    if (res.headersSent) {
-                                        return;
-                                    }
+                                } else {
+                                    // Sync fast-path — plain handler, avoids Promise/async overhead on every request
+                                    router[method](fullPath, (req: DRequest, res: DResponse, next: DNextFunc) => {
+                                        try {
+                                            const result = controllerInstance[methodName](req, res, next);
+                                            if (!res.headersSent) sendControllerResult(res, result);
+                                        } catch (error) {
+                                            next(error);
+                                        }
+                                    });
                                 }
+                                inAppLogger.info(dolphMessages.routeMessages(methodName, method, fullPath));
+                                return;
+                            }
 
-                                // -- Decorator Resolution Logic --
-                                const args: any[] = new Array(expectedArgsCount);
+                            const handler = async (req: DRequest, res: DResponse, next: DNextFunc) => {
+                                try {
+                                    // Apply middleware
+                                    for (const middleware of finalMiddlewareList) {
+                                        await new Promise<void>((resolve, reject) => {
+                                            if (res.headersSent) {
+                                                return resolve();
+                                            }
+                                            middleware(req, res, (err?: any) => {
+                                                if (err) {
+                                                    reject(err);
+                                                } else {
+                                                    resolve();
+                                                }
+                                            });
+                                        });
+                                        if (res.headersSent) {
+                                            return;
+                                        }
+                                    }
 
-                                if (routeArgsMetadata.length > 0) {
-                                    for (const meta of routeArgsMetadata) {
-                                        if (meta.index < expectedArgsCount) {
-                                            switch (meta.type) {
-                                                case 'req':
-                                                    args[meta.index] = req;
-                                                    break;
-                                                case 'res':
-                                                    args[meta.index] = res;
-                                                    break;
-                                                case 'next':
-                                                    args[meta.index] = next;
-                                                    break;
-                                                case 'payload':
-                                                    args[meta.index] = req.payload;
-                                                    break;
-                                                case 'param':
-                                                    try {
-                                                        const dtoClass = meta.data?.dtoType as
-                                                            | ClassConstructor<object>
-                                                            | undefined;
+                                    // -- Decorator Resolution Logic --
+                                    const args: any[] = new Array(expectedArgsCount);
 
-                                                        args[meta.index] = await transformAndValidateDto(
-                                                            dtoClass,
-                                                            req.params,
-                                                            'request params',
-                                                        );
-                                                    } catch (error) {
-                                                        throw error;
-                                                    }
-                                                    break;
-                                                case 'query':
-                                                    try {
-                                                        const dtoClass = meta.data?.dtoType as
-                                                            | ClassConstructor<object>
-                                                            | undefined;
+                                    if (routeArgsMetadata.length > 0) {
+                                        for (const meta of routeArgsMetadata) {
+                                            if (meta.index < expectedArgsCount) {
+                                                switch (meta.type) {
+                                                    case 'req':
+                                                        args[meta.index] = req;
+                                                        break;
+                                                    case 'res':
+                                                        args[meta.index] = res;
+                                                        break;
+                                                    case 'next':
+                                                        args[meta.index] = next;
+                                                        break;
+                                                    case 'payload':
+                                                        args[meta.index] = req.payload;
+                                                        break;
+                                                    case 'param':
+                                                        try {
+                                                            const dtoClass = meta.data?.dtoType as
+                                                                | ClassConstructor<object>
+                                                                | undefined;
 
-                                                        args[meta.index] = await transformAndValidateDto(
-                                                            dtoClass,
-                                                            req.query ?? {},
-                                                            'request query',
-                                                            { forbidNonWhitelisted: false },
-                                                        );
-                                                    } catch (error) {
-                                                        throw error;
-                                                    }
-                                                    break;
-                                                case 'file':
-                                                    args[meta.index] = req.file;
-                                                    break;
-                                                case 'body':
-                                                    try {
-                                                        const dtoClass = meta.data?.dtoType as
-                                                            | ClassConstructor<object>
-                                                            | undefined;
+                                                            args[meta.index] = await transformAndValidateDto(
+                                                                dtoClass,
+                                                                req.params,
+                                                                'request params',
+                                                            );
+                                                        } catch (error) {
+                                                            throw error;
+                                                        }
+                                                        break;
+                                                    case 'query':
+                                                        try {
+                                                            const dtoClass = meta.data?.dtoType as
+                                                                | ClassConstructor<object>
+                                                                | undefined;
 
-                                                        args[meta.index] = await transformAndValidateDto(
-                                                            dtoClass,
-                                                            req.body,
-                                                            'request body',
-                                                        );
-                                                    } catch (error) {
-                                                        throw error;
-                                                    }
-                                                    break;
+                                                            args[meta.index] = await transformAndValidateDto(
+                                                                dtoClass,
+                                                                req.query ?? {},
+                                                                'request query',
+                                                                { forbidNonWhitelisted: false },
+                                                            );
+                                                        } catch (error) {
+                                                            throw error;
+                                                        }
+                                                        break;
+                                                    case 'file':
+                                                        args[meta.index] = req.file;
+                                                        break;
+                                                    case 'headers':
+                                                        args[meta.index] = req.headers;
+                                                        break;
+                                                    case 'cookies':
+                                                        args[meta.index] = req.cookies || {};
+                                                        break;
+                                                    case 'body':
+                                                        try {
+                                                            const dtoClass = meta.data?.dtoType as
+                                                                | ClassConstructor<object>
+                                                                | undefined;
+
+                                                            args[meta.index] = await transformAndValidateDto(
+                                                                dtoClass,
+                                                                req.body,
+                                                                'request body',
+                                                            );
+                                                        } catch (error) {
+                                                            throw error;
+                                                        }
+                                                        break;
+                                                }
                                             }
                                         }
                                     }
+
+                                    // Fall back to positional arguments for routes not using param decorators
+                                    if (!hasCoreParamDecorators) {
+                                        if (expectedArgsCount >= 1) args[0] = req;
+                                        if (expectedArgsCount >= 2) args[1] = res;
+                                        if (expectedArgsCount >= 3) args[2] = next;
+                                    }
+
+                                    const result = await controllerInstance[methodName](...args);
+
+                                    if (renderTemplate && !res.headersSent) {
+                                        // Pass the already-awaited result as the template data.
+                                        // Previously this incorrectly re-invoked the controller method a second time.
+                                        res.render(renderTemplate, result ?? {});
+                                    } else if (!res.headersSent) {
+                                        sendControllerResult(res, result);
+                                    }
+                                } catch (error) {
+                                    next(error);
                                 }
+                            };
 
-                                // Fall back to positional arguments for routes not using param decorators
-                                if (!hasCoreParamDecorators) {
-                                    if (expectedArgsCount >= 1) args[0] = req;
-                                    if (expectedArgsCount >= 2) args[1] = res;
-                                    if (expectedArgsCount >= 3) args[2] = next;
-                                }
-
-                                const result = await controllerInstance[methodName](...args);
-
-                                if (renderTemplate && !res.headersSent) {
-                                    // Pass the already-awaited result as the template data.
-                                    // Previously this incorrectly re-invoked the controller method a second time.
-                                    res.render(renderTemplate, result ?? {});
-                                } else if (!res.headersSent) {
-                                    sendControllerResult(res, result);
-                                }
-                            } catch (error) {
-                                next(error);
-                            }
-                        };
-
-                        // parse the handler function together with full path to the express router object
-                        router[method](fullPath, handler);
-                        inAppLogger.info(dolphMessages.routeMessages(methodName, method, fullPath));
+                            // parse the handler function together with full path to the express router object
+                            router[method](fullPath, handler);
+                            inAppLogger.info(dolphMessages.routeMessages(methodName, method, fullPath));
+                        }
                     }
-                }
-            });
+                });
             registeredShields.length = 0;
 
             // register the router object in the express engine
@@ -413,6 +429,7 @@ const initMvcAdapter = () => {
                 break;
             case 'ejs':
                 engine.use('views', express.static(MVCViewsDir));
+                break;
             case 'pug':
                 engine.use('views', express.static(MVCViewsDir));
             default:
@@ -477,7 +494,7 @@ const initClosureHandler = () => {
  * The main engine for the dolph framework
  *
  *
- * @version 1.6.0
+ * @version 2.0
  */
 class DolphFactoryClass {
     private routes: Array<{ path?: string; router: Router }> = [];
@@ -493,12 +510,14 @@ class DolphFactoryClass {
     externalMiddlewares: RequestHandler[] = [];
     jsonLimit = '5mb';
     globalFilter = false;
+    private globalExceptionFilterHandler?: ErrorRequestHandler;
     private dolph: typeof engine = engine;
 
     constructor(adapter: { graphql: boolean; schema: any; context?: any });
     constructor(
         routes: Array<{ new (): any } | { path?: string; router: Router }>,
         middlewares?: RequestHandler[] | DSocketInit,
+        sockets?: DSocketInit,
     );
 
     constructor(
@@ -506,6 +525,7 @@ class DolphFactoryClass {
             | Array<{ new (): any } | { path?: string; router: Router }>
             | { graphql: boolean; schema: any; context?: any },
         middlewares?: RequestHandler[] | DSocketInit,
+        socketsInit?: DSocketInit,
     ) {
         /**
          * Start dolphjs initialisation time
@@ -532,7 +552,7 @@ class DolphFactoryClass {
         } else {
             const routes = adapterOrRoutes;
 
-            if(!routes || !Array.isArray(routes)) return;
+            if (!routes || !Array.isArray(routes)) return;
 
             routes.forEach((item) => {
                 if ('router' in item) {
@@ -548,6 +568,9 @@ class DolphFactoryClass {
                 this.externalMiddlewares = middlewares as RequestHandler[];
             } else if (typeof middlewares === 'object' && middlewares !== null && 'socketService' in middlewares) {
                 this.sockets = middlewares as DSocketInit;
+            }
+            if (typeof socketsInit === 'object' && socketsInit !== null && 'socketService' in socketsInit) {
+                this.sockets = socketsInit;
             }
         }
 
@@ -595,7 +618,9 @@ class DolphFactoryClass {
                     this.changePort(parsedPort);
                 } else {
                     inAppLogger.warn(
-                        clc.yellow(`Invalid port '${String(config.port)}' in dolph_config.yaml; using current/default port.`),
+                        clc.yellow(
+                            `Invalid port '${String(config.port)}' in dolph_config.yaml; using current/default port.`,
+                        ),
                     );
                 }
             }
@@ -609,15 +634,7 @@ class DolphFactoryClass {
             }
 
             if (config.jsonLimit?.length) {
-                if (!config.jsonLimit.includes('mb')) {
-                    inAppLogger.warn(
-                        clc.yellow(
-                            "jsonLimit value in `dolph_config` file must be in format 'number + mb' e.g '20mb'. Using default value of '5mb' ",
-                        ),
-                    );
-                } else {
-                    this.jsonLimit = config.jsonLimit;
-                }
+                this.jsonLimit = config.jsonLimit;
             } else {
                 inAppLogger.warn(
                     clc.yellow(
@@ -626,8 +643,9 @@ class DolphFactoryClass {
                 );
             }
 
-            const mongoCfg: MongooseConfig | undefined = this.configs?.database?.mongo;
-            if (mongoCfg?.url?.length && mongoCfg.url.length > 1) {
+            const mongoCfgConfig: MongooseConfig | undefined = this.configs?.database?.mongo;
+            if (mongoCfgConfig?.url?.length && mongoCfgConfig.url.length > 1) {
+                const mongoCfg = { ...mongoCfgConfig };
                 if (mongoCfg.url === 'sensitive') {
                     if (!configs.MONGO_URL) {
                         logger.error('cannot find `MONGO_URL` in the projects `.env` file');
@@ -689,8 +707,16 @@ class DolphFactoryClass {
         InitialiseControllersAsRouter(this.controllers, this.routingBase);
 
         if (this.globalFilter) {
-            this.dolph.use(this.attachGlobalExceptionFilter);
-            logger.info(clc.blueBright(`Dolph app using global exception filter`));
+            if (this.globalExceptionFilterHandler) {
+                this.dolph.use(this.globalExceptionFilterHandler);
+                logger.info(clc.blueBright(`Dolph app using custom global exception filter`));
+            } else {
+                inAppLogger.warn(
+                    clc.yellow(
+                        'globalExceptionFilter is true in config, but no handler was provided via setGlobalExceptionHandler(). Error handling will fall back to default.',
+                    ),
+                );
+            }
         }
 
         InitialiseErrorHandlers();
@@ -713,8 +739,8 @@ class DolphFactoryClass {
         middlewareRegistry.seal();
     }
 
-    private attachGlobalExceptionFilter(err: any, req: DRequest, res: DResponse, next: DNextFunc) {
-        next(err);
+    public setGlobalExceptionHandler(handler: ErrorRequestHandler) {
+        this.globalExceptionFilterHandler = handler;
     }
 
     /**
@@ -758,9 +784,7 @@ class DolphFactoryClass {
                 new socketServiceClass();
 
                 logger.info(
-                    `${clc.blue(
-                        `${clc.white(`${socketServiceClass.name}`)} can now receive and send websocket events`,
-                    )}`,
+                    `${clc.blue(`${clc.white(`${socketServiceClass.name}`)} can now receive and send websocket events`)}`,
                 );
             });
         }

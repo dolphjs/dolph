@@ -86,14 +86,15 @@ export const Component = <T extends Dolph>({ controllers, services }: ComponentP
         );
         return (target: any) => target; // No-op decorator
     }
-    if (!(Array.isArray(services) && services.every((item) => typeof item === 'function'))) {
+    const resolvedServices = services || [];
+    if (!(Array.isArray(resolvedServices) && resolvedServices.every((item) => typeof item === 'function'))) {
         logger.error(clc.red('Component decorator: Invalid `services` array. Each item must be a class.'));
         return (target: any) => target; // No-op decorator
     }
 
     return (target: any) => {
         Reflect.defineMetadata('controllers', controllers, target.prototype);
-        Reflect.defineMetadata('services', services, target.prototype);
+        Reflect.defineMetadata('services', resolvedServices, target.prototype);
 
         // Tracks service classes currently in the process of instantiation to detect cycles
         const servicesBeingResolved = new Set<any>();
@@ -122,7 +123,7 @@ export const Component = <T extends Dolph>({ controllers, services }: ComponentP
             //    We allow cross-component resolution: if a service is already in the global
             //    registry from another component, it was already handled by step 1.
             //    If it's not registered here AND not in the global registry, that's an error.
-            if (!services?.includes(serviceClass)) {
+            if (!resolvedServices.includes(serviceClass)) {
                 throw new Error(
                     `Resolution error: Service '${serviceClass.name}' is not registered in the component '${target.name}' ` +
                     `and has not been registered by any other component.`,
@@ -201,7 +202,7 @@ export const Component = <T extends Dolph>({ controllers, services }: ComponentP
 
         // Instantiate all registered services. This will resolve their dependencies.
         try {
-            services.forEach((serviceClass) => {
+            resolvedServices.forEach((serviceClass) => {
                 if (!serviceInstances.has(serviceClass)) {
                     resolveService(serviceClass);
                 }
@@ -257,32 +258,6 @@ export const Component = <T extends Dolph>({ controllers, services }: ComponentP
     };
 };
 
-export const Body = (): ParameterDecorator => {
-    return (target: Object, propertyKey: string | symbol, parameterIndex: number) => {
-        const existingBodyParameters: number[] = Reflect.getOwnMetadata('bodyParameters', target, propertyKey) || [];
-
-        existingBodyParameters.push(parameterIndex);
-
-        Reflect.defineMetadata('bodyParameters', existingBodyParameters, target, propertyKey);
-    };
-};
-
-export const Query = (): ParameterDecorator => {
-    return (target: Object, propertyKey: string | symbol, parameterIndex: number) => {
-        const existingQueryParameters: number[] = Reflect.getOwnMetadata('queryParameters', target, propertyKey) || [];
-        existingQueryParameters.push(parameterIndex);
-        Reflect.defineMetadata('queryParameters', existingQueryParameters, target, propertyKey);
-    };
-};
-
-export const Param = (): ParameterDecorator => {
-    return (target: Object, propertyKey: string | symbol, parameterIndex: number) => {
-        const existingParamParameters: number[] = Reflect.getOwnMetadata('paramParameters', target, propertyKey) || [];
-        existingParamParameters.push(parameterIndex);
-        Reflect.defineMetadata('paramParameters', existingParamParameters, target, propertyKey);
-    };
-};
-
 // Todo: implement later in future version
 export const UseDto = (dto: any): MethodDecorator => {
     return (target: Object, propertyKey: string | symbol, _descriptor: PropertyDescriptor) => {
@@ -304,12 +279,12 @@ export function Render(template: string): MethodDecorator {
 // Unique symbol for metadata key
 export const ROUTE_ARGS_METADATA = Symbol('dolph:route_args_metadata');
 
-export const routeParamsArr = ['req', 'res', 'next', 'body', 'query', 'param', 'file', 'payload'];
+export const routeParamsArr = ['req', 'res', 'next', 'body', 'query', 'param', 'file', 'payload', 'headers', 'cookies'];
 
 export interface RouteParamMetadata {
     // Parameter index
     index: number;
-    type: 'req' | 'res' | 'next' | 'body' | 'query' | 'param' | 'file' | 'payload';
+    type: 'req' | 'res' | 'next' | 'body' | 'query' | 'param' | 'file' | 'payload' | 'headers' | 'cookies';
     // For DTO type, specific param name, etc.
     data?: any;
 }
@@ -328,10 +303,12 @@ function addParameterMetadata(
     // Checks whether a core decorator is already applied to this parameter index
     const previousParamMeta = existingMetaData.find((p) => p.index === parameterIndex);
     if (previousParamMeta) {
-        console.warn(
-            `DolphJS: Overwriting route parameter decorator at index ${parameterIndex} for ${
-                target.constructor.name
-            }.${String(propertyKey)}. Previous type: ${previousParamMeta.type}, New type: ${type}`,
+        logger.warn(
+            clc.yellow(
+                `DolphJS: Overwriting route parameter decorator at index ${parameterIndex} for ${
+                    target.constructor.name
+                }.${String(propertyKey)}. Previous type: ${previousParamMeta.type}, New type: ${type}`
+            )
         );
     }
 
@@ -386,5 +363,17 @@ export function DParam(dtoType?: any): ParameterDecorator {
 export function DQuery(dtoType?: any): ParameterDecorator {
     return (target: Object, propertyKey: string | symbol, parameterIndex: number) => {
         addParameterMetadata(target, propertyKey, parameterIndex, 'query', { dtoType });
+    };
+}
+
+export function DHeaders(): ParameterDecorator {
+    return (target: Object, propertyKey: string | symbol, parameterIndex: number) => {
+        addParameterMetadata(target, propertyKey, parameterIndex, 'headers');
+    };
+}
+
+export function DCookies(): ParameterDecorator {
+    return (target: Object, propertyKey: string | symbol, parameterIndex: number) => {
+        addParameterMetadata(target, propertyKey, parameterIndex, 'cookies');
     };
 }

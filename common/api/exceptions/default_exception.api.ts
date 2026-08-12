@@ -4,7 +4,7 @@
 class DefaultException extends Error {
     statusCode: number;
     isOperational: boolean;
-    constructor(message: string, statusCode?: number, isOperational = true, stack = '') {
+    constructor(message: string, statusCode: number = 500, isOperational = true, stack = '') {
         super(message);
         this.statusCode = statusCode;
         this.isOperational = isOperational;
