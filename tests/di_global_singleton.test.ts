@@ -69,16 +69,16 @@ describe('Global DI singleton across components', () => {
         // Increment via ComponentA's controller
         const incRes = await request(server).post('/v1/a/increment').send();
         expect(incRes.status).toBe(200);
-        expect(incRes.body.count).toBe(1);
+        expect(incRes.body.data.count).toBe(1);
 
         // Read the count through ComponentB's controller — should see 1, not 0
         const countRes = await request(server).get('/v1/b/count');
         expect(countRes.status).toBe(200);
-        expect(countRes.body.count).toBe(1);
+        expect(countRes.body.data.count).toBe(1);
 
         // Increment again and verify both views stay in sync
         await request(server).post('/v1/a/increment').send();
         const countRes2 = await request(server).get('/v1/b/count');
-        expect(countRes2.body.count).toBe(2);
+        expect(countRes2.body.data.count).toBe(2);
     });
 });

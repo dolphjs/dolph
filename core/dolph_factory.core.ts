@@ -15,6 +15,7 @@ import {
     Middleware,
     MongooseConfig,
     dolphPort,
+    ResponseInterceptor,
 } from '../common';
 import { inAppLogger, logger } from '../utilities';
 import { autoInitMongo, SocketService } from '../packages';
@@ -54,7 +55,7 @@ const isExpressHttpMethod = (value: unknown): value is ExpressHttpMethod =>
  * - `object/array` → 200 application/json
  * - anything else  → 200 JSON (numbers, booleans, etc.)
  */
-const sendControllerResult = (res: DResponse, result: unknown): void => {
+const sendControllerResult = (req: DRequest, res: DResponse, result: unknown, interceptor?: ResponseInterceptor): void => {
     if (result === undefined) return;
 
     if (result === null) {
@@ -69,14 +70,39 @@ const sendControllerResult = (res: DResponse, result: unknown): void => {
 
     if (typeof result === 'string') {
         const isHtml = result.trimStart().startsWith('<');
-        res.status(200)
-            .contentType(isHtml ? 'text/html' : 'text/plain')
-            .send(result);
+        if (isHtml) {
+            res.status(200).contentType('text/html').send(result);
+            return;
+        }
+
+        if (interceptor) {
+            const customData = interceptor(result, req, res);
+            if (customData !== undefined && !res.headersSent) res.status(200).json(customData);
+            return;
+        }
+
+        res.status(200).json({
+            success: true,
+            status: 200,
+            message: result,
+            data: {}
+        });
         return;
     }
 
     // object, array, number, boolean — serialise as JSON
-    res.status(200).json(result);
+    if (interceptor) {
+        const customData = interceptor(result, req, res);
+        if (customData !== undefined && !res.headersSent) res.status(200).json(customData);
+        return;
+    }
+
+    res.status(200).json({
+        success: true,
+        status: 200,
+        message: 'Request successful',
+        data: result
+    });
 };
 
 
@@ -107,6 +133,7 @@ const InitialiseControllersAsRouter = <T extends Dolph>(
     engine: import("express").Express,
     controllers: Array<{ new (): DolphControllerHandler<T> }>,
     basePath: string,
+    factory?: any
 ) => {
     const registeredShields: string[] = [];
 
@@ -216,7 +243,7 @@ const InitialiseControllersAsRouter = <T extends Dolph>(
                                     router[method](fullPath, async (req: DRequest, res: DResponse, next: DNextFunc) => {
                                         try {
                                             const result = await controllerInstance[methodName](req, res, next);
-                                            if (!res.headersSent) sendControllerResult(res, result);
+                                            if (!res.headersSent) sendControllerResult(req, res, result, factory?.responseInterceptor);
                                         } catch (error) {
                                             next(error);
                                         }
@@ -226,7 +253,7 @@ const InitialiseControllersAsRouter = <T extends Dolph>(
                                     router[method](fullPath, (req: DRequest, res: DResponse, next: DNextFunc) => {
                                         try {
                                             const result = controllerInstance[methodName](req, res, next);
-                                            if (!res.headersSent) sendControllerResult(res, result);
+                                            if (!res.headersSent) sendControllerResult(req, res, result, factory?.responseInterceptor);
                                         } catch (error) {
                                             next(error);
                                         }
@@ -338,7 +365,7 @@ const InitialiseControllersAsRouter = <T extends Dolph>(
                                         // Previously this incorrectly re-invoked the controller method a second time.
                                         res.render(renderTemplate, result ?? {});
                                     } else if (!res.headersSent) {
-                                        sendControllerResult(res, result);
+                                        sendControllerResult(req, res, result, factory?.responseInterceptor);
                                     }
                                 } catch (error) {
                                     next(error);
@@ -495,6 +522,7 @@ class DolphFactoryClass {
     globalFilter = false;
     private globalExceptionFilterHandler?: ErrorRequestHandler;
     private dolph: import("express").Express;
+    private responseInterceptor?: ResponseInterceptor;
 
     constructor(adapter: { graphql: boolean; schema: any; context?: any });
     constructor(
@@ -690,7 +718,7 @@ class DolphFactoryClass {
         initGlobalMiddlewares(this.dolph);
         initMvcAdapter(this.dolph);
         InitialiseRoutes(this.dolph, this.routes, this.routingBase);
-        InitialiseControllersAsRouter(this.dolph, this.controllers, this.routingBase);
+        InitialiseControllersAsRouter(this.dolph, this.controllers, this.routingBase, this);
 
 
         /**
@@ -708,6 +736,10 @@ class DolphFactoryClass {
     public setGlobalExceptionHandler(handler: ErrorRequestHandler) {
         this.globalExceptionFilterHandler = handler;
         this.globalFilter = true;
+    }
+
+    public setResponseInterceptor(interceptor: ResponseInterceptor) {
+        this.responseInterceptor = interceptor;
     }
 
     /**

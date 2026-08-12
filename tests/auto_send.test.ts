@@ -62,14 +62,14 @@ describe('Auto-send controller return values', () => {
             .send({ name: 'Utee', age: 25 });
         expect(res.status).toBe(200);
         expect(res.headers['content-type']).toMatch(/application\/json/);
-        expect(res.body).toEqual({ name: 'Utee', age: 25 });
+        expect(res.body).toEqual({ success: true, status: 200, message: 'Request successful', data: { name: 'Utee', age: 25 } });
     });
 
     it('GET returning string → 200 text/plain', async () => {
         const res = await request(server).get('/v1/auto-send/text');
         expect(res.status).toBe(200);
-        expect(res.headers['content-type']).toMatch(/text\/plain/);
-        expect(res.text).toBe('hello from dolph');
+        expect(res.headers['content-type']).toMatch(/application\/json/);
+        expect(res.body).toEqual({ success: true, status: 200, message: 'hello from dolph', data: {} });
     });
 
     it('GET returning HTML string → 200 text/html', async () => {
@@ -89,14 +89,14 @@ describe('Auto-send controller return values', () => {
         const res = await request(server).get('/v1/auto-send/number');
         expect(res.status).toBe(200);
         expect(res.headers['content-type']).toMatch(/application\/json/);
-        expect(res.body).toBe(42);
+        expect(res.body).toEqual({ success: true, status: 200, message: 'Request successful', data: 42 });
     });
 
     it('GET returning array → 200 JSON', async () => {
         const res = await request(server).get('/v1/auto-send/array');
         expect(res.status).toBe(200);
         expect(res.headers['content-type']).toMatch(/application\/json/);
-        expect(res.body).toEqual([1, 2, 3]);
+        expect(res.body).toEqual({ success: true, status: 200, message: 'Request successful', data: [1, 2, 3] });
     });
 
     it('GET returning Buffer → 200 binary', async () => {
@@ -111,5 +111,32 @@ describe('Auto-send controller return values', () => {
             });
         expect(res.status).toBe(200);
         expect(res.body).toBe('binary-data');
+    });
+});
+
+describe('Response Interceptor overrides', () => {
+    let server: any;
+
+    beforeAll(() => {
+        const factory = new DolphFactory([AutoSendComponent]);
+        factory.setResponseInterceptor((data, req, res) => {
+            return {
+                myCustomSuccess: true,
+                payload: data
+            };
+        });
+        server = factory.start();
+    });
+
+    afterAll(() => {
+        server.close();
+    });
+
+    it('POST returning object → uses custom interceptor format', async () => {
+        const res = await request(server)
+            .post('/v1/auto-send/object')
+            .send({ name: 'Interceptor' });
+        expect(res.status).toBe(200);
+        expect(res.body).toEqual({ myCustomSuccess: true, payload: { name: 'Interceptor' } });
     });
 });

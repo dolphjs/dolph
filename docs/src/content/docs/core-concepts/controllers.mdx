@@ -29,16 +29,43 @@ export class CatsController extends DolphControllerHandler<Dolph> {
 ```
 
 :::note
-The `@DRes()` decorator injects the underlying Express response object into your method signature, allowing you to use Dolph's unified `SuccessResponse` utility. 
+The `@DRes()` decorator injects the underlying Express response object into your method signature, allowing you to use Dolph's legacy `SuccessResponse` utility.
 
-However, **using `SuccessResponse` is not necessary!** Just like in NestJS, you can simply `return` your data directly from the controller method, and the framework will automatically send it back to the client. `SuccessResponse` is merely provided as a standard, unified response formatter.
+However, **using `SuccessResponse` is not necessary!** Just like in NestJS, you can simply `return` your data directly from the controller method, and the framework will automatically send it back to the client.
+
+By default, Dolph wraps all auto-returned controller values in a standardized JSON envelope:
+```json
+{
+  "success": true,
+  "status": 200,
+  "message": "Request successful", // "message" uses the return value if it's a string
+  "data": { ... } // "data" uses the return value if it's an object/array
+}
+```
 
 ```typescript
 @Get('direct')
 async returnDirectly(req: DRequest, res: DResponse) {
     // Returning data directly works exactly as it does in NestJS
-    return { message: 'This data is returned directly' };
+    return { name: 'Utee' };
+    // Automatically sent as: { success: true, status: 200, message: 'Request successful', data: { name: 'Utee' } }
 }
+```
+
+If you prefer a different response envelope, you can override this behavior globally via the `DolphFactory`:
+
+```typescript
+// server.ts
+const dolph = new DolphFactory([AppComponent]);
+
+dolph.setResponseInterceptor((data, req, res) => {
+    return {
+        myCustomSuccess: true,
+        payload: data
+    };
+});
+
+dolph.start();
 ```
 :::
 

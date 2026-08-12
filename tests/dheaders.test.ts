@@ -37,21 +37,21 @@ describe('DHeaders, DCookies, and DAuth', () => {
 
     it('should inject headers', async () => {
         const res = await request(server).get('/v1/test/headers').set('x-custom-header', 'dolph');
-        expect(res.text).toBe('dolph'); // Auto-send returns string
+        expect(res.body.message).toBe('dolph');
     });
 
     it('should inject cookies (fallback to empty object if unparsed)', async () => {
         const res = await request(server).get('/v1/test/cookies').set('Cookie', 'custom_cookie=cookie-value');
-        expect(res.text).toBe('{}');
+        expect(res.body.data).toEqual({});
     });
 
     it('should inject authorization header', async () => {
         const res = await request(server).get('/v1/test/auth').set('Authorization', 'Bearer my-token');
-        expect(res.text).toBe('Bearer my-token');
+        expect(res.body.message).toBe('Bearer my-token');
     });
 
     it('should inject authorization header case-insensitively', async () => {
         const res = await request(server).get('/v1/test/auth').set('authorization', 'Bearer lower-token');
-        expect(res.text).toBe('Bearer lower-token');
+        expect(res.body.message).toBe('Bearer lower-token');
     });
 });

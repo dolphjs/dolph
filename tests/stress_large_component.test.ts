@@ -253,21 +253,21 @@ describe('Large component: 9 services + 3 controllers', () => {
     it('creates a user and retrieves it', async () => {
         const create = await request(server).post('/v1/users/').send({ id: 'u1', name: 'Utee' });
         expect(create.status).toBe(200);
-        expect(create.body.name).toBe('Utee');
+        expect(create.body.data.name).toBe('Utee');
 
         const get = await request(server).get('/v1/users/u1');
         expect(get.status).toBe(200);
-        expect(get.body.name).toBe('Utee');
+        expect(get.body.data.name).toBe('Utee');
     });
 
     it('creates a product and retrieves it (second GET is a cache hit)', async () => {
         const create = await request(server).post('/v1/products/').send({ id: 'p1', name: 'Gadget', price: 99 });
         expect(create.status).toBe(200);
-        expect(create.body.price).toBe(99);
+        expect(create.body.data.price).toBe(99);
 
         const get = await request(server).get('/v1/products/p1');
         expect(get.status).toBe(200);
-        expect(get.body.name).toBe('Gadget');
+        expect(get.body.data.name).toBe('Gadget');
     });
 
     it('places an order crossing all three service layers', async () => {
@@ -277,14 +277,14 @@ describe('Large component: 9 services + 3 controllers', () => {
             productId: 'p1',
         });
         expect(order.status).toBe(200);
-        expect(order.body.id).toBe('o1');
-        expect(order.body.total).toBe(99);
+        expect(order.body.data.id).toBe('o1');
+        expect(order.body.data.total).toBe(99);
     });
 
     it('MetricsService is a true singleton — increments from all controllers visible in one place', async () => {
         const res = await request(server).get('/v1/orders/metrics');
         expect(res.status).toBe(200);
-        const m = res.body;
+        const m = res.body.data;
         expect(m['users.created']).toBeGreaterThanOrEqual(1);
         expect(m['products.created']).toBeGreaterThanOrEqual(1);
         expect(m['orders.placed']).toBeGreaterThanOrEqual(1);
@@ -295,8 +295,8 @@ describe('Large component: 9 services + 3 controllers', () => {
     it('list endpoints reflect shared in-memory state across controllers', async () => {
         const users = await request(server).get('/v1/users/');
         const orders = await request(server).get('/v1/orders/');
-        expect(users.body.length).toBeGreaterThanOrEqual(1);
-        expect(orders.body.length).toBeGreaterThanOrEqual(1);
+        expect(users.body.data.length).toBeGreaterThanOrEqual(1);
+        expect(orders.body.data.length).toBeGreaterThanOrEqual(1);
     });
 
     // ── Performance ─────────────────────────────────────────────────
@@ -328,7 +328,7 @@ describe('Large component: 9 services + 3 controllers', () => {
 
             const gr = await request(server).get(`/v1/users/u${i}`);
             if (gr.status !== 200) errors.push(`GET /users/u${i} status ${gr.status}`);
-            if (gr.body?.name !== `User-${i}`) errors.push(`Name mismatch for u${i}: got '${gr.body?.name}'`);
+            if (gr.body?.data?.name !== `User-${i}`) errors.push(`Name mismatch for u${i}: got '${gr.body?.data?.name}'`);
         }
         if (errors.length) console.error('  ❌ Errors:', errors.slice(0, 10));
         expect(errors).toHaveLength(0);
