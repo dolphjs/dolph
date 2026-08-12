@@ -420,6 +420,7 @@ const initMvcAdapter = () => {
                 break;
             case 'pug':
                 engine.use('views', express.static(MVCViewsDir));
+                break;
             default:
                 break;
         }
