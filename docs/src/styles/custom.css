@@ -1,11 +1,13 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@500;600;700;800&display=swap');
 
 :root {
-  /* Fonts */
+  /* Fonts - applied globally */
   --sl-font: 'Inter', sans-serif;
   --sl-font-heading: 'Outfit', sans-serif;
+}
 
-  /* Deep Dark Mode Colors (Vercel-style) */
+/* Deep Dark Mode Colors (Vercel-style) */
+:root[data-theme='dark'], :root:not([data-theme='light']) {
   --sl-color-bg: #0a0a0f;
   --sl-color-bg-nav: rgba(10, 10, 15, 0.7);
   --sl-color-bg-sidebar: #0a0a0f;
@@ -21,13 +23,44 @@
   --sl-color-text: #9ca3af;
   --sl-color-text-accent: #00e1ff;
   --sl-color-text-invert: #000000;
+
+  /* Theming Variables */
+  --hero-gradient: linear-gradient(135deg, #ffffff 0%, #00e1ff 100%);
+  --hero-glow: drop-shadow(0 0 40px rgba(0, 225, 255, 0.4));
+  --border-nav: rgba(255, 255, 255, 0.05);
+  
+  --scrollbar-track: var(--sl-color-bg);
+  --scrollbar-thumb: #333333;
+  --scrollbar-thumb-hover: #555555;
+}
+
+/* Light Mode Overrides */
+:root[data-theme='light'] {
+  --sl-color-bg-nav: rgba(255, 255, 255, 0.7);
+  
+  /* Elegant Blue Accents for light mode */
+  --sl-color-accent-low: #e0f2fe;
+  --sl-color-accent: #0284c7;
+  --sl-color-accent-high: #0369a1;
+  
+  /* Text Colors */
+  --sl-color-text-accent: #0284c7;
+
+  /* Theming Variables */
+  --hero-gradient: linear-gradient(135deg, #0f172a 0%, #0284c7 100%);
+  --hero-glow: drop-shadow(0 0 40px rgba(2, 132, 199, 0.2));
+  --border-nav: rgba(0, 0, 0, 0.05);
+
+  --scrollbar-track: #f1f5f9;
+  --scrollbar-thumb: #cbd5e1;
+  --scrollbar-thumb-hover: #94a3b8;
 }
 
 /* Glassmorphism for Header */
 header.header {
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+  border-bottom: 1px solid var(--border-nav) !important;
   background-color: var(--sl-color-bg-nav) !important;
 }
 
@@ -37,14 +70,14 @@ header.header {
   height: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: var(--sl-color-bg);
+  background: var(--scrollbar-track);
 }
 ::-webkit-scrollbar-thumb {
-  background: #333333;
+  background: var(--scrollbar-thumb);
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #555555;
+  background: var(--scrollbar-thumb-hover);
 }
 
 /* Hover Lifts & Transitions */
@@ -59,10 +92,10 @@ header.header {
 
 /* Hero Section Animated Gradient */
 .hero > img {
-  filter: drop-shadow(0 0 40px rgba(0, 225, 255, 0.4));
+  filter: var(--hero-glow);
 }
 .hero h1 {
-  background: linear-gradient(135deg, #ffffff 0%, #00e1ff 100%);
+  background: var(--hero-gradient);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
