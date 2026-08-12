@@ -45,6 +45,38 @@ type ExpressHttpMethod = 'get' | 'post' | 'patch' | 'put' | 'delete';
 const isExpressHttpMethod = (value: unknown): value is ExpressHttpMethod =>
     typeof value === 'string' && ['get', 'post', 'patch', 'put', 'delete'].includes(value);
 
+/**
+ * Sends a controller method's return value as an HTTP response.
+ * - `undefined`    → no-op (user handled the response manually)
+ * - `null`         → 204 No Content
+ * - `string`       → 200 text/plain (or text/html if it looks like HTML)
+ * - `Buffer`       → 200 binary send
+ * - `object/array` → 200 application/json
+ * - anything else  → 200 JSON (numbers, booleans, etc.)
+ */
+const sendControllerResult = (res: DResponse, result: unknown): void => {
+    if (result === undefined) return;
+
+    if (result === null) {
+        res.status(204).end();
+        return;
+    }
+
+    if (Buffer.isBuffer(result)) {
+        res.status(200).send(result);
+        return;
+    }
+
+    if (typeof result === 'string') {
+        const isHtml = result.trimStart().startsWith('<');
+        res.status(200).contentType(isHtml ? 'text/html' : 'text/plain').send(result);
+        return;
+    }
+
+    // object, array, number, boolean — serialise as JSON
+    res.status(200).json(result);
+};
+
 const engine = express();
 
 // declare core variables
@@ -180,7 +212,8 @@ const InitialiseControllersAsRouter = <T extends Dolph>(
                                 // Async fast-path — awaits the handler so errors propagate and delays are observed
                                 router[method](fullPath, async (req: DRequest, res: DResponse, next: DNextFunc) => {
                                     try {
-                                        await controllerInstance[methodName](req, res, next);
+                                        const result = await controllerInstance[methodName](req, res, next);
+                                        if (!res.headersSent) sendControllerResult(res, result);
                                     } catch (error) {
                                         next(error);
                                     }
@@ -189,7 +222,8 @@ const InitialiseControllersAsRouter = <T extends Dolph>(
                                 // Sync fast-path — plain handler, avoids Promise/async overhead on every request
                                 router[method](fullPath, (req: DRequest, res: DResponse, next: DNextFunc) => {
                                     try {
-                                        controllerInstance[methodName](req, res, next);
+                                        const result = controllerInstance[methodName](req, res, next);
+                                        if (!res.headersSent) sendControllerResult(res, result);
                                     } catch (error) {
                                         next(error);
                                     }
@@ -302,12 +336,12 @@ const InitialiseControllersAsRouter = <T extends Dolph>(
 
                                 const result = await controllerInstance[methodName](...args);
 
-                                if (result !== undefined && !res.headersSent) {
-                                    // Todo: handle auto sending of response from the controller method's return
-                                }
-
                                 if (renderTemplate && !res.headersSent) {
-                                    res.render(renderTemplate, await controllerMethod(req, res, next));
+                                    // Pass the already-awaited result as the template data.
+                                    // Previously this incorrectly re-invoked the controller method a second time.
+                                    res.render(renderTemplate, result ?? {});
+                                } else if (!res.headersSent) {
+                                    sendControllerResult(res, result);
                                 }
                             } catch (error) {
                                 next(error);
