@@ -4,7 +4,7 @@ import { Dolph } from '../../common';
 export class AnotherEventService extends DolphSocketServiceHandler<Dolph> {
     constructor() {
         super();
-        this.socketService;
+
         this.handleEvents();
     }
 

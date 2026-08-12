@@ -6,6 +6,9 @@
         "decorators/**/*",
         "packages/**/*",
         "classes/**/*",
+        "samples/**/*",
+        "benchmark/**/*",
+        "tools/**/*",
         "index.ts"
     ],
     "exclude": ["node_modules"],

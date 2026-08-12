@@ -25,3 +25,4 @@ tests/uploader/uploads
 
 # Docs (Astro)
 .astro/
+coverage/

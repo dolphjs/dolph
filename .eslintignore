@@ -1,2 +1,7 @@
 node_modules
 bin
+dist
+samples
+benchmark
+tools
+docs
