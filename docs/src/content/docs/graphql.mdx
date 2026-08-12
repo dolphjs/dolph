@@ -1,0 +1,63 @@
+---
+title: GraphQL
+description: Implementing GraphQL in DolphJS using Apollo Server
+editUrl: https://github.com/dolphjs/dolph/edit/main/docs/content/docs/graphql.mdx
+sidebar:
+  label: GraphQL
+  order: 10
+---
+
+DolphJS provides a seamless, out-of-the-box integration for GraphQL APIs through the official `@dolphjs/graphql` package, which is powered by Apollo Server under the hood.
+
+## Installation
+
+To get started with GraphQL, install the required packages:
+
+```bash
+pnpm install @dolphjs/graphql graphql
+```
+
+If you plan to use a schema builder like `type-graphql`, you can install it alongside:
+
+```bash
+pnpm install type-graphql
+```
+
+## Initializing a GraphQL Server
+
+Unlike a standard REST API where you pass an array of routing components to the `DolphFactory`, for GraphQL applications you pass a configuration object containing your GraphQL schema and an optional context function.
+
+```typescript
+// src/server.ts
+import { DolphFactory } from '@dolphjs/core';
+import { buildSchema } from 'type-graphql';
+import { UserResolver } from './resolvers/user.resolver';
+
+async function bootstrap() {
+  // Build your executable schema (using type-graphql as an example)
+  const schema = await buildSchema({
+    resolvers: [UserResolver],
+  });
+
+  // Initialize DolphJS with the GraphQL adapter config
+  const dolph = new DolphFactory({
+    graphql: true, // Enables the Apollo Server integration
+    schema,
+    context: ({ req, res }) => {
+      // Return whatever you want to be accessible in your resolvers' context
+      return { 
+        headers: req.headers, 
+        user: req.user 
+      };
+    },
+  });
+
+  dolph.start();
+}
+
+bootstrap();
+```
+
+### How It Works
+
+When you pass `{ graphql: true }` into the `DolphFactory` configuration, DolphJS automatically dynamically loads the `@dolphjs/graphql` package, spins up an Apollo Server instance using your schema and context, and applies it directly as middleware to the underlying Express engine. This means you don't have to manually bootstrap Apollo Server—DolphJS handles the heavy lifting for you while still giving you full access to the Apollo context!

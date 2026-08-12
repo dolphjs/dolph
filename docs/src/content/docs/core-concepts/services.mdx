@@ -1,0 +1,116 @@
+---
+title: Services
+description: Encapsulating business logic in DolphJS
+editUrl: https://github.com/dolphjs/dolph/edit/main/docs/content/docs/core-concepts/services.mdx
+sidebar:
+  label: Services
+  order: 2
+---
+
+Services are responsible for executing the core business logic of your application, validating data rules, and interacting with databases. By separating this logic from the **Controllers**, you make your application more modular, testable, and maintainable.
+
+## High-Level vs Low-Level Services
+
+DolphJS strongly encourages separating your business logic into two classes of services:
+- **High-level Services**: These act as orchestrators for complex operations. They do not typically interact with the database directly; instead, they interact with other (often low-level) services to piece together complex business operations.
+- **Low-level Services**: These perform highly specific, isolated tasks. A classic example of a low-level service is one that solely fetches or inserts data into the database (assuming no repository pattern is used) or interacts with a specific external utility or API.
+
+This separation of concerns makes your services highly reusable and prevents monolithic "god classes" from forming across your application.
+
+## Basic Service
+
+In DolphJS, a service must extend the `DolphServiceHandler` class. Crucially, you must pass a unique string identifier to the `super()` call in the constructor. This identifier helps the Dependency Injection (DI) system map the service correctly.
+
+```typescript
+import { DolphServiceHandler, Dolph } from '@dolphjs/core';
+
+export class CatsService extends DolphServiceHandler<Dolph> {
+  private readonly cats: any[] = [];
+
+  constructor() {
+    // Pass a unique identifier for this service
+    super('catsService');
+  }
+
+  async create(cat: any) {
+    this.cats.push(cat);
+    return cat;
+  }
+
+  async findAll() {
+    return this.cats;
+  }
+}
+```
+
+## Dependency Injection (DI)
+
+Once your service is defined, you group it with a controller inside a `@Component`.
+
+```typescript
+import { Component } from '@dolphjs/decorators';
+import { CatsController } from './cats.controller';
+import { CatsService } from './cats.service';
+
+@Component({ controllers: [CatsController], services: [CatsService] })
+export class CatsComponent {}
+```
+
+The DI container will now instantiate `CatsService` as a singleton. When `CatsController` is initialized, DolphJS automatically maps the singleton instance to the controller's property.
+
+### Database Injection
+
+Services often need to interact with a database. DolphJS provides specialized decorators to inject database models directly into your service.
+
+#### MongoDB Example
+
+```typescript
+import { DolphServiceHandler, Dolph } from '@dolphjs/core';
+import { InjectMongo } from '@dolphjs/decorators';
+import { Model } from 'mongoose';
+import { catModel, ICatModel } from './cat.model';
+
+// Inject the model into the 'catModel' property of this class
+@InjectMongo('catModel', catModel)
+export class CatsService extends DolphServiceHandler<Dolph> {
+  // Declare the property so TypeScript knows about it
+  catModel!: Model<ICatModel>;
+
+  constructor() {
+    super('catsService');
+  }
+
+  async findAll() {
+    // Use the injected model to query the database
+    return await this.catModel.find({});
+  }
+}
+```
+
+#### MySQL Example
+
+Similarly, if you are using MySQL (via Sequelize or similar), you can use `@InjectMySQL`.
+
+```typescript
+import { DolphServiceHandler, Dolph } from '@dolphjs/core';
+import { InjectMySQL } from '@dolphjs/decorators';
+import { ModelStatic, Model as SqlModel } from 'sequelize';
+import { catModel, ICatModel } from './cat.model';
+
+@InjectMySQL('catModel', catModel)
+export class CatsService extends DolphServiceHandler<Dolph> {
+  catModel!: ModelStatic<SqlModel<any, any>>;
+
+  constructor() {
+    super('catsService');
+  }
+
+  async create(data: any) {
+    return await this.catModel.create(data);
+  }
+}
+```
+
+:::tip
+By injecting models this way, you decouple your business logic from hardcoded database imports, making it significantly easier to mock databases during unit testing.
+:::

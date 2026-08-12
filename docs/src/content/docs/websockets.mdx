@@ -1,0 +1,106 @@
+---
+title: WebSockets
+description: Real-time communication using WebSockets in DolphJS
+editUrl: https://github.com/dolphjs/dolph/edit/main/docs/content/docs/websockets.mdx
+sidebar:
+  label: Websockets
+  order: 10
+---
+
+DolphJS provides a deeply integrated, highly-scalable architecture for WebSockets out-of-the-box, powered by `socket.io`. Unlike traditional Express apps where WebSocket logic clutters your main server file, DolphJS introduces a component-based structure for WebSockets that seamlessly integrates with your existing Services.
+
+## Generating Sockets via CLI
+
+The quickest way to scaffold the DolphJS socket architecture is using the CLI:
+
+```bash
+dolph g socket chat
+```
+
+This will automatically generate a socket component and a socket service for you.
+
+## The DolphJS Way (Native Architecture)
+
+DolphJS abstracts WebSocket connections into **Socket Services** and bundles them into a **Socket Component** using the `@Socket` decorator. This gives you the power to magically inject your standard REST/GraphQL Services directly into your WebSocket handlers!
+
+### 1. The Socket Service
+
+A Socket Service handles the actual WebSocket events. By extending `DolphSocketServiceHandler`, you instantly get access to the underlying `socket.io` server instance via `this.socket`.
+
+```typescript
+// src/websockets/chat.socket.service.ts
+import { DolphSocketServiceHandler } from '@dolphjs/classes';
+import { Dolph } from '@dolphjs/core';
+import { UserService } from '../user/user.service'; // standard Dolph service
+
+export class ChatSocketService extends DolphSocketServiceHandler<Dolph> {
+  // The @Socket decorator will automatically inject UserService onto this class!
+  declare UserService: UserService; 
+
+  constructor() {
+    super();
+    this.handleConnection();
+  }
+
+  private handleConnection() {
+    // this.socket is the Socket.io Server instance
+    this.socket.on('connection', (socket) => {
+      console.log('A user connected:', socket.id);
+
+      socket.on('fetchUsers', async () => {
+        // You can use injected standard services inside your sockets!
+        const users = await this.UserService.findAll();
+        socket.emit('usersList', users);
+      });
+      
+      socket.on('disconnect', () => {
+        console.log('User disconnected');
+      });
+    });
+  }
+}
+```
+
+### 2. The Socket Component
+
+The Socket Component acts as a module to bundle your Socket Services together and inject any required external Services.
+
+```typescript
+// src/websockets/chat.socket.component.ts
+import { Socket } from '@dolphjs/decorators';
+import { SocketComponent } from '@dolphjs/packages';
+import { ChatSocketService } from './chat.socket.service';
+import { UserService } from '../user/user.service';
+
+@Socket({
+  services: [UserService], // Inject your standard Dolph services here!
+  socketServices: [ChatSocketService] // Register your socket handlers
+})
+export class ChatSocketComponent extends SocketComponent {}
+```
+
+### 3. Bootstrapping the Server
+
+Finally, pass your newly created Socket Component and the internal DolphJS `SocketService` to your `DolphFactory` alongside your standard routing components.
+
+```typescript
+// src/server.ts
+import { DolphFactory } from '@dolphjs/core';
+import { AppComponent } from './app.component';
+import { ChatSocketComponent } from './websockets/chat.socket.component';
+import { SocketService } from '@dolphjs/packages';
+
+const dolph = new DolphFactory([AppComponent], {
+  component: new ChatSocketComponent(),
+  socketService: SocketService,
+  options: {
+    cors: {
+      origin: '*' // socket.io options
+    }
+  }
+});
+
+dolph.start();
+```
+
+With this architecture, DolphJS automatically spins up the `socket.io` instance, injects the necessary services into the prototypes of your handlers, and attaches everything to the underlying HTTP server, keeping your codebase extremely clean and scalable!

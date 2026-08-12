@@ -1,0 +1,106 @@
+---
+title: Getting Started
+description: A guide to getting started with DolphJS
+editUrl: https://github.com/dolphjs/dolph/edit/main/docs/content/docs/getting-started.mdx
+sidebar:
+    label: Getting Started
+    order: 2
+---
+
+Welcome to **DolphJS**! 🐬
+
+Building modern Node.js applications often feels like a balancing act. You either choose a highly-opinionated, heavy enterprise framework that dictates your every move, or you piece together a lightweight micro-framework like Express, risking messy "spaghetti code" as your app grows.
+
+DolphJS is the **New-Age, developer-friendly Node.js framework** that bridges this gap.
+
+## The DolphJS Philosophy
+
+DolphJS was designed with a core philosophy: **Architectural elegance without sacrificing the ecosystem**.
+
+Built entirely in TypeScript on top of the battle-tested **Express** engine, DolphJS introduces a robust, **Component-based architecture** inspired by enterprise frameworks (like Spring Boot and NestJS) but tailored for the modern Node developer.
+
+Here is why developers love DolphJS:
+
+- **Zero-Config Dependency Injection**: No more manual wiring! Services and Controllers are seamlessly injected and managed for you via advanced TypeScript Decorators.
+- **Uncompromised Flexibility**: Unlike other enterprise frameworks that hide the underlying HTTP engine, DolphJS gives you full access to Express. If a package works in Express, it works in DolphJS.
+- **Batteries Included, but Swappable**: Out of the box, you get native wrappers for GraphQL (via Apollo), WebSockets (via Socket.io), and deep Auto-wiring for MongoDB and MySQL—all configured through a single `dolph_config.yaml` file.
+- **Developer Experience First**: The Dolph CLI automates boilerplate generation so you can focus strictly on your business logic.
+
+Whether you are building a lightning-fast REST API, a robust GraphQL server, or a real-time WebSocket application, DolphJS provides the guardrails to keep your code clean and the freedom to build it your way.
+
+---
+
+## Installation
+
+The easiest and recommended way to start a new DolphJS project is by using the official CLI. We highly recommend using `pnpm` as your package manager.
+
+First, install the CLI globally:
+
+```bash
+pnpm install -g @dolphjs/cli
+```
+
+## Creating a New Project
+
+Once the CLI is installed, you can scaffold a new DolphJS application using the `new` command:
+
+```bash
+dolph new my-dolph-app
+```
+
+This command will automatically generate the recommended project structure, setup your `dolph_config.yaml` file, and install all necessary dependencies for you.
+
+## Running the Application
+
+Navigate into your newly created project directory:
+
+```bash
+cd my-dolph-app
+```
+
+To run your application in development mode with hot-reloading (powered by `ts-node` or `swc`), use the provided dev script:
+
+```bash
+pnpm dev:start
+```
+
+### Default Port
+
+By default, a DolphJS application starts on **port 3030**. You can easily change this by editing your `dolph_config.yaml` file or by passing a `PORT` environment variable.
+
+```yaml
+# dolph_config.yaml
+port: 3000 # Change to your preferred port
+```
+
+### The Default Folder Structure
+
+When you scaffold an application using the CLI, DolphJS generates a clean, scalable folder structure ready for your components:
+
+```text
+my-dolph-app/
+├── src/
+│   ├── app.component.ts
+│   ├── app.controller.ts
+│   ├── app.service.ts
+│   └── server.ts
+├── dolph_config.yaml
+├── package.json
+└── tsconfig.json
+```
+
+### The Entry File (`server.ts`)
+
+The `server.ts` file acts as the entry point for your application. This is where the `DolphFactory` initializes your root components and starts the Dolph engine.
+
+```typescript
+// src/server.ts
+import { DolphFactory } from '@dolphjs/core';
+import { AppComponent } from './app.component';
+
+const dolph = new DolphFactory([AppComponent]);
+
+dolph.start();
+```
+
+Once running, you should see logs in your terminal confirming the successful bootstrap and indicating that your DolphJS engine is ready to accept requests!

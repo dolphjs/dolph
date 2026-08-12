@@ -1,0 +1,64 @@
+---
+title: Decorators
+description: A reference guide to DolphJS decorators
+editUrl: https://github.com/dolphjs/dolph/edit/main/docs/content/docs/core-concepts/decorators.mdx
+sidebar:
+    label: Decorators
+    order: 5
+---
+
+Decorators are the heart of the Component-based Pattern in DolphJS. They provide a declarative, expressive way to define routing, injection, and middleware logic.
+
+## Routing Decorators
+
+These decorators map HTTP methods to controller functions.
+
+| Decorator        | Description                                       | Example           |
+| :--------------- | :------------------------------------------------ | :---------------- |
+| `@Route(path)`   | Class-level. Sets the base path for a controller. | `@Route('users')` |
+| `@Get(path?)`    | Method-level. Handles GET requests.               | `@Get(':id')`     |
+| `@Post(path?)`   | Method-level. Handles POST requests.              | `@Post('create')` |
+| `@Put(path?)`    | Method-level. Handles PUT requests.               | `@Put(':id')`     |
+| `@Patch(path?)`  | Method-level. Handles PATCH requests.             | `@Patch(':id')`   |
+| `@Delete(path?)` | Method-level. Handles DELETE requests.            | `@Delete(':id')`  |
+
+## Parameter Extraction Decorators
+
+Extract specific data from the Express request object securely.
+
+| Decorator       | Description                                                      | Example                              |
+| :-------------- | :--------------------------------------------------------------- | :----------------------------------- |
+| `@DReq()`       | Injects the raw Express Request object.                          | `(@DReq() req: DRequest)`            |
+| `@DRes()`       | Injects the raw Express Response object.                         | `(@DRes() res: DResponse)`           |
+| `@DNext()`      | Injects the Express Next function.                               | `(@DNext() next: DNextFunc)`         |
+| `@DBody()`      | Extracts `req.body`.                                             | `(@DBody() body: any)`               |
+| `@DParam(name)` | Extracts a route parameter (`req.params[name]`).                 | `(@DParam('id') id: string)`         |
+| `@DQuery(name)` | Extracts a query parameter (`req.query[name]`).                  | `(@DQuery('search') search: string)` |
+| `@DPayload()`   | Extracts authenticated payload (usually set by JWT middlewares). | `(@DPayload() payload: any)`         |
+
+## Middleware Decorators
+
+| Decorator             | Description                                                       | Example                       |
+| :-------------------- | :---------------------------------------------------------------- | :---------------------------- |
+| `@Shield(mid)`        | Class-level. Applies middleware to ALL routes in the controller.  | `@Shield(requireAuth)`        |
+| `@UseMiddleware(mid)` | Method-level. Applies middleware to a SPECIFIC route.             | `@UseMiddleware(validateDto)` |
+| `@UnShield(mid?)`     | Method-level. Bypasses a class-level shield for a specific route. | `@UnShield()`                 |
+
+## Injection & Architecture Decorators
+
+| Decorator                               | Description                              | Example                                           |
+| :-------------------------------------- | :--------------------------------------- | :------------------------------------------------ |
+| `@Component({ controllers, services })` | Binds controllers and services for DI.   | `@Component({ controllers: [C], services: [S] })` |
+| `@InjectMongo(name, model)`             | Injects a Mongoose model into a service. | `@InjectMongo('user', UserModel)`                 |
+| `@InjectMySQL(name, model)`             | Injects a MySQL model into a service.    | `@InjectMySQL('user', UserModel)`                 |
+
+## Authentication Decorators
+
+DolphJS provides specialized decorators for validating JWTs out of the box.
+
+- **`@JWTAuthVerifyDec(secret)`**: Method decorator that extracts a JWT from headers, verifies it using HMAC/RSA, and injects the payload.
+- **`@CookieAuthVerifyDec(secret)`**: Extracts and verifies JWT from cookies.
+
+:::tip
+Always import decorators from `@dolphjs/decorators` to ensure you are using the correct metadata reflections.
+:::

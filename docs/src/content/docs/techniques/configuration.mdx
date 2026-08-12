@@ -1,0 +1,83 @@
+---
+title: Configuration
+description: Managing environment variables and configurations dynamically
+editUrl: https://github.com/dolphjs/dolph/edit/main/docs/content/docs/techniques/configuration.mdx
+sidebar:
+  label: Configuration
+  order: 4
+---
+
+While the root `dolph_config.yaml` handles the framework's core bootstrapping, a robust application also requires dynamic runtime configuration (like API keys, third-party URLs, or feature flags) stored safely in environment variables.
+
+## Using `.env` Files
+
+DolphJS apps should utilize `.env` files to keep sensitive data out of source control.
+
+1. Create a `.env` file at the root of your project:
+
+```env
+# .env
+PORT=3000
+JWT_SECRET=super_secret_key_123
+STRIPE_API_KEY=sk_test_123456789
+```
+
+2. Load it using a package like `dotenv`. (Often `ts-node` or `swc` dev environments handle this, but for production, explicit loading is best).
+
+```bash
+pnpm install dotenv
+```
+
+## Creating a Configuration Wrapper
+
+Instead of calling `process.env.JWT_SECRET` scattered throughout your services—which is error-prone and untyped—it is a best practice to create a configuration wrapper file.
+
+```typescript
+// src/config/env.config.ts
+import * as dotenv from 'dotenv';
+import * as path from 'path';
+
+// Load variables from .env
+dotenv.config({ path: path.resolve(process.cwd(), '.env') });
+
+export const config = {
+  port: parseInt(process.env.PORT || '3000', 10),
+  jwt: {
+    secret: process.env.JWT_SECRET || 'default_fallback_secret',
+    expiresIn: '1d',
+  },
+  stripe: {
+    apiKey: process.env.STRIPE_API_KEY,
+  },
+};
+```
+
+## Accessing Configuration in Services
+
+You can now import this typed `config` object anywhere in your controllers or services.
+
+```typescript
+import { DolphServiceHandler, Dolph } from '@dolphjs/core';
+import { config } from '../config/env.config';
+
+export class PaymentService extends DolphServiceHandler<Dolph> {
+  constructor() {
+    super('paymentService');
+  }
+
+  async processPayment(amount: number) {
+    const stripeKey = config.stripe.apiKey;
+    
+    if (!stripeKey) {
+      throw new Error("Stripe API key is not configured.");
+    }
+    
+    // Process payment...
+    return { status: 'success', amount };
+  }
+}
+```
+
+:::tip
+For complex environments (Dev, Staging, Prod), you can create multiple `.env` files (e.g., `.env.staging`) and instruct `dotenv` to load the appropriate file based on the `NODE_ENV` variable.
+:::

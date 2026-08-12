@@ -1,0 +1,93 @@
+---
+title: Architecture
+description: Understanding the underlying architecture of DolphJS
+editUrl: https://github.com/dolphjs/dolph/edit/main/docs/content/docs/architecture.mdx
+sidebar:
+  label: Architecture
+  order: 4
+---
+
+DolphJS offers a highly structured, scalable architecture. It builds upon the Express.js ecosystem but introduces paradigms commonly found in robust enterprise frameworks like Spring Boot and NestJS.
+
+## Two Paradigms
+
+DolphJS supports two distinct architectural patterns. While you can mix them, the **Component-based Pattern** is strongly recommended for modern applications.
+
+### 1. Component-based Pattern (Recommended)
+
+This pattern leverages TypeScript decorators and Dependency Injection (DI) to automate wiring. 
+
+In this pattern:
+1. **Controllers** define routes and handle HTTP requests.
+2. **Services** execute business logic and database interactions.
+3. **Components** encapsulate Controllers and Services into modules.
+4. **DolphFactory** reads the components, resolves dependencies, and boots the application.
+
+```typescript
+import { Component } from '@dolphjs/decorators';
+import { AuthController } from './auth.controller';
+import { AuthService } from './auth.service';
+
+// The Component acts as a DI container for this feature module
+@Component({ controllers: [AuthController], services: [AuthService] })
+export class AuthComponent {}
+```
+
+### 2. Traditional Express Router Pattern
+
+For developers migrating legacy Express applications or those who prefer manual routing, DolphJS offers the `DolphRouteHandler`. 
+
+```typescript
+import { DolphRouteHandler, Dolph } from '@dolphjs/core';
+import { Router } from 'express';
+
+export class AuthRouter extends DolphRouteHandler<Dolph> {
+  path = '/auth';
+  router = Router();
+
+  constructor() {
+    super();
+    this.initRoutes();
+  }
+
+  private initRoutes() {
+    this.router.post(`${this.path}/login`, (req, res) => {
+      res.send('Login');
+    });
+  }
+}
+```
+
+:::caution
+While the Router Pattern is supported, it lacks the automated Dependency Injection and decorator-driven enhancements of the Component-based Pattern.
+:::
+
+## Application Lifecycle
+
+Understanding how DolphJS boots up is crucial for debugging and advanced configuration.
+
+1. **Configuration Loading**: The `DolphFactory` reads `dolph_config.yaml`.
+2. **Middleware Binding**: Global middlewares (CORS, Helmet, Body Parsers) are attached to the underlying Express instance.
+3. **Database Connection**: If configured, DolphJS establishes connections to MongoDB or MySQL.
+4. **Dependency Injection**: The framework scans all registered `@Component` classes. It instantiates Services as singletons and injects them into Controllers.
+5. **Route Registration**: The framework scans Controller decorators (`@Route`, `@Get`, etc.) and maps them to Express routes, wrapping them in asynchronous try-catch blocks automatically.
+6. **Server Start**: The HTTP server begins listening on the configured port.
+
+## Dependency Injection (DI)
+
+DolphJS uses a constructor-based injection model mapped through the `@Component` decorator. 
+
+When you define a controller:
+
+```typescript
+@Route('users')
+export class UserController extends DolphControllerHandler<Dolph> {
+  // Notice this is NOT passed in the constructor.
+  // DolphJS reflects the type and injects it automatically at runtime.
+  private userService!: UserService; 
+  
+
+}
+```
+
+The DI container ensures that exactly one instance of `UserService` exists, promoting memory efficiency and making it easy to share state across the application if needed.

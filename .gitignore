@@ -22,3 +22,6 @@ logs
 
 tests/uploads/
 tests/uploader/uploads
+
+# Docs (Astro)
+.astro/

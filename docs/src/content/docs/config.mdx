@@ -1,0 +1,91 @@
+---
+title: Configuration
+description: Configuring your DolphJS application with dolph_config.yaml
+editUrl: https://github.com/dolphjs/dolph/edit/main/docs/content/docs/config.mdx
+sidebar:
+  label: Config
+  order: 2
+---
+
+DolphJS uses a central configuration file named `dolph_config.yaml`. This file sits at the root of your project and dictates how the `DolphFactory` initializes the server, databases, and middleware.
+
+## Basic Configuration
+
+A standard `dolph_config.yaml` looks like this:
+
+```yaml
+database:
+  mongo:
+    url: mongodb://localhost:27017/dolph_db
+    options:
+      useNewUrlParser: true
+      useUnifiedTopology: true
+  mysql:
+    host: localhost
+    user: root
+    password: password
+    database: dolph_db
+
+server:
+  port: 3300
+  host: localhost
+  env: development
+
+middlewares:
+  cors:
+    origin: "*"
+    credentials: true
+  helmet: true
+  jsonParser: true
+  urlEncoded: true
+```
+
+## Environment Variables
+
+DolphJS automatically merges your `.env` files with your configuration. You can reference environment variables within your application using standard `process.env` properties, or you can rely on the factory to inject these values directly.
+
+## Configuration Sections
+
+### Server
+
+Controls the core HTTP server bindings.
+
+- **port**: The port your application will listen on. Defaults to `3000`.
+- **host**: The host to bind to.
+- **env**: The running environment (e.g., `development`, `production`). In `production`, DolphJS disables certain verbose logging mechanisms to boost performance.
+
+### Database
+
+DolphJS provides out-of-the-box auto-initialization for MongoDB and MySQL.
+
+:::tip
+When you define the `mongo` or `mysql` keys in your configuration, the `DolphFactory` will automatically attempt to connect to these databases before starting the HTTP server. This saves you from writing manual connection boilerplate!
+:::
+
+:::note
+**Sensitive Credentials:** When initializing a MongoDB database, if the value `"sensitive"` is passed to the `url` field inside `dolph_config.yaml`, the framework automatically checks your `.env` file for a `MONGO_URL` key to use as the connection string. This keeps your credentials out of source control.
+:::
+
+### Middlewares
+
+DolphJS bundles commonly used Express middlewares. You can toggle them in your config:
+
+- **cors**: Configures Cross-Origin Resource Sharing.
+- **helmet**: Secures your Express apps by setting various HTTP headers.
+- **jsonParser**: Automatically parses incoming requests with JSON payloads (uses `express.json()`).
+- **urlEncoded**: Parses URL-encoded bodies (uses `express.urlencoded()`).
+
+## Accessing Configuration in Code
+
+While `dolph_config.yaml` drives the framework's bootstrap phase, you can also access configuration values dynamically in your components using standard environment variables if you have mapped them.
+
+```typescript
+import { DolphFactory } from '@dolphjs/core';
+import { AppComponent } from './app.component';
+
+const dolph = new DolphFactory([AppComponent]);
+
+// You can override configuration programmatically before starting
+// However, using dolph_config.yaml is the recommended approach.
+dolph.start();
+```

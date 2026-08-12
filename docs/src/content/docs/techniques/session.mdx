@@ -1,0 +1,129 @@
+---
+title: Session
+description: Implementing session management in DolphJS
+editUrl: https://github.com/dolphjs/dolph/edit/main/docs/content/docs/techniques/session.mdx
+sidebar:
+    label: Session
+    order: 5
+---
+
+While JSON Web Tokens (JWTs) are popular for stateless authentication, traditional server-side sessions remain highly relevant for many web applications. Because DolphJS is built on Express, you can easily integrate `express-session` for robust session management.
+
+## Installation
+
+Install the necessary packages. You will also need a session store (like Redis or MongoDB) for production, but we will use the default memory store for this example.
+
+```bash
+pnpm install express-session
+pnpm install -D @types/express-session
+```
+
+## Configuring the Middleware
+
+You should configure the session middleware globally so that it applies to all routes, making the session object available on the request.
+
+```typescript
+// src/server.ts
+import { DolphFactory } from '@dolphjs/core';
+import { AppComponent } from './app.component';
+import session from 'express-session';
+
+async function bootstrap() {
+    const dolph = new DolphFactory([AppComponent]);
+
+    // Access the underlying Express engine to apply global middleware
+    dolph.engine().use(
+        session({
+            secret: 'my-super-secret-key', // Use env variables in production
+            resave: false,
+            saveUninitialized: false,
+            cookie: {
+                secure: process.env.NODE_ENV === 'production',
+                maxAge: 1000 * 60 * 60 * 24, // 1 day
+            },
+        }),
+    );
+
+    dolph.start();
+}
+
+bootstrap();
+```
+
+## Using Sessions in Controllers
+
+Once the middleware is applied, you can access the session object via the injected Request object (`@DReq()`) in your controllers.
+
+### Typing the Session Data
+
+To avoid using `any` and achieve strict type safety with `express-session` in TypeScript, augment the `SessionData` interface in a `.d.ts` file or at the top of your controller:
+
+```typescript
+import 'express-session';
+
+declare module 'express-session' {
+    interface SessionData {
+        user: {
+            username: string;
+            role: string;
+        };
+    }
+}
+```
+
+Now you can build your controller with full type support:
+
+```typescript
+// src/auth/auth.controller.ts
+import { DolphControllerHandler, Dolph } from '@dolphjs/core';
+import { Route, Post, Get, DReq, DRes, DBody } from '@dolphjs/decorators';
+import { DRequest, DResponse, SuccessResponse, ErrorResponse } from '@dolphjs/common';
+
+@Route('auth')
+export class AuthController extends DolphControllerHandler<Dolph> {
+    @Post('login')
+    async login(
+        @DBody() body: { username: string; password?: string }, 
+        @DReq() req: DRequest, 
+        @DRes() res: DResponse
+    ) {
+        const { username, password } = body;
+
+        // Dummy validation
+        if (username === 'admin' && password === 'password') {
+            // Properly typed now! No 'any' cast needed.
+            req.session.user = { username, role: 'admin' };
+
+            return SuccessResponse({ res, body: 'Logged in successfully' });
+        }
+
+        return ErrorResponse({ res, body: 'Invalid credentials', status: 401 });
+    }
+
+    @Get('profile')
+    async profile(@DReq() req: DRequest, @DRes() res: DResponse) {
+        const user = req.session.user;
+
+        if (!user) {
+            return ErrorResponse({ res, body: 'Not logged in', status: 401 });
+        }
+
+        return SuccessResponse({ res, body: user });
+    }
+
+    @Post('logout')
+    async logout(@DReq() req: DRequest, @DRes() res: DResponse) {
+        req.session.destroy((err) => {
+            if (err) {
+                return ErrorResponse({ res, body: 'Could not log out', status: 500 });
+            }
+            res.clearCookie('connect.sid');
+            return SuccessResponse({ res, body: 'Logged out' });
+        });
+    }
+}
+```
+
+:::caution
+The default `express-session` MemoryStore is intentionally not designed for a production environment. It will leak memory under most conditions and does not scale past a single process. Use a store like `connect-redis` or `connect-mongo` for production apps.
+:::

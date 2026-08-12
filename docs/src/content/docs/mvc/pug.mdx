@@ -1,0 +1,91 @@
+---
+title: Pug Integration
+description: Building a non-REST Server-Side Rendered app with Pug
+editUrl: https://github.com/dolphjs/dolph/edit/main/docs/content/docs/mvc/pug.mdx
+sidebar:
+  label: Pug
+  order: 2
+---
+
+DolphJS supports the **Pug** templating engine (formerly Jade) for developers who prefer its concise, whitespace-sensitive syntax.
+
+## Installation
+
+Install Pug:
+
+```bash
+pnpm install pug
+```
+
+## Configuring the MVC Adapter
+
+Configure the `MVCAdapter` in your server bootstrap file to use Pug.
+
+```typescript
+// src/server.ts
+import { DolphFactory } from '@dolphjs/core';
+import { MVCAdapter } from '@dolphjs/common';
+import { PageComponent } from './page/page.component';
+import * as path from 'path';
+
+async function bootstrap() {
+  const dolph = new DolphFactory([PageComponent]);
+  
+  MVCAdapter.setViewsDir(path.join(process.cwd(), 'views'));
+  MVCAdapter.setViewEngine('pug');
+
+  dolph.start();
+}
+
+bootstrap();
+```
+
+## Creating the View
+
+Create a `views` directory in your project root, and add an `index.pug` file. Notice the indentation-based syntax.
+
+```pug
+//- views/index.pug
+doctype html
+html(lang="en")
+  head
+    title= title
+  body
+    h1= heading
+    ul
+      each user in users
+        li= user.name
+```
+
+## Rendering the View in a Controller
+
+Just like with EJS, use the `@Render()` decorator to pass data to the Pug view.
+
+```typescript
+// src/page/page.controller.ts
+import { DolphControllerHandler, Dolph } from '@dolphjs/core';
+import { Route, Get, Render } from '@dolphjs/decorators';
+
+@Route('pages')
+export class PageController extends DolphControllerHandler<Dolph> {
+
+
+  @Get('home')
+  @Render('index') // Corresponds to views/index.pug
+  async getHomePage() {
+    // Data passed directly to Pug
+    return {
+      title: 'DolphJS Pug App',
+      heading: 'Welcome to SSR with Pug',
+      users: [
+        { name: 'Charlie' },
+        { name: 'Diana' }
+      ]
+    };
+  }
+}
+```
+
+:::note
+If the view rendering fails (for example, a syntax error in your `.pug` file), DolphJS will catch the error and pass it to the global exception handler, returning a 500 status code to the client.
+:::

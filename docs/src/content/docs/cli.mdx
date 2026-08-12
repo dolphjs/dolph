@@ -1,0 +1,68 @@
+---
+title: CLI
+description: Streamline your workflow with the Dolph CLI
+editUrl: https://github.com/dolphjs/dolph/edit/main/docs/content/docs/cli.mdx
+sidebar:
+  label: CLI
+  order: 5
+---
+
+The Dolph CLI is an essential tool for initializing, developing, and maintaining DolphJS applications. It automates repetitive tasks such as generating boilerplate code for controllers, services, and components.
+
+## Installation
+
+You can install the Dolph CLI globally using your preferred package manager. As mentioned in the Getting Started section, `pnpm` is recommended.
+
+```bash
+pnpm install -g @dolphjs/cli
+```
+
+## Basic Commands
+
+### `dolph new <project-name>`
+
+Scaffolds a new DolphJS project. It sets up the directory structure, installs dependencies, and generates a base `dolph_config.yaml` and entry point.
+
+```bash
+dolph new my-app
+```
+
+### `dolph generate <schematic> <name>` (Alias: `dolph g`)
+
+Generates a new file based on a specific schematic. This is incredibly useful for maintaining a consistent architecture without manually creating and wiring classes.
+
+#### Generating a Component
+
+A component typically bundles a controller and a service. The CLI will generate these files and link them for you.
+
+```bash
+dolph g component users
+```
+This generates:
+- `users.component.ts`
+- `users.controller.ts`
+- `users.service.ts`
+
+#### Generating a Controller
+
+If you only need a controller:
+
+```bash
+dolph g controller auth
+```
+
+#### Generating a Service
+
+If you only need a service:
+
+```bash
+dolph g service auth
+```
+
+## Running Your Application
+
+While you can run your application using standard Node.js commands, it is recommended to use the generated `pnpm dev:start` script (which typically uses `ts-node` or `swc` for fast compilation) for development to enjoy hot-reloading.
+
+:::tip
+Always use the CLI to generate components. It ensures your classes inherit from the correct base classes (`DolphControllerHandler`, `DolphServiceHandler`) and applies the necessary decorators automatically!
+:::

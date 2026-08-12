@@ -1,0 +1,102 @@
+---
+title: EJS Integration
+description: Building a non-REST Server-Side Rendered app with EJS
+editUrl: https://github.com/dolphjs/dolph/edit/main/docs/content/docs/mvc/ejs.mdx
+sidebar:
+  label: EJS
+  order: 1
+---
+
+While DolphJS is heavily optimized for building JSON-based REST APIs, it is equally capable of serving full Server-Side Rendered (SSR) applications using the Model-View-Controller (MVC) pattern. 
+
+In this guide, we'll configure DolphJS to render HTML views using the **EJS** templating engine.
+
+## Installation
+
+Install EJS:
+
+```bash
+pnpm install ejs
+```
+
+## Configuring the MVC Adapter
+
+DolphJS provides an `MVCAdapter` specifically to configure view engines without digging into the underlying Express instance manually.
+
+```typescript
+// src/server.ts
+import { DolphFactory } from '@dolphjs/core';
+import { MVCAdapter } from '@dolphjs/common';
+import { PageComponent } from './page/page.component';
+import * as path from 'path';
+
+async function bootstrap() {
+  const dolph = new DolphFactory([PageComponent]);
+  
+  // Set the views directory
+  MVCAdapter.setViewsDir(path.join(process.cwd(), 'views'));
+  
+  // Set the view engine to ejs
+  MVCAdapter.setViewEngine('ejs');
+
+  dolph.start();
+}
+
+bootstrap();
+```
+
+## Creating the View
+
+Create a `views` directory in your project root, and add an `index.ejs` file.
+
+```html
+<!-- views/index.ejs -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title><%= title %></title>
+</head>
+<body>
+    <h1><%= heading %></h1>
+    <ul>
+        <% for(let i=0; i<users.length; i++) { %>
+            <li><%= users[i].name %></li>
+        <% } %>
+    </ul>
+</body>
+</html>
+```
+
+## Rendering the View in a Controller
+
+To render a view, use the `@Render()` decorator. Instead of using `SuccessResponse` to send JSON, you simply return an object from your method. The `@Render` decorator intercepts the returned object and passes it to the specified view.
+
+```typescript
+// src/page/page.controller.ts
+import { DolphControllerHandler, Dolph } from '@dolphjs/core';
+import { Route, Get, Render } from '@dolphjs/decorators';
+
+@Route('pages')
+export class PageController extends DolphControllerHandler<Dolph> {
+
+
+  @Get('home')
+  @Render('index') // Corresponds to views/index.ejs
+  async getHomePage() {
+    // The returned object is injected as variables into the EJS template
+    return {
+      title: 'DolphJS EJS App',
+      heading: 'Welcome to SSR with DolphJS',
+      users: [
+        { name: 'Alice' },
+        { name: 'Bob' }
+      ]
+    };
+  }
+}
+```
+
+:::tip
+By returning the data directly, your controllers remain decoupled from the view engine logic, making them easier to test!
+:::

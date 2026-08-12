@@ -1,0 +1,78 @@
+---
+title: File Upload
+description: Handling file uploads natively in DolphJS using useFileUploader
+editUrl: https://github.com/dolphjs/dolph/edit/main/docs/content/docs/techniques/file-upload.mdx
+sidebar:
+  label: File Upload
+  order: 3
+---
+
+Handling file uploads in DolphJS is extremely straightforward because the framework ships with its own robust, internal file uploading utility `useFileUploader` provided by `@dolphjs/packages`. You don't need to manually install `multer` or any external dependencies!
+
+## Creating the Middleware
+
+You can configure `useFileUploader` with storage destinations, file filters, and extension restrictions. DolphJS provides both `diskStorage` and `memoryStorage` helpers to manage where your files go.
+
+```typescript
+// src/utils/uploader.config.ts
+import { useFileUploader, diskStorage } from '@dolphjs/packages';
+import path from 'path';
+
+// Configure storage
+const storage = diskStorage({
+  destination: (req, file, cb) => {
+    // Save files to the 'uploads' directory
+    cb(null, './uploads');
+  },
+  filename: (req, file, cb) => {
+    // Prevent naming collisions
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+  },
+});
+
+export const uploadMedia = useFileUploader({
+  storage,
+  fieldname: 'document',
+  type: 'single', // can also be 'array' or 'fields'
+  limit: 5 * 1024 * 1024, // 5MB limit
+  extensions: ['.png', '.jpg', '.jpeg', '.pdf'] // automatically filters files!
+});
+```
+
+## Applying to Controllers
+
+Use the `@UseMiddleware` decorator to apply the newly created `uploadMedia` middleware to your route. When the request reaches your handler, the file data will be securely populated in `req.file` (or `req.files` if uploading an array).
+
+```typescript
+// src/upload/upload.controller.ts
+import { DolphControllerHandler, Dolph } from '@dolphjs/core';
+import { Route, Post, DReq, DRes, UseMiddleware } from '@dolphjs/decorators';
+import { SuccessResponse, ErrorResponse, DRequest, DResponse } from '@dolphjs/common';
+import { uploadMedia } from '../utils/uploader.config';
+
+@Route('files')
+export class UploadController extends DolphControllerHandler<Dolph> {
+
+  @Post('single')
+  @UseMiddleware(uploadMedia)
+  async uploadSingleFile(@DReq() req: DRequest, @DRes() res: DResponse) {
+    if (!req.file) {
+      return ErrorResponse({ res, body: 'No file uploaded or invalid format', status: 400 });
+    }
+
+    // Pass file data to a service, or return the path
+    SuccessResponse({
+      res,
+      body: {
+        message: 'File uploaded successfully',
+        filePath: req.file.path,
+      },
+    });
+  }
+}
+```
+
+:::caution
+Make sure the `uploads` directory exists at the root of your project. Otherwise, the upload stream will fail with an ENOENT error when attempting to write to disk.
+:::

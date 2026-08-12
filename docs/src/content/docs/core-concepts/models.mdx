@@ -1,0 +1,99 @@
+---
+title: Models
+description: Defining data schemas in DolphJS
+editUrl: https://github.com/dolphjs/dolph/edit/main/docs/content/docs/core-concepts/models.mdx
+sidebar:
+  label: Models
+  order: 3
+---
+
+In DolphJS, Models represent the data structure of your application and handle direct interactions with your database. While DolphJS does not enforce a specific ORM, it provides excellent integration and auto-initialization for **Mongoose** (MongoDB) and **Sequelize** (MySQL/PostgreSQL).
+
+## Defining a Mongoose Model
+
+If you have configured `mongo` in your `dolph_config.yaml`, the factory automatically connects to the database. You only need to define your schemas using standard Mongoose syntax.
+
+```typescript
+// src/user/user.model.ts
+import { Schema, Document, model } from 'mongoose';
+
+export interface IUser extends Document {
+  name: string;
+  email: string;
+  age: number;
+}
+
+const UserSchema = new Schema(
+  {
+    name: {
+      type: String,
+      required: true,
+    },
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+    },
+    age: {
+      type: Number,
+      default: 18,
+    },
+  },
+  { timestamps: true }
+);
+
+export const UserModel = model<IUser>('User', UserSchema);
+```
+
+## Using the Model in a Service
+
+Once your model is defined, you inject it into your Service using the `@InjectMongo` or `@InjectMySQL` decorators provided by Dolph.
+
+```typescript
+import { DolphServiceHandler, Dolph } from '@dolphjs/core';
+import { InjectMongo } from '@dolphjs/decorators';
+import { Model } from 'mongoose';
+import { UserModel, IUser } from './user.model';
+
+@InjectMongo('userModel', UserModel)
+export class UserService extends DolphServiceHandler<Dolph> {
+  // The property name MUST match the first argument of @InjectMongo
+  userModel!: Model<IUser>;
+
+  constructor() {
+    super('userService');
+  }
+
+  async createUser(data: any) {
+    // We can now use Mongoose methods directly
+    const user = new this.userModel(data);
+    return await user.save();
+  }
+}
+```
+
+:::tip
+Always separate your models into `.model.ts` files. This keeps your project organized and makes it easier for the CLI to navigate your structure.
+:::
+
+## Validation Integration
+
+While Mongoose handles database-level validation, you should typically validate incoming requests at the Controller level using DTOs (Data Transfer Objects) and `class-validator` before passing the data to the Model.
+
+```typescript
+// DTO Example
+import { IsString, IsEmail, IsNumber } from 'class-validator';
+
+export class CreateUserDto {
+  @IsString()
+  name: string;
+
+  @IsEmail()
+  email: string;
+
+  @IsNumber()
+  age: number;
+}
+```
+
+This ensures your Model only ever receives sanitized, valid data.

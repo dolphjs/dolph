@@ -1,0 +1,115 @@
+---
+title: MongoDB Integration
+description: Using MongoDB with Mongoose in DolphJS
+editUrl: https://github.com/dolphjs/dolph/edit/main/docs/content/docs/techniques/database/mongo.mdx
+sidebar:
+  label: Mongo
+  order: 2
+---
+
+MongoDB is arguably the most popular NoSQL database in the Node.js ecosystem. DolphJS offers zero-boilerplate auto-initialization for MongoDB when combined with the **Mongoose** ODM.
+
+## Configuration
+
+Setting up MongoDB is as simple as adding the URL to your `dolph_config.yaml`.
+
+```yaml
+# dolph_config.yaml
+database:
+  mongo:
+    url: mongodb://127.0.0.1:27017/dolph_app
+    options:
+      useNewUrlParser: true
+      useUnifiedTopology: true
+```
+
+:::tip
+**Securing your MongoDB URL**: If you do not want to hardcode your MongoDB connection string in the `dolph_config.yaml` file, you can pass the value `"sensitive"` to the `url` field. DolphJS will then automatically check your `.env` file for a `MONGO_URL` key and use that instead!
+
+```yaml
+# dolph_config.yaml
+database:
+  mongo:
+    url: sensitive
+```
+:::
+
+When you start your application using `DolphFactory`, DolphJS automatically establishes the Mongoose connection pool using the settings from `dolph_config.yaml`.
+
+### Programmatic Initialization (Alternative)
+
+If you prefer to skip `dolph_config.yaml` or want to manually control the connection timing (e.g. for testing or complex setups), you can initialize the database programmatically using `autoInitMongo` from `@dolphjs/packages`.
+
+```typescript
+import { autoInitMongo } from '@dolphjs/packages';
+
+autoInitMongo({
+  url: 'mongodb://127.0.0.1:27017/dolph_app',
+  options: {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  }
+});
+```
+
+## Defining the Schema
+
+Create your Mongoose schema in a dedicated `.model.ts` file.
+
+```typescript
+// src/product/product.model.ts
+import { Schema, Document, model } from 'mongoose';
+
+export interface IProduct extends Document {
+  title: string;
+  price: number;
+  inStock: boolean;
+}
+
+const ProductSchema = new Schema(
+  {
+    title: { type: String, required: true },
+    price: { type: Number, required: true },
+    inStock: { type: Boolean, default: true },
+  },
+  { timestamps: true }
+);
+
+export const ProductModel = model<IProduct>('Product', ProductSchema);
+```
+
+## Injecting the Model
+
+Use the `@InjectMongo` decorator to inject the model into your Dolph Service. This pattern ensures your Service remains testable and decoupled.
+
+```typescript
+// src/product/product.service.ts
+import { DolphServiceHandler, Dolph } from '@dolphjs/core';
+import { InjectMongo } from '@dolphjs/decorators';
+import { Model } from 'mongoose';
+import { ProductModel, IProduct } from './product.model';
+
+@InjectMongo('productModel', ProductModel)
+export class ProductService extends DolphServiceHandler<Dolph> {
+  // Ensure the property name exactly matches the string 'productModel'
+  productModel!: Model<IProduct>;
+
+  constructor() {
+    super('productService');
+  }
+
+  async addProduct(data: { title: string; price: number }) {
+    // Utilize Mongoose's create method via the injected property
+    const newProduct = await this.productModel.create(data);
+    return newProduct;
+  }
+
+  async getAllProducts() {
+    return await this.productModel.find({ inStock: true });
+  }
+}
+```
+
+:::note
+If the connection to MongoDB fails during boot (e.g., incorrect URL in `dolph_config.yaml`), DolphJS will catch the error and log it to the console, but the server will continue to start. Ensure your database is running before starting the app in production!
+:::

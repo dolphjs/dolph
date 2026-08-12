@@ -1,0 +1,67 @@
+---
+title: Middlewares
+description: Intercepting and transforming requests with middlewares
+editUrl: https://github.com/dolphjs/dolph/edit/main/docs/content/docs/core-concepts/middlewares.mdx
+sidebar:
+    label: Middlewares
+    order: 6
+---
+
+In DolphJS, standard Express middlewares can be seamlessly integrated into your modern, decorator-driven architecture. Middlewares are functions that have access to the request object (`req`), the response object (`res`), and the next middleware function in the application's request-response cycle.
+
+## Route-Level Middlewares
+
+To apply a middleware to a specific route, use the `@UseMiddleware()` decorator. This is useful for data validation, logging, or specific route authentication.
+
+```typescript
+import { DolphControllerHandler, Dolph } from '@dolphjs/core';
+import { Route, Post, DBody, DRes, UseMiddleware, DRequest } from '@dolphjs/decorators';
+import { DRequest, DResponse, DNextFunc, SuccessResponse } from '@dolphjs/common';
+
+// Example custom validation middleware
+const validatePayload = (req: DRequest, res: DResponse, next: DNextFunc) => {
+    if (!req.body.username) {
+        return res.status(400).json({ error: 'Username is required' });
+    }
+    next();
+};
+
+@Route('users')
+export class UserController extends DolphControllerHandler<Dolph> {
+    @Post('create')
+    @UseMiddleware(validatePayload) // Executed before the route handler
+    async createUser(@DBody() body: any, @DRes() res: DRequest) {
+        SuccessResponse({ res, message: 'User created successfully', data: { user: body } });
+    }
+}
+```
+
+## Built-in Middlewares (Global)
+
+DolphJS automatically provides and configures several global middlewares if they are enabled in your `dolph_config.yaml`:
+
+- **CORS**: Handles Cross-Origin Resource Sharing.
+- **Helmet**: Adds security headers.
+- **JSON Parser**: Parses incoming requests with JSON payloads (`express.json()`).
+- **URL Encoded**: Parses URL-encoded bodies (`express.urlencoded()`).
+
+These middlewares run globally before the request ever reaches your Controller logic.
+
+## Chaining Middlewares
+
+You can chain multiple middlewares on a single route by passing them as a sequence to `@UseMiddleware()`, or by using the decorator multiple times.
+
+```typescript
+import { UseMiddleware, Post } from '@dolphjs/decorators';
+
+@Post('upload')
+@UseMiddleware(checkRateLimit)
+@UseMiddleware(validateFileFormat)
+async uploadFile() {
+  // Logic executes only if both middlewares call next()
+}
+```
+
+:::tip
+For applying middlewares across an entire Controller, use **Shields** (`@Shield()`). Shields act exactly like `@UseMiddleware`, but they apply class-wide.
+:::

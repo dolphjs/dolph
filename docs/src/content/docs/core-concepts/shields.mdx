@@ -1,0 +1,76 @@
+---
+title: Shields
+description: Protecting your controllers with Shields
+editUrl: https://github.com/dolphjs/dolph/edit/main/docs/content/docs/core-concepts/shields.mdx
+sidebar:
+    label: Shields
+    order: 4
+---
+
+Shields are a powerful mechanism in DolphJS for applying middleware across an entire Controller. While standard middlewares (using `@UseMiddleware`) apply to single routes, Shields apply a layer of protection to _all_ routes defined within a controller class.
+
+## Applying a Shield
+
+To apply a shield, use the `@Shield()` class-level decorator. It accepts standard Express middleware functions.
+
+A common use case is requiring authentication for every route in a controller.
+
+```typescript
+import { DolphControllerHandler, Dolph } from '@dolphjs/core';
+import { Route, Get, Shield, DReq, DRes } from '@dolphjs/decorators';
+import { DRequest, DResponse, DNextFunc, SuccessResponse } from '@dolphjs/common';
+
+// A basic Express middleware
+const requireAuth = (req: DRequest, res: DResponse, next: DNextFunc) => {
+    if (!req.headers.authorization) {
+        return res.status(401).send('Unauthorized');
+    }
+    next();
+};
+
+@Shield(requireAuth)
+@Route('admin')
+export class AdminController extends DolphControllerHandler<Dolph> {
+    @Get('dashboard')
+    async getDashboard(@DReq() req: DRequest, @DRes() res: DResponse) {
+        // This route is protected by requireAuth
+        SuccessResponse({ res, body: 'Welcome to the admin dashboard' });
+    }
+
+    @Get('users')
+    async getUsers(@DReq() req: DRequest, @DRes() res: DResponse) {
+        // This route is ALSO protected by requireAuth
+        SuccessResponse({ res, body: 'Admin Users List' });
+    }
+}
+```
+
+## UnShielding Specific Routes
+
+Sometimes you want an entire controller protected, except for one or two specific public routes (like a login endpoint). You can achieve this using the `@UnShield()` method-level decorator.
+
+```typescript
+import { Route, Get, Post, Shield, UnShield, DReq, DRes } from '@dolphjs/decorators';
+import { SuccessResponse } from '@dolphjs/common';
+import { requireAuth } from './auth.middleware';
+
+@Shield(requireAuth)
+@Route('auth')
+export class AuthController extends DolphControllerHandler<Dolph> {
+    @Post('login')
+    @UnShield() // Bypasses the requireAuth shield!
+    async login(@DReq() req: DRequest, @DRes() res: DResponse) {
+        SuccessResponse({ res, body: 'Public login route' });
+    }
+
+    @Get('profile')
+    async profile(@DReq() req: DRequest, @DRes() res: DResponse) {
+        // Still protected by requireAuth
+        SuccessResponse({ res, body: 'Private profile route' });
+    }
+}
+```
+
+:::note
+If you pass specific middlewares to `@UnShield(authMiddleware1, authMiddleware2)`, it will only bypass those specific shields, leaving other applied shields intact.
+:::
