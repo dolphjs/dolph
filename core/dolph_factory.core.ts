@@ -9,7 +9,6 @@ import {
     DRequest,
     DRequestHandler,
     DResponse,
-    DSocket,
     Dolph,
     DolphConfig,
     ErrorResponse,
@@ -593,7 +592,7 @@ class DolphFactoryClass {
                 );
             }
 
-            let mongoCfg: MongooseConfig | undefined = this.configs?.database?.mongo;
+            const mongoCfg: MongooseConfig | undefined = this.configs?.database?.mongo;
             if (mongoCfg?.url?.length && mongoCfg.url.length > 1) {
                 if (mongoCfg.url === 'sensitive') {
                     if (!configs.MONGO_URL) {
