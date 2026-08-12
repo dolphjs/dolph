@@ -25,6 +25,8 @@
         "test": "jest --forceExit --detectOpenHandles",
         "clean": "npm run clean:all",
         "clean:all": "tsc -b --clean classes common core decorators packages utilities",
+        "lint": "eslint \"**/*.ts\"",
+        "lint:fix": "eslint \"**/*.ts\" --fix",
         "format": "prettier \"**/*.ts\" \"common/**/*.json\" --ignore-path ./.prettierignore --write && git status",
         "copy:package-json": "gulp copy:package-json",
         "copy:readme": "gulp copy:readme",
@@ -49,7 +51,8 @@
     },
     "lint-staged": {
         "**/*.ts": [
-            "prettier --ignore-path ./.prettierignore --write"
+            "prettier --ignore-path ./.prettierignore --write",
+            "eslint --fix"
         ],
         "core/**/*.json": [
             "prettier --ignore-path ./.prettierignore --write"

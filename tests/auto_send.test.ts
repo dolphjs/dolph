@@ -119,7 +119,7 @@ describe('Response Interceptor overrides', () => {
 
     beforeAll(() => {
         const factory = new DolphFactory([AutoSendComponent]);
-        factory.setResponseInterceptor((data, req, res) => {
+        factory.setResponseInterceptor((data, _req, _res) => {
             return {
                 myCustomSuccess: true,
                 payload: data
