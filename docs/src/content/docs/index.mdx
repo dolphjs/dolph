@@ -1,40 +1,36 @@
 ---
-title: Welcome to Starlight
-description: Get started building your docs site with Starlight.
-template: splash # Remove or comment out this line to display the site sidebar on this page.
+title: DolphJS
+description: The New-Age, developer-friendly Node.js framework for building scalable enterprise applications.
+template: splash
 hero:
-  tagline: Congrats on setting up a new Starlight project!
+  tagline: Architectural elegance without sacrificing the ecosystem. Build fast, scalable, and beautifully structured Node.js apps.
   image:
-    file: ../../assets/houston.webp
+    file: ../../assets/logo.svg
   actions:
-    - text: Example Guide
-      link: /guides/example/
+    - text: Get Started
+      link: /getting-started/
       icon: right-arrow
-    - text: Read the Starlight docs
-      link: https://starlight.astro.build
+    - text: View on GitHub
+      link: https://github.com/dolphjs/dolph
       icon: external
       variant: minimal
 ---
 
 import { Card, CardGrid } from '@astrojs/starlight/components';
 
-## Next steps
+## Why DolphJS?
 
 <CardGrid stagger>
-	<Card title="Update content" icon="pencil">
-		Edit `src/content/docs/index.mdx` to see this page change.
+	<Card title="Zero-Config DI" icon="setting">
+		No more manual wiring! Services and Controllers are seamlessly injected and managed for you via advanced TypeScript Decorators.
 	</Card>
-	<Card title="Change page layout" icon="document">
-		Delete `template: splash` in `src/content/docs/index.mdx` to display a
-		sidebar on this page.
+	<Card title="Uncompromised Flexibility" icon="rocket">
+		Unlike other enterprise frameworks, DolphJS gives you full access to the Express engine. If it works in Express, it works in Dolph.
 	</Card>
-	<Card title="Add new content" icon="add-document">
-		Add Markdown or MDX files to `src/content/docs` to create new pages.
+	<Card title="Batteries Included" icon="puzzle">
+		Native wrappers for GraphQL (Apollo), WebSockets (Socket.io), and deep Auto-wiring for MongoDB and MySQL out of the box.
 	</Card>
-	<Card title="Configure your site" icon="setting">
-		Edit your `sidebar` and other config in `astro.config.mjs`.
-	</Card>
-	<Card title="Read the docs" icon="open-book">
-		Learn more in [the Starlight Docs](https://starlight.astro.build/).
+	<Card title="Rust-Powered CLI" icon="laptop">
+		Scaffold apps, generate controllers, and manage components lightning-fast with the brand new Rust-powered CLI.
 	</Card>
 </CardGrid>
