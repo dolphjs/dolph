@@ -1,7 +1,13 @@
 {
   "extends": "../tsconfig.json",
   "compilerOptions": {
-    "outDir": "./dist"
+    "outDir": "./dist",
+    "baseUrl": ".",
+    "paths": {
+      "@dolphjs/testing": ["../../../testing/src/index"],
+      "@dolphjs/dolph": ["../../index"],
+      "@dolphjs/dolph/*": ["../../*"]
+    }
   },
   "include": ["src/**/*"]
 }
