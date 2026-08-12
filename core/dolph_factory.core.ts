@@ -815,13 +815,23 @@ class DolphFactoryClass {
         }
     }
 
-    public engine = () => this.dolph;
-    public socket = () => this.socketService;
+    private engineFinalized = false;
 
     /**
-     * Initialises and returns the dolphjs engine
+     * Registers the global exception filter (if configured), the error
+     * converter/handler chain, and the catch-all 404 fallback.
+     *
+     * This used to run inline at the top of `start()`, which meant it never
+     * ran at all for `engine()` — the Express app handed to a test runner
+     * (or anything else that only wants the request handler, not a bound
+     * port) silently had no 404 fallback and ignored `setGlobalExceptionHandler()`.
+     * Both `engine()` and `start()` call this now, guarded to run once, so
+     * the two only differ in whether a socket actually gets bound.
      */
-    public start() {
+    private finalizeEngine() {
+        if (this.engineFinalized) return;
+        this.engineFinalized = true;
+
         if (this.globalFilter) {
             if (this.globalExceptionFilterHandler) {
                 this.dolph.use(this.globalExceptionFilterHandler);
@@ -840,6 +850,19 @@ class DolphFactoryClass {
         if (!this.isGraphQL) {
             initNotFoundError(this.dolph);
         }
+    }
+
+    public engine = () => {
+        this.finalizeEngine();
+        return this.dolph;
+    };
+    public socket = () => this.socketService;
+
+    /**
+     * Initialises and returns the dolphjs engine
+     */
+    public start() {
+        this.finalizeEngine();
 
         if (!this.isGraphQL) {
             this.server = this.dolph.listen(+this.port, '0.0.0.0', () => {
