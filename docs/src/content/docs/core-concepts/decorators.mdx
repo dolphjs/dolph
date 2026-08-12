@@ -34,6 +34,9 @@ Extract specific data from the Express request object securely.
 | `@DBody()`      | Extracts `req.body`.                                             | `(@DBody() body: any)`               |
 | `@DParam(name)` | Extracts a route parameter (`req.params[name]`).                 | `(@DParam('id') id: string)`         |
 | `@DQuery(name)` | Extracts a query parameter (`req.query[name]`).                  | `(@DQuery('search') search: string)` |
+| `@DHeaders()`   | Extracts `req.headers`.                                          | `(@DHeaders() headers: any)`         |
+| `@DCookies()`   | Extracts `req.cookies`.                                          | `(@DCookies() cookies: any)`         |
+| `@DAuth()`      | Extracts the `Authorization` header.                             | `(@DAuth() auth: string)`            |
 | `@DPayload()`   | Extracts authenticated payload (usually set by JWT middlewares). | `(@DPayload() payload: any)`         |
 
 ## Middleware Decorators

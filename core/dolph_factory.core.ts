@@ -323,6 +323,9 @@ const InitialiseControllersAsRouter = <T extends Dolph>(
                                                     case 'cookies':
                                                         args[meta.index] = req.cookies || {};
                                                         break;
+                                                    case 'auth':
+                                                        args[meta.index] = req.headers['authorization'] || req.headers['Authorization'];
+                                                        break;
                                                     case 'body':
                                                         try {
                                                             const dtoClass = meta.data?.dtoType as
@@ -706,25 +709,6 @@ class DolphFactoryClass {
         InitialiseRoutes(this.routes, this.routingBase);
         InitialiseControllersAsRouter(this.controllers, this.routingBase);
 
-        if (this.globalFilter) {
-            if (this.globalExceptionFilterHandler) {
-                this.dolph.use(this.globalExceptionFilterHandler);
-                logger.info(clc.blueBright(`Dolph app using custom global exception filter`));
-            } else {
-                inAppLogger.warn(
-                    clc.yellow(
-                        'globalExceptionFilter is true in config, but no handler was provided via setGlobalExceptionHandler(). Error handling will fall back to default.',
-                    ),
-                );
-            }
-        }
-
-        InitialiseErrorHandlers();
-
-        if (!this.isGraphQL) {
-            initNotFoundError();
-        }
-
         port = +this.port;
 
         /**
@@ -741,6 +725,7 @@ class DolphFactoryClass {
 
     public setGlobalExceptionHandler(handler: ErrorRequestHandler) {
         this.globalExceptionFilterHandler = handler;
+        this.globalFilter = true;
     }
 
     /**
@@ -797,6 +782,25 @@ class DolphFactoryClass {
      * Initialises and returns the dolphjs engine
      */
     public start() {
+        if (this.globalFilter) {
+            if (this.globalExceptionFilterHandler) {
+                this.dolph.use(this.globalExceptionFilterHandler);
+                logger.info(clc.blueBright(`Dolph app using custom global exception filter`));
+            } else {
+                inAppLogger.warn(
+                    clc.yellow(
+                        'globalExceptionFilter is true in config, but no handler was provided via setGlobalExceptionHandler(). Error handling will fall back to default.',
+                    ),
+                );
+            }
+        }
+
+        InitialiseErrorHandlers();
+
+        if (!this.isGraphQL) {
+            initNotFoundError();
+        }
+
         if (!this.isGraphQL) {
             server = this.dolph.listen(port, '0.0.0.0', () => {
                 logger.info(

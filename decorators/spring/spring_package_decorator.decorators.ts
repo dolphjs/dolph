@@ -279,12 +279,12 @@ export function Render(template: string): MethodDecorator {
 // Unique symbol for metadata key
 export const ROUTE_ARGS_METADATA = Symbol('dolph:route_args_metadata');
 
-export const routeParamsArr = ['req', 'res', 'next', 'body', 'query', 'param', 'file', 'payload', 'headers', 'cookies'];
+export const routeParamsArr = ['req', 'res', 'next', 'body', 'query', 'param', 'file', 'payload', 'headers', 'cookies', 'auth'];
 
 export interface RouteParamMetadata {
     // Parameter index
     index: number;
-    type: 'req' | 'res' | 'next' | 'body' | 'query' | 'param' | 'file' | 'payload' | 'headers' | 'cookies';
+    type: 'req' | 'res' | 'next' | 'body' | 'query' | 'param' | 'file' | 'payload' | 'headers' | 'cookies' | 'auth';
     // For DTO type, specific param name, etc.
     data?: any;
 }
@@ -375,5 +375,11 @@ export function DHeaders(): ParameterDecorator {
 export function DCookies(): ParameterDecorator {
     return (target: Object, propertyKey: string | symbol, parameterIndex: number) => {
         addParameterMetadata(target, propertyKey, parameterIndex, 'cookies');
+    };
+}
+
+export function DAuth(): ParameterDecorator {
+    return (target: Object, propertyKey: string | symbol, parameterIndex: number) => {
+        addParameterMetadata(target, propertyKey, parameterIndex, 'auth');
     };
 }
