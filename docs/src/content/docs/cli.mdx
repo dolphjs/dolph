@@ -7,62 +7,104 @@ sidebar:
   order: 5
 ---
 
-The Dolph CLI is an essential tool for initializing, developing, and maintaining DolphJS applications. It automates repetitive tasks such as generating boilerplate code for controllers, services, and components.
+The Dolph CLI is an essential tool for initializing, developing, and maintaining DolphJS applications. Now completely rewritten in Rust for blazing-fast performance, it automates repetitive tasks such as generating boilerplate code for controllers, services, and components instantly.
 
 ## Installation
 
-You can install the Dolph CLI globally using your preferred package manager. As mentioned in the Getting Started section, `pnpm` is recommended.
+You can install the Dolph CLI globally using your preferred package manager. `pnpm` is highly recommended.
 
 ```bash
-pnpm install -g @dolphjs/cli
+pnpm add -g @dolphjs/cli
 ```
 
 ## Basic Commands
 
 ### `dolph new <project-name>`
 
-Scaffolds a new DolphJS project. It sets up the directory structure, installs dependencies, and generates a base `dolph_config.yaml` and entry point.
+Scaffolds a new DolphJS project. It sets up the directory structure, handles package manager integrations, and generates a base `dolph_config.yaml` and entry point based on interactive prompts.
 
 ```bash
 dolph new my-app
 ```
 
-### `dolph generate <schematic> <name>` (Alias: `dolph g`)
-
-Generates a new file based on a specific schematic. This is incredibly useful for maintaining a consistent architecture without manually creating and wiring classes.
-
-#### Generating a Component
-
-A component typically bundles a controller and a service. The CLI will generate these files and link them for you.
-
+You can also use `.` to generate the project in your current directory:
 ```bash
-dolph g component users
-```
-This generates:
-- `users.component.ts`
-- `users.controller.ts`
-- `users.service.ts`
-
-#### Generating a Controller
-
-If you only need a controller:
-
-```bash
-dolph g controller auth
+dolph new .
 ```
 
-#### Generating a Service
+### `dolph generate`
 
-If you only need a service:
+Generates new files based on specific options. This is incredibly useful for maintaining a consistent architecture without manually creating and wiring classes.
 
 ```bash
-dolph g service auth
+dolph generate [OPTIONS]
 ```
 
-## Running Your Application
+#### Available Generation Flags:
 
-While you can run your application using standard Node.js commands, it is recommended to use the generated `pnpm dev:start` script (which typically uses `ts-node` or `swc` for fast compilation) for development to enjoy hot-reloading.
+| Flag | Full Option | Description |
+|---|---|---|
+| `-a` | `--all <NAME>` | Generates all DolphJS files for the named parameter (Controller, Service, Model, etc.) |
+| `-c` | `--controller <NAME>` | Generates a DolphJS controller file |
+| `-d` | `--dto <NAME>` | Generates a DolphJS dto file |
+| `-e` | `--entity <NAME>` | Generates a DolphJS entity file |
+| `-i` | `--input <NAME>` | Generates a DolphJS input file |
+| `-k` | `--socket <NAME>` | Generate a DolphJS socket service and component |
+| `-m` | `--model <NAME>` | Generates a DolphJS models file |
+| `-r` | `--route <NAME>` | Generates a DolphJS routes file |
+| `-s` | `--service <NAME>` | Generates a DolphJS service file |
+| `-v` | `--resolver <NAME>` | Generates a DolphJS resolver file |
+| `-y` | `--component <NAME>` | Generates a DolphJS spring component file |
+
+
+#### Generating a Full Feature
+
+Instead of generating individual files, you can generate everything required for a domain feature at once.
+
+```bash
+dolph generate --all users
+# or
+dolph generate -a users
+```
+This typically generates a bundled controller, service, model, and routes file for that specific domain depending on your architectural choice.
+
+#### Generating Individual Files
+
+If you only need a specific file:
+
+```bash
+dolph generate --controller auth
+dolph generate --service auth
+```
+
+## Development & Production
+
+The CLI also comes packed with native commands to run and build your DolphJS projects!
+
+### `dolph watch`
+
+Starts the DolphJS server in development mode with hot-reloading enabled.
+
+```bash
+dolph watch
+```
+
+### `dolph build`
+
+Builds your DolphJS TypeScript project into a JavaScript project optimized for production.
+
+```bash
+dolph build
+```
+
+### `dolph start`
+
+Starts the compiled DolphJS server in production mode.
+
+```bash
+dolph start
+```
 
 :::tip
-Always use the CLI to generate components. It ensures your classes inherit from the correct base classes (`DolphControllerHandler`, `DolphServiceHandler`) and applies the necessary decorators automatically!
+Always use the CLI to generate components. It ensures your classes inherit from the correct base classes (e.g., `DolphControllerHandler`, `DolphServiceHandler`) and applies the necessary decorators automatically!
 :::

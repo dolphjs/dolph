@@ -1,6 +1,7 @@
 # source
 
 log
+docs/
 
 # configuration
 yarn-error.log
