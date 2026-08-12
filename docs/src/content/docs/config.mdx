@@ -75,6 +75,12 @@ DolphJS bundles commonly used Express middlewares. You can toggle them in your c
 - **jsonParser**: Automatically parses incoming requests with JSON payloads (uses `express.json()`).
 - **urlEncoded**: Parses URL-encoded bodies (uses `express.urlencoded()`).
 
+### Routing
+
+Controls route-level and application-level routing behaviors.
+
+- **globalFilter**: A boolean flag (`true` or `false`). When enabled, you can provide a custom global exception handler for your entire application by calling `dolph.setGlobalExceptionHandler()` before starting the server. If set to `true` but no handler is provided, DolphJS falls back to its default error handler.
+
 ## Accessing Configuration in Code
 
 While `dolph_config.yaml` drives the framework's bootstrap phase, you can also access configuration values dynamically in your components using standard environment variables if you have mapped them.
