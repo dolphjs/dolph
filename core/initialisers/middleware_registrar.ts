@@ -1,4 +1,6 @@
 import { RequestHandler } from 'express';
+import { inAppLogger } from '../utils/logger.utils';
+import clc from 'cli-color';
 
 class MiddlewareRegistry {
     private static instance: MiddlewareRegistry;
@@ -19,9 +21,11 @@ class MiddlewareRegistry {
 
     public register(middleware: RequestHandler) {
         if (this.sealed) {
-            console.warn(
-                '[dolphjs] middlewareRegistry.register() called after DolphFactory was initialised — ' +
-                    'this middleware will NOT be applied. Register all middleware before constructing DolphFactory.',
+            inAppLogger.warn(
+                clc.yellow(
+                    '[dolphjs] middlewareRegistry.register() called after DolphFactory was initialised — ' +
+                        'this middleware will NOT be applied. Register all middleware before constructing DolphFactory.'
+                )
             );
             return;
         }
