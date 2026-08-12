@@ -7,6 +7,16 @@ export default defineConfig({
     integrations: [
         starlight({
             title: 'DolphJS',
+            logo: {
+                src: './src/assets/logo.ico',
+            },
+            favicon: '/favicon.ico',
+            expressiveCode: {
+                themes: ['one-dark-pro'],
+                styleOverrides: {
+                    borderRadius: '0.5rem',
+                }
+            },
             customCss: [
                 './src/styles/custom.css'
             ],

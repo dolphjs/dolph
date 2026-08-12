@@ -1,7 +1,69 @@
-/* Docs custom font */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@500;600;700;800&display=swap');
 
 :root {
-  /* Set the default sans-serif font family to Inter */
+  /* Fonts */
   --sl-font: 'Inter', sans-serif;
+  --sl-font-heading: 'Outfit', sans-serif;
+
+  /* Deep Dark Mode Colors (Vercel-style) */
+  --sl-color-bg: #0a0a0f;
+  --sl-color-bg-nav: rgba(10, 10, 15, 0.7);
+  --sl-color-bg-sidebar: #0a0a0f;
+  --sl-color-black: #000000;
+  --sl-color-white: #ffffff;
+  
+  /* Neon Accents */
+  --sl-color-accent-low: #0f172a;
+  --sl-color-accent: #00e1ff;
+  --sl-color-accent-high: #7eeaff;
+  
+  /* Text Colors */
+  --sl-color-text: #9ca3af;
+  --sl-color-text-accent: #00e1ff;
+  --sl-color-text-invert: #000000;
+}
+
+/* Glassmorphism for Header */
+header.header {
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+  background-color: var(--sl-color-bg-nav) !important;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--sl-color-bg);
+}
+::-webkit-scrollbar-thumb {
+  background: #333333;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #555555;
+}
+
+/* Hover Lifts & Transitions */
+.sl-link-card, a {
+  transition: all 0.2s ease-in-out !important;
+}
+.sl-link-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 20px rgba(0, 225, 255, 0.15) !important;
+  border-color: var(--sl-color-accent) !important;
+}
+
+/* Hero Section Animated Gradient */
+.hero > img {
+  filter: drop-shadow(0 0 40px rgba(0, 225, 255, 0.4));
+}
+.hero h1 {
+  background: linear-gradient(135deg, #ffffff 0%, #00e1ff 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
