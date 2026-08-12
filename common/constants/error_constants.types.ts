@@ -7,7 +7,7 @@ const DolphErrors = {
     passwordShort: (char: number | string) => `password must be at least ${char} characters`,
     passwordMustContain: (letter: number | string, no: number | string, symbols?: Array<string>) =>
         ` password must contain at least ${letter} letter and ${no} number ${
-            symbols.length ? `and any of these symbols:${symbols.join(', ')}` : ''
+            symbols?.length ? `and any of these symbols:${symbols.join(', ')}` : ''
         }`,
     noDolphConfigFile:
         'dolphjs engine cannot start without dolph_config.yaml file, please ensure to add it to root directory',

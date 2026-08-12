@@ -12,4 +12,12 @@ module.exports = {
     transformIgnorePatterns: ['node_modules/(?!(fs-temp|random-path)/)'],
     setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
     //   moduleNameMapper: pathsToModuleNameMapper(compilerOptions.paths, { prefix: '<rootDir>' }),
+    coverageThreshold: {
+        global: {
+            branches: 80,
+            functions: 80,
+            lines: 80,
+            statements: 80,
+        },
+    },
 };
