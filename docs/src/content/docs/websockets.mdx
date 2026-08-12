@@ -31,8 +31,10 @@ A Socket Service handles the actual WebSocket events. By extending `DolphSocketS
 // src/websockets/chat.socket.service.ts
 import { DolphSocketServiceHandler } from '@dolphjs/dolph/classes';
 import { Dolph } from '@dolphjs/dolph/common';
+import { DService } from '@dolphjs/dolph/decorators';
 import { UserService } from '../user/user.service'; // standard Dolph service
 
+@DService()
 export class ChatSocketService extends DolphSocketServiceHandler<Dolph> {
   // The @Socket decorator will automatically inject UserService onto this class!
   declare UserService: UserService; 

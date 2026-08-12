@@ -59,8 +59,10 @@ You can now import this typed `config` object anywhere in your controllers or se
 ```typescript
 import { DolphServiceHandler } from '@dolphjs/dolph/classes';
 import { Dolph } from '@dolphjs/dolph/common';
+import { DService } from '@dolphjs/dolph/decorators';
 import { config } from '../config/env.config';
 
+@DService()
 export class PaymentService extends DolphServiceHandler<Dolph> {
   constructor() {
     super('paymentService');

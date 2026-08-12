@@ -24,7 +24,9 @@ In DolphJS, a service must extend the `DolphServiceHandler` class. Crucially, yo
 ```typescript
 import { DolphServiceHandler } from '@dolphjs/dolph/classes';
 import { Dolph } from '@dolphjs/dolph/common';
+import { DService } from '@dolphjs/dolph/decorators';
 
+@DService()
 export class CatsService extends DolphServiceHandler<Dolph> {
   private readonly cats: any[] = [];
 
@@ -68,12 +70,13 @@ Services often need to interact with a database. DolphJS provides specialized de
 ```typescript
 import { DolphServiceHandler } from '@dolphjs/dolph/classes';
 import { Dolph } from '@dolphjs/dolph/common';
-import { InjectMongo } from '@dolphjs/dolph/decorators';
+import { InjectMongo, DService } from '@dolphjs/dolph/decorators';
 import { Model } from 'mongoose';
 import { catModel, ICatModel } from './cat.model';
 
 // Inject the model into the 'catModel' property of this class
 @InjectMongo('catModel', catModel)
+@DService()
 export class CatsService extends DolphServiceHandler<Dolph> {
   // Declare the property so TypeScript knows about it
   catModel!: Model<ICatModel>;
@@ -96,11 +99,12 @@ Similarly, if you are using MySQL (via Sequelize or similar), you can use `@Inje
 ```typescript
 import { DolphServiceHandler } from '@dolphjs/dolph/classes';
 import { Dolph } from '@dolphjs/dolph/common';
-import { InjectMySQL } from '@dolphjs/dolph/decorators';
+import { InjectMySQL, DService } from '@dolphjs/dolph/decorators';
 import { ModelStatic, Model as SqlModel } from 'sequelize';
 import { catModel, ICatModel } from './cat.model';
 
 @InjectMySQL('catModel', catModel)
+@DService()
 export class CatsService extends DolphServiceHandler<Dolph> {
   catModel!: ModelStatic<SqlModel<any, any>>;
 

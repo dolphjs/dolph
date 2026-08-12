@@ -52,11 +52,12 @@ Once your model is defined, you inject it into your Service using the `@InjectMo
 ```typescript
 import { DolphServiceHandler } from '@dolphjs/dolph/classes';
 import { Dolph } from '@dolphjs/dolph/common';
-import { InjectMongo } from '@dolphjs/dolph/decorators';
+import { InjectMongo, DService } from '@dolphjs/dolph/decorators';
 import { Model } from 'mongoose';
 import { UserModel, IUser } from './user.model';
 
 @InjectMongo('userModel', UserModel)
+@DService()
 export class UserService extends DolphServiceHandler<Dolph> {
   // The property name MUST match the first argument of @InjectMongo
   userModel!: Model<IUser>;

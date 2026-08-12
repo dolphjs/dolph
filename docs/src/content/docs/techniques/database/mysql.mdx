@@ -73,11 +73,12 @@ To keep your business logic clean, use Dependency Injection to provide the model
 // src/user/user.service.ts
 import { DolphServiceHandler } from '@dolphjs/dolph/classes';
 import { Dolph } from '@dolphjs/dolph/common';
-import { InjectMySQL } from '@dolphjs/dolph/decorators';
+import { InjectMySQL, DService } from '@dolphjs/dolph/decorators';
 import { ModelStatic, Model as SqlModel } from 'sequelize';
 import { UserModel } from './user.model';
 
 @InjectMySQL('userModel', UserModel)
+@DService()
 export class UserService extends DolphServiceHandler<Dolph> {
   // TypeScript declaration matching the string in @InjectMySQL
   userModel!: ModelStatic<SqlModel<any, any>>;
