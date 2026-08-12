@@ -7,4 +7,6 @@ type ResponseType<T = any> = {
     body?: T;
 };
 
+export type ResponseInterceptor = (data: any, req: any, res: DResponse) => any;
+
 export { ResponseType };

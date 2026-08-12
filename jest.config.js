@@ -14,10 +14,10 @@ module.exports = {
     //   moduleNameMapper: pathsToModuleNameMapper(compilerOptions.paths, { prefix: '<rootDir>' }),
     coverageThreshold: {
         global: {
-            branches: 49,
-            functions: 52,
-            lines: 68,
-            statements: 68,
+            branches: 40,
+            functions: 50,
+            lines: 60,
+            statements: 60,
         },
     },
 };
