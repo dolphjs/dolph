@@ -79,28 +79,20 @@ const sendControllerResult = (res: DResponse, result: unknown): void => {
     res.status(200).json(result);
 };
 
-const engine = express();
-
-// declare core variables
-let port = configs.PORT;
-let server: Server<typeof IncomingMessage, typeof ServerResponse> = createServer(engine);
-
-// disable the x-powered-by header returned by express
-engine.disable('x-powered-by');
 
 // function add cors middleware to express
-const enableCorsFunc = (corsOptions: CorsOptions) => {
+const enableCorsFunc = (engine: import("express").Express, corsOptions: CorsOptions) => {
     engine.use(cors(corsOptions));
 };
 
-const enableHelmetFunc = (helmetOptions?: HelmetOptions) => {
+const enableHelmetFunc = (engine: import("express").Express, helmetOptions?: HelmetOptions) => {
     engine.use(helmet(helmetOptions));
 };
 
 /**
  * Function is used to register express router handlers using the **express routing** architecture
  */
-const InitialiseRoutes = (routes: Array<{ path?: string; router: import('express').Router }>, basePath = '') => {
+const InitialiseRoutes = (engine: import("express").Express, routes: Array<{ path?: string; router: import("express").Router }>, basePath = "") => {
     routes.forEach((route) => {
         // const path = join(basePath, route.path || '');
         const path = normalizePath(join(basePath, route.path || '')).replace(/\\/g, '/');
@@ -112,6 +104,7 @@ const InitialiseRoutes = (routes: Array<{ path?: string; router: import('express
  * Initialiser is responsible for registering all spring controllers as routers and detaching each method from the controller classes and registering them as handler functions.
  */
 const InitialiseControllersAsRouter = <T extends Dolph>(
+    engine: import("express").Express,
     controllers: Array<{ new (): DolphControllerHandler<T> }>,
     basePath: string,
 ) => {
@@ -375,13 +368,13 @@ const incrementHandlers = () => {
 };
 
 // Initialises middlewares used by dolphjs
-const InitialiseMiddlewares = ({ jsonLimit }: { jsonLimit: string }) => {
+const InitialiseMiddlewares = (engine: import("express").Express, { jsonLimit }: { jsonLimit: string }) => {
     engine.use(express.json({ limit: jsonLimit }));
     engine.use(express.urlencoded({ extended: true }));
 };
 
 // registers middlewares defined by user
-const initExternalMiddlewares = (middlewares: DRequestHandler[]) => {
+const initExternalMiddlewares = (engine: import("express").Express, middlewares: DRequestHandler[]) => {
     if (middlewares?.length) {
         middlewares.forEach((middleware) => {
             engine.use(middleware);
@@ -389,14 +382,14 @@ const initExternalMiddlewares = (middlewares: DRequestHandler[]) => {
     }
 };
 
-const initGlobalMiddlewares = () => {
+const initGlobalMiddlewares = (engine: import("express").Express) => {
     const middlewares = middlewareRegistry.getMiddlewares();
     middlewares.forEach((middleware) => {
         engine.use(middleware);
     });
 };
 
-const initMvcAdapter = () => {
+const initMvcAdapter = (engine: import("express").Express) => {
     const MVCEngine = MVCAdapter.getViewEngine();
     const MVCAssetsPath = MVCAdapter.getAssetsPath();
     const MVCViewsDir = MVCAdapter.getViewsDir();
@@ -428,7 +421,7 @@ const initMvcAdapter = () => {
 };
 
 // default not found endpoint
-const initNotFoundError = () => {
+const initNotFoundError = (engine: import("express").Express) => {
     engine.use('/', (req: DRequest, res: DResponse) => {
         ErrorResponse({ res, status: httpStatus.NOT_FOUND, body: { message: 'this endpoint does not exist' } });
     });
@@ -440,13 +433,13 @@ const InitialiseConfigLoader = () => {
 };
 
 // Initialises error handlers and converters
-const InitialiseErrorHandlers = () => {
+const InitialiseErrorHandlers = (engine: import("express").Express) => {
     engine.use(errorConverter);
     engine.use(errorHandler);
 };
 
 // exist handler
-const exitHandler = () => {
+const exitHandler = (server: Server<typeof IncomingMessage, typeof ServerResponse>) => {
     if (server) {
         server.close(() => {
             logger.error(clc.red(DolphErrors.serverClosed));
@@ -457,14 +450,14 @@ const exitHandler = () => {
     }
 };
 
-const unexpectedErrorHandler = (error: Error) => {
+const unexpectedErrorHandler = (server: Server<typeof IncomingMessage, typeof ServerResponse>, error: Error) => {
     logger.error(clc.red(error));
-    exitHandler();
+    exitHandler(server);
 };
 
-const initClosureHandler = () => {
-    process.on('uncaughtException', unexpectedErrorHandler);
-    process.on('unhandledRejection', unexpectedErrorHandler);
+const initClosureHandler = (server: Server<typeof IncomingMessage, typeof ServerResponse>) => {
+    process.on('uncaughtException', (err) => unexpectedErrorHandler(server, err));
+    process.on('unhandledRejection', (err: Error) => unexpectedErrorHandler(server, err));
 
     process.on('SIGTERM', () => {
         if (server) {
@@ -490,6 +483,7 @@ class DolphFactoryClass {
     private controllers: Array<{ new (): any }> = [];
     private sockets?: DSocketInit;
     private socketService?: SocketService;
+    private server: Server<typeof IncomingMessage, typeof ServerResponse>;
     private routingBase = '';
     private isGraphQL = false;
 
@@ -500,7 +494,7 @@ class DolphFactoryClass {
     jsonLimit = '5mb';
     globalFilter = false;
     private globalExceptionFilterHandler?: ErrorRequestHandler;
-    private dolph: typeof engine = engine;
+    private dolph: import("express").Express;
 
     constructor(adapter: { graphql: boolean; schema: any; context?: any });
     constructor(
@@ -530,9 +524,9 @@ class DolphFactoryClass {
                 // eslint-disable-next-line @typescript-eslint/no-var-requires
                 const { GraphQLAdapter } = require('@dolphjs/graphql');
 
-                GraphQLAdapter.apolloServer(server, adapter.schema, adapter.context)
+                GraphQLAdapter.apolloServer(this.server, adapter.schema, adapter.context)
                     .then((middleware: RequestHandler) => {
-                        engine.use(middleware);
+                        this.dolph.use(middleware);
                     })
                     .catch((err: Error) => {
                         logger.error(`${clc.red('DOLPH ERROR: ')}`, err);
@@ -563,6 +557,9 @@ class DolphFactoryClass {
             }
         }
 
+        this.dolph = express();
+        this.dolph.disable('x-powered-by');
+        this.server = createServer(this.dolph);
         this.extractControllersFromComponent();
         this.readConfigFile();
         this.intiDolphEngine(startTime);
@@ -655,7 +652,7 @@ class DolphFactoryClass {
                         origin,
                         preflightContinue,
                     } = config.middlewares.cors;
-                    enableCorsFunc({
+                    enableCorsFunc(this.dolph, {
                         optionsSuccessStatus,
                         allowedHeaders: allowedHeaders ?? undefined,
                         exposedHeaders: exposedHeaders ?? undefined,
@@ -681,21 +678,20 @@ class DolphFactoryClass {
     }
 
     public middlewares(middlewares?: RequestHandler[]) {
-        initExternalMiddlewares(middlewares ?? []);
+        initExternalMiddlewares(this.dolph, middlewares ?? []);
     }
 
     private intiDolphEngine(startTime: [number, number]) {
-        this.dolph = engine;
+        
         InitialiseConfigLoader();
         incrementHandlers();
-        InitialiseMiddlewares({ jsonLimit: this.jsonLimit });
-        initExternalMiddlewares(this.externalMiddlewares || []);
-        initGlobalMiddlewares();
-        initMvcAdapter();
-        InitialiseRoutes(this.routes, this.routingBase);
-        InitialiseControllersAsRouter(this.controllers, this.routingBase);
+        InitialiseMiddlewares(this.dolph, { jsonLimit: this.jsonLimit });
+        initExternalMiddlewares(this.dolph, this.externalMiddlewares || []);
+        initGlobalMiddlewares(this.dolph);
+        initMvcAdapter(this.dolph);
+        InitialiseRoutes(this.dolph, this.routes, this.routingBase);
+        InitialiseControllersAsRouter(this.dolph, this.controllers, this.routingBase);
 
-        port = +this.port;
 
         /**
          * End the time recording and obtain duration
@@ -724,14 +720,14 @@ class DolphFactoryClass {
                 '`enableCors()` is deprecated and will be removed in the next major version. Use the `middlewares.cors` section in `dolph_config.yaml` instead.',
             ),
         );
-        enableCorsFunc(options || { origin: '*' });
+        enableCorsFunc(this.dolph, options || { origin: '*' });
     }
 
     public enableHemet(options?: HelmetOptions) {
         if (options) {
-            enableHelmetFunc(options);
+            enableHelmetFunc(this.dolph, options);
         } else {
-            enableHelmetFunc();
+            enableHelmetFunc(this.dolph);
         }
     }
 
@@ -781,25 +777,25 @@ class DolphFactoryClass {
             }
         }
 
-        InitialiseErrorHandlers();
+        InitialiseErrorHandlers(this.dolph);
 
         if (!this.isGraphQL) {
-            initNotFoundError();
+            initNotFoundError(this.dolph);
         }
 
         if (!this.isGraphQL) {
-            server = this.dolph.listen(port, '0.0.0.0', () => {
+            this.server = this.dolph.listen(+this.port, '0.0.0.0', () => {
                 logger.info(
                     clc.blueBright(
                         `Dolph app running on port ${clc.white(`${this.port}`)} in ${this.env.toUpperCase()} mode`,
                     ),
                 );
-                this.initSockets(server);
+                this.initSockets(this.server);
             });
         } else {
             const start = async () => {
                 //@ts-expect-error -- server.listen callback typing does not match Promise resolve
-                await new Promise((resolve) => server.listen({ port }, resolve));
+                await new Promise((resolve) => this.server.listen({ port }, resolve));
             };
 
             start()
@@ -810,7 +806,7 @@ class DolphFactoryClass {
                         ),
                     );
 
-                    this.initSockets(server);
+                    this.initSockets(this.server);
                 })
                 .catch((err) => {
                     logger.error(clc.red(`Cannot start Dolph Server: ${err}`));
@@ -827,8 +823,8 @@ class DolphFactoryClass {
         //   );
         // }
 
-        initClosureHandler();
-        return server;
+        initClosureHandler(this.server);
+        return this.server;
     }
 }
 
