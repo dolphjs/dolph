@@ -8,18 +8,16 @@ export default defineConfig({
         starlight({
             title: 'DolphJS',
             logo: {
-                src: './src/assets/logo.ico',
+                src: './src/assets/logo.svg',
             },
             favicon: '/favicon.ico',
             expressiveCode: {
                 themes: ['one-dark-pro'],
                 styleOverrides: {
                     borderRadius: '0.5rem',
-                }
+                },
             },
-            customCss: [
-                './src/styles/custom.css'
-            ],
+            customCss: ['./src/styles/custom.css'],
             social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/dolphjs/dolph' }],
             sidebar: [
                 {
