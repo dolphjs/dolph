@@ -24,7 +24,9 @@ In DolphJS, a service must extend the `DolphServiceHandler` class. Crucially, yo
 ```typescript
 import { DolphServiceHandler } from '@dolphjs/dolph/classes';
 import { Dolph } from '@dolphjs/dolph/common';
+import { DService } from '@dolphjs/dolph/decorators';
 
+@DService()
 export class CatsService extends DolphServiceHandler<Dolph> {
   private readonly cats: any[] = [];
 
@@ -43,6 +45,10 @@ export class CatsService extends DolphServiceHandler<Dolph> {
   }
 }
 ```
+
+:::caution
+Always apply `@DService()` to every service class, even one with no constructor parameters today. TypeScript's `emitDecoratorMetadata` only emits `design:paramtypes` reflection metadata for a class that has **at least one** decorator applied to it — with none at all, `@Component` reads back `undefined` for that class's constructor parameter types. For a leaf service this is harmless (there's nothing to resolve anyway), but the moment that service grows a constructor-injected dependency on another service, DI fails silently: the dependency resolves to `undefined` instead of throwing, since JavaScript doesn't enforce argument count at the call site. `@DService()` itself does nothing functionally for `@Component`'s resolution — it's a decorator re-exported from `typedi`, a separate DI layer the framework also exposes — but its mere presence is what makes TypeScript emit the metadata `@Component` depends on. Treat it as mandatory boilerplate, the same way NestJS treats `@Injectable()`.
+:::
 
 ## Dependency Injection (DI)
 
@@ -68,12 +74,13 @@ Services often need to interact with a database. DolphJS provides specialized de
 ```typescript
 import { DolphServiceHandler } from '@dolphjs/dolph/classes';
 import { Dolph } from '@dolphjs/dolph/common';
-import { InjectMongo } from '@dolphjs/dolph/decorators';
+import { InjectMongo, DService } from '@dolphjs/dolph/decorators';
 import { Model } from 'mongoose';
 import { catModel, ICatModel } from './cat.model';
 
 // Inject the model into the 'catModel' property of this class
 @InjectMongo('catModel', catModel)
+@DService()
 export class CatsService extends DolphServiceHandler<Dolph> {
   // Declare the property so TypeScript knows about it
   catModel!: Model<ICatModel>;
@@ -96,11 +103,12 @@ Similarly, if you are using MySQL (via Sequelize or similar), you can use `@Inje
 ```typescript
 import { DolphServiceHandler } from '@dolphjs/dolph/classes';
 import { Dolph } from '@dolphjs/dolph/common';
-import { InjectMySQL } from '@dolphjs/dolph/decorators';
+import { InjectMySQL, DService } from '@dolphjs/dolph/decorators';
 import { ModelStatic, Model as SqlModel } from 'sequelize';
 import { catModel, ICatModel } from './cat.model';
 
 @InjectMySQL('catModel', catModel)
+@DService()
 export class CatsService extends DolphServiceHandler<Dolph> {
   catModel!: ModelStatic<SqlModel<any, any>>;
 
