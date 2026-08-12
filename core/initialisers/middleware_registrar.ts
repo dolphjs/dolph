@@ -1,5 +1,5 @@
 import { RequestHandler } from 'express';
-import { inAppLogger } from '../utils/logger.utils';
+import { inAppLogger } from '../../utilities';
 import clc from 'cli-color';
 
 class MiddlewareRegistry {
