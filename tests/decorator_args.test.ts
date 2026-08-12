@@ -1,4 +1,5 @@
 import request from 'supertest';
+import { createServer } from 'http';
 import { IsInt, IsOptional, IsString, Min } from 'class-validator';
 import { DolphFactory } from '../core';
 import { DRequest, DResponse, Dolph, SuccessResponse } from '../common';
@@ -69,7 +70,8 @@ describe('Decorator argument integration', () => {
     let server: any;
 
     beforeAll(() => {
-        server = new DolphFactory([DecoratorArgsComponent]).start();
+        // One real ephemeral listener per file — see auto_send.test.ts for why.
+        server = createServer(new DolphFactory([DecoratorArgsComponent]).engine()).listen(0);
     });
 
     afterAll(() => {

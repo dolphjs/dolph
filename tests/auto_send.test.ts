@@ -1,4 +1,5 @@
 import request from 'supertest';
+import { createServer } from 'http';
 import { DolphFactory } from '../core';
 import { DBody, Component, Get, Post, Route } from '../decorators';
 import { DolphControllerHandler } from '../classes';
@@ -49,7 +50,15 @@ describe('Auto-send controller return values', () => {
     let server: any;
 
     beforeAll(() => {
-        server = new DolphFactory([AutoSendComponent]).start();
+        // One real (ephemeral) listener per file, reused by every request
+        // below — not DolphFactory#start(), which would also install
+        // process-level SIGTERM/uncaughtException handlers meant for a real
+        // running server. supertest binds its own fresh ephemeral server on
+        // every single call when handed a bare Express app instead of an
+        // already-listening one, which gets expensive fast across a file
+        // with many requests — so bind once here and pass the server, not
+        // `.engine()`, to `request()`.
+        server = createServer(new DolphFactory([AutoSendComponent]).engine()).listen(0);
     });
 
     afterAll(() => {
@@ -125,7 +134,7 @@ describe('Response Interceptor overrides', () => {
                 payload: data
             };
         });
-        server = factory.start();
+        server = createServer(factory.engine()).listen(0);
     });
 
     afterAll(() => {

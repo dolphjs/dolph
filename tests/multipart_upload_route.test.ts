@@ -1,4 +1,5 @@
 import request from 'supertest';
+import { createServer } from 'http';
 import { DolphFactory } from '../core';
 import { DolphControllerHandler } from '../classes';
 import { Dolph, DRequest, DResponse, SuccessResponse } from '../common';
@@ -35,7 +36,8 @@ describe('Multipart upload through Dolph route', () => {
     let server: any;
 
     beforeAll(() => {
-        server = new DolphFactory([MultipartRouteComponent]).start();
+        // One real ephemeral listener per file — see auto_send.test.ts for why.
+        server = createServer(new DolphFactory([MultipartRouteComponent]).engine()).listen(0);
     });
 
     afterAll(() => {

@@ -151,7 +151,7 @@ describe('CatsComponent', () => {
 Two details here are load-bearing, not stylistic:
 
 - **`components` takes a lazy loader, not a static import.** Writing `import { CatsComponent } from './cats.component'` at the top of the file runs `@Component` immediately — before `beforeAll` gets a chance to call `overrides` — so the real `CatsService` would already be built and cached by the time your mock arrives. `createTestingApp` seeds `overrides` into the registry *first*, then awaits your loader, so the import happens only after the mock is in place.
-- **`app.engine` is never bound to a port.** `createTestingApp` builds the underlying `DolphFactory` but never calls `.start()`. Pass `app.engine` (the bare Express instance) straight to `supertest` — it doesn't need a listening socket.
+- **`app.engine` is a real, already-listening server, not a bare Express app.** `createTestingApp` never calls `DolphFactory#start()`, so none of its process-level `SIGTERM`/`uncaughtException` handlers get installed — but it does bind one ephemeral port via `http.createServer(engine).listen(0)`, reused for every request in the spec. supertest binds a **fresh** ephemeral server on every single call when handed a bare Express app instead of one already listening — fine for a one-off request, expensive for a spec with several. `app.close()` (async — awaits the server closing) tears it down.
 
 :::note
 `app.get(SomeService)` reads whatever is currently cached in the registry for that class — the mock you passed via `overrides`, or the real singleton if you didn't override it. Useful for asserting a mock was called without threading it through a second variable.
@@ -180,9 +180,9 @@ interface TestingAppOptions {
 }
 
 interface TestingApp {
-  engine: Express;              // pass to supertest — never bound to a port
+  engine: Server;                // a real, listening server — pass straight to supertest
   get<T>(ServiceClass: Ctor<T>): T | undefined;
-  close(): void;                // clears the registry — call in afterAll/afterEach
+  close(): Promise<void>;        // closes the server, then clears the registry — call in afterAll
 }
 ```
 
@@ -244,9 +244,9 @@ module.exports = {
 
 ## Why `createTestingApp` never calls `.start()`
 
-`DolphFactory#start()` binds a real OS port and installs process-level `SIGTERM`/`uncaughtException`/`unhandledRejection` handlers — the right thing for a long-running server, and the wrong thing to repeat once per spec file. Registering those handlers over and over inside the same Jest worker is exactly why a `.start()`-based suite typically needs `jest --forceExit --detectOpenHandles` to exit cleanly.
+`DolphFactory#start()` does two things beyond wiring the Express app: it binds a real OS port, and it installs process-level `SIGTERM`/`uncaughtException`/`unhandledRejection` handlers. The first is fine to repeat; the second isn't — registering those handlers once per spec file, inside the same Jest worker, is exactly why a `.start()`-based suite typically needs `jest --forceExit --detectOpenHandles` to exit cleanly.
 
-`createTestingApp` returns the bare Express app from `DolphFactory#engine()` instead, which `supertest` drives directly with no listener to leak. A suite built entirely on Tier 1–3 as described above should exit on its own, with neither flag.
+`createTestingApp` calls `DolphFactory#engine()` instead, which returns the app with routing, middleware, the 404 fallback, and any custom `setGlobalExceptionHandler()` fully wired — everything `start()` does short of the process-level handlers — then binds one ephemeral port itself via `http.createServer(engine).listen(0)`, closed by `app.close()`. A suite built entirely on Tier 1–3 as described above should exit on its own, with neither Jest flag.
 
 ## Generating tests with the CLI
 

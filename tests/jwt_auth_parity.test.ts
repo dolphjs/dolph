@@ -1,4 +1,5 @@
 import request from 'supertest';
+import { createServer } from 'http';
 import { DolphFactory } from '../core';
 import { DolphControllerHandler, JWTAuthVerifyDec, JwtBasicAuth } from '../classes';
 import { Dolph, DRequest, DResponse, SuccessResponse } from '../common';
@@ -35,7 +36,8 @@ describe('JWT auth decorator vs middleware parity', () => {
             payload: { sub: 'parity-user', iat: Math.floor(Date.now() / 1000), exp: Math.floor(Date.now() / 1000) + 3600 },
             secret: SECRET,
         });
-        server = new DolphFactory([JwtParityComponent]).start();
+        // One real ephemeral listener per file — see auto_send.test.ts for why.
+        server = createServer(new DolphFactory([JwtParityComponent]).engine()).listen(0);
     });
 
     afterAll(() => {

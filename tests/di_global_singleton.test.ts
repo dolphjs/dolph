@@ -1,4 +1,5 @@
 import request from 'supertest';
+import { createServer } from 'http';
 import { DolphFactory } from '../core';
 import { Component, Get, Post, Route } from '../decorators';
 import { DolphControllerHandler } from '../classes';
@@ -58,7 +59,8 @@ describe('Global DI singleton across components', () => {
     beforeAll(() => {
         // Reset the global registry so this test is isolated from others
         GlobalServiceRegistry._reset();
-        server = new DolphFactory([ComponentA, ComponentB]).start();
+        // One real ephemeral listener per file — see auto_send.test.ts for why.
+        server = createServer(new DolphFactory([ComponentA, ComponentB]).engine()).listen(0);
     });
 
     afterAll(() => {

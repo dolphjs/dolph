@@ -24,7 +24,7 @@
         "prebuild:prod": "npm run clean",
         "build:prod": "tsc -b -v common",
         "build:sample": "tsc -b -v samples",
-        "test": "jest --forceExit --detectOpenHandles",
+        "test": "jest",
         "clean": "npm run clean:all",
         "clean:all": "tsc -b --clean classes common core decorators packages utilities",
         "lint": "eslint \"**/*.ts\"",

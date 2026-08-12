@@ -17,6 +17,7 @@
  *  - 100 sequential POST+GET pairs with zero errors
  */
 import request from 'supertest';
+import { createServer } from 'http';
 import { DolphFactory } from '../core';
 import { Component, DBody, DParam, DService, Get, Post, Route } from '../decorators';
 import { DolphControllerHandler } from '../classes';
@@ -241,13 +242,21 @@ describe('Large component: 9 services + 3 controllers', () => {
     beforeAll(() => {
         GlobalServiceRegistry._reset();
         const t0 = process.hrtime.bigint();
-        server = new DolphFactory([BigComponent]).start();
+        const engine = new DolphFactory([BigComponent]).engine();
         const t1 = process.hrtime.bigint();
         initDurationMs = Number(t1 - t0) / 1_000_000;
         console.log(`\n  ⏱  DolphFactory init time: ${initDurationMs.toFixed(2)}ms`);
+
+        // One real ephemeral listener per file, bound outside the timed
+        // region above (it measures DI/route-registration cost, not socket
+        // bind cost) — see auto_send.test.ts for why a real, reused listener
+        // matters for a file that fires 100+ sequential requests below.
+        server = createServer(engine).listen(0);
     });
 
-    afterAll(() => server.close());
+    afterAll(() => {
+        server.close();
+    });
 
     // ── Correctness ────────────────────────────────────────────────
     it('creates a user and retrieves it', async () => {

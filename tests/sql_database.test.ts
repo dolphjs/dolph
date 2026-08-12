@@ -22,9 +22,22 @@ import * as fs from 'fs';
 import * as yaml from 'js-yaml';
 import { configs } from '../core/config.core';
 
+// autoInitTypeOrm/autoInitSql (triggered from the DolphFactory constructor,
+// via readConfigFile) kick off DataSource#initialize()/Sequelize#sync()
+// fire-and-forget — the constructor returns before either promise settles.
+// Poll instead of assuming it's done by the time the assertions run.
+async function waitUntil(predicate: () => boolean, timeoutMs = 5000): Promise<void> {
+    const start = Date.now();
+    while (!predicate()) {
+        if (Date.now() - start > timeoutMs) {
+            throw new Error('timed out waiting for condition');
+        }
+        await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+}
+
 describe('SQL Database Auto Initialization', () => {
     describe('TypeORM', () => {
-        let server: any;
         let dataSource: DataSource;
         let originalConfig: string;
 
@@ -54,22 +67,19 @@ describe('SQL Database Auto Initialization', () => {
             
             fs.writeFileSync('dolph_config.yaml', yaml.dump(mockConfig));
 
-            const factory = new DolphFactory([]);
-            server = factory.start();
+            // Constructing the factory is enough to trigger auto-init — no
+            // server needs to be started to observe or use the DataSource.
+            new DolphFactory([]);
             dataSource = getDataSource();
+            await waitUntil(() => dataSource.isInitialized);
         });
 
-        afterAll((done) => {
+        afterAll(() => {
             if (originalConfig) {
                 fs.writeFileSync('dolph_config.yaml', originalConfig);
             } else {
                 fs.unlinkSync('dolph_config.yaml');
             }
-
-            if (server) {
-                try { server.close(done); } catch (e) { done(); }
-            }
-            else done();
         });
 
         it('should have initialized the TypeORM DataSource', () => {
@@ -79,7 +89,6 @@ describe('SQL Database Auto Initialization', () => {
     });
 
     describe('Sequelize', () => {
-        let server: any;
         let sequelize: Sequelize;
         let originalConfig: string;
 
@@ -105,8 +114,7 @@ describe('SQL Database Auto Initialization', () => {
             
             fs.writeFileSync('dolph_config.yaml', yaml.dump(mockConfig));
 
-            const factory = new DolphFactory([]);
-            server = factory.start();
+            new DolphFactory([]);
             sequelize = getSequelize();
 
             UserSequelize.init(
@@ -129,17 +137,12 @@ describe('SQL Database Auto Initialization', () => {
             await sequelize.sync({ force: true });
         });
 
-        afterAll((done) => {
+        afterAll(() => {
             if (originalConfig) {
                 fs.writeFileSync('dolph_config.yaml', originalConfig);
             } else {
                 fs.unlinkSync('dolph_config.yaml');
             }
-
-            if (server) {
-                try { server.close(done); } catch (e) { done(); }
-            }
-            else done();
         });
 
         it('should have initialized the Sequelize instance', () => {

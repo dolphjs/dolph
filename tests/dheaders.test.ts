@@ -1,4 +1,5 @@
 import request from 'supertest';
+import { createServer } from 'http';
 import { DolphFactory } from '/Users/utee/Documents/dolph/dolph/core';
 import { Component, DHeaders, DCookies, DAuth, Get, Route } from '/Users/utee/Documents/dolph/dolph/decorators';
 import { DolphControllerHandler } from '/Users/utee/Documents/dolph/dolph/classes';
@@ -31,7 +32,8 @@ describe('DHeaders, DCookies, and DAuth', () => {
     beforeAll(() => {
         const dolph = new DolphFactory([TestComponent]);
         dolph.middlewares([cookieParser()]);
-        server = dolph.start();
+        // One real ephemeral listener per file — see auto_send.test.ts for why.
+        server = createServer(dolph.engine()).listen(0);
     });
     afterAll(() => server.close());
 
