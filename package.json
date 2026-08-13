@@ -1,6 +1,6 @@
 {
     "name": "@dolphjs/dolph",
-    "version": "2.0.0",
+    "version": "2.0.2",
     "description": "New-Age, developer friendly node.js and bun framework",
     "main": "index.js",
     "types": "index.d.ts",
