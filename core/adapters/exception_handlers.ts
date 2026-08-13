@@ -1,17 +1,18 @@
-// e.g., in common/exceptions/validation.exception.ts
 import { ValidationError } from 'class-validator';
-// You might use a library like 'http-status-codes' for status codes
-const HTTP_STATUS_BAD_REQUEST = 400;
+import { DefaultException } from '../../common/api/exceptions/default_exception.api';
+import { HttpStatus } from '../../common/api/HttpStatus.api';
 
-export class ValidationException extends Error {
+// Extends DefaultException (not a plain Error) so it flows through
+// errorConverter's `instanceof DefaultException` check unchanged, preserving
+// `errors` and the real 400 statusCode instead of being coerced to a generic
+// 500 — DefaultException uses `statusCode`, not `status`, which is what
+// errorConverter/errorHandler actually read.
+export class ValidationException extends DefaultException {
     public errors: ValidationError[];
-    public status: number;
 
     constructor(errors: ValidationError[], message = 'Input validation failed') {
-        super(message); // Message for the error
+        super(message, HttpStatus.BAD_REQUEST, true);
         this.name = 'ValidationException';
         this.errors = errors; // Array of validation errors from class-validator
-        this.status = HTTP_STATUS_BAD_REQUEST;
-        Object.setPrototypeOf(this, ValidationException.prototype); // Ensures 'instanceof ValidationException' works
     }
 }

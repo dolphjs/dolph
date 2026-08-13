@@ -31,9 +31,20 @@ export const errorHandler = (err: any, req: DRequest, res: DResponse, _next: DNe
 
     res.locals.errorMessage = message;
 
+    // class-validator ValidationError[] attached by ValidationException —
+    // flattened to field/messages pairs so DTO validation failures are
+    // actionable instead of just a generic "validation failed" string.
+    const errors: { field: string; messages: string[] }[] | undefined = Array.isArray(err.errors)
+        ? err.errors.map((error: any) => ({
+              field: error.property,
+              messages: Object.values(error.constraints || {}) as string[],
+          }))
+        : undefined;
+
     const response = {
         code: statusCode,
         message,
+        ...(errors?.length && { errors }),
         ...(configs.NODE_ENV === 'development' && { stack: err.stack }),
     };
 

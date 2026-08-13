@@ -114,7 +114,8 @@ describe('Decorator argument integration', () => {
         expect(okRes.body.body.name).toBe('Utee');
 
         const badRes = await request(server).post('/v1/decorator-args/body').send({ name: 'Utee', age: 0 });
-        expect(badRes.status).toBeGreaterThanOrEqual(400);
+        expect(badRes.status).toBe(400);
+        expect(badRes.body.errors).toEqual(expect.arrayContaining([expect.objectContaining({ field: 'age' })]));
     });
 
     it('maps DPayload from middleware', async () => {
