@@ -52,16 +52,12 @@ export default defineConfig({
                     link: '/getting-started/',
                 },
                 {
+                    label: 'Examples',
+                    link: '/examples/',
+                },
+                {
                     label: 'Core Concepts',
                     items: [{ autogenerate: { directory: 'core-concepts' } }],
-                },
-                {
-                    label: 'Guides',
-                    items: [{ autogenerate: { directory: 'guides' } }],
-                },
-                {
-                    label: 'Reference',
-                    items: [{ autogenerate: { directory: 'reference' } }],
                 },
                 {
                     label: 'Techniques',

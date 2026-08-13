@@ -1,0 +1,37 @@
+---
+title: Examples
+description: Open-source, real-world applications built with DolphJS
+editUrl: https://github.com/dolphjs/dolph/edit/main/docs/content/docs/examples.mdx
+sidebar:
+  label: Examples
+  order: 3
+---
+
+The best way to learn DolphJS's conventions is to read a full application, not just isolated snippets. The examples below are open-source, actively maintained, and built to demonstrate the architecture and design principles covered throughout these docs — folder structure, DTO validation, service layering, and more.
+
+## REST API
+
+### DolphStore
+
+A real estate REST API — property listings, reviews, JWT authentication with access/refresh tokens, and payments via Paystack and Flutterwave. Built with TypeORM and PostgreSQL.
+
+DolphStore is the reference implementation for a medium/enterprise-scale DolphJS REST API: environment validation with Joi, request validation with `class-validator`/`class-transformer`, and the upper-level/lower-level service pattern (see [Architecture](/architecture/)) demonstrated through its payments module.
+
+**Stack:** TypeORM · PostgreSQL · JWT · Paystack · Flutterwave
+
+[View on GitHub →](https://github.com/dolphjs/dolphstore-example-rest-app)
+
+:::note
+Under active development — modules are being added incrementally. Check the repository for current progress.
+:::
+
+## Coming Soon
+
+More reference apps are planned to cover the rest of DolphJS's surface area:
+
+- **GraphQL** — an app built on `@dolphjs/graphql`, showing schema design and resolver conventions.
+- **MVC** — a server-rendered app using DolphJS's MVC routing and view engine support.
+
+## Contributing an Example
+
+Building something with DolphJS worth showcasing? Open an issue or PR on the [DolphJS GitHub organization](https://github.com/dolphjs) — community examples are welcome alongside the official ones.
