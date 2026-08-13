@@ -398,7 +398,17 @@ const incrementHandlers = () => {
 
 // Initialises middlewares used by dolphjs
 const InitialiseMiddlewares = (engine: import("express").Express, { jsonLimit }: { jsonLimit: string }) => {
-    engine.use(express.json({ limit: jsonLimit }));
+    engine.use(
+        express.json({
+            limit: jsonLimit,
+            // Stashes the raw bytes on req.rawBody before they're parsed —
+            // needed for byte-exact HMAC webhook signature verification,
+            // which JSON.stringify(req.body) can't reliably reproduce.
+            verify: (req, _res, buf) => {
+                (req as DRequest).rawBody = buf;
+            },
+        }),
+    );
     engine.use(express.urlencoded({ extended: true }));
 };
 

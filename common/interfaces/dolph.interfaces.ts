@@ -58,6 +58,13 @@ export type DRequest = Omit<Request, 'file' | 'files'> &
         file?: FileInfo;
         files?: FileInfo[] | Record<string, FileInfo[]>;
         uploadConfig?: UploadConfig;
+        /**
+         * The raw request body bytes, captured before JSON parsing. Needed
+         * for byte-exact HMAC signature verification (webhooks from
+         * Paystack, Stripe, GitHub, etc.) — `JSON.stringify(req.body)` is
+         * not guaranteed to reproduce the original bytes.
+         */
+        rawBody?: Buffer;
     };
 
 export type DResponse<T = any> = Response &
