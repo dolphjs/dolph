@@ -6,8 +6,6 @@
         "decorators/**/*",
         "packages/**/*",
         "classes/**/*",
-        "samples/**/*",
-        "benchmark/**/*",
         "tools/**/*",
         "index.ts"
     ],
