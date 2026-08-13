@@ -36,7 +36,7 @@ database:
 **Sensitive Credentials:** Notice we set `password: sensitive` in the config above. When you set properties like `username`, `password`, `host`, or `url` to `"sensitive"`, DolphJS automatically intercepts this and injects the corresponding environment variable from your `.env` file (`SQL_USER`, `SQL_PASSWORD`, `SQL_HOST`, `SQL_URL`). This ensures your credentials never leak into your source code!
 :::
 
-When you start your DolphJS application, the `DolphFactory` reads this block and automatically connects the `DataSource` prior to mounting your services and routes.
+When you start your DolphJS application, the `DolphFactory` reads this block and automatically connects the `DataSource` — but not before your services are constructed. See the callout below before wiring up `getDataSource()` in a service.
 
 ## Defining the Entity
 
@@ -66,6 +66,10 @@ export class User {
 
 Since TypeORM is globally auto-initialized by DolphJS, you can easily access the underlying `DataSource` anywhere inside your services using the `getDataSource()` function from `@dolphjs/dolph/packages/typeorm`.
 
+:::caution
+**Call `getDataSource()` lazily, not as a field initializer.** If a service is wired up through `@Component({ services: [...] })`, that component resolves and constructs every listed service the moment its module is imported — which happens before `new DolphFactory(...)` ever runs, since imports are evaluated first. `autoInitTypeOrm()` (which is what actually creates the `DataSource`) only runs once `DolphFactory`'s constructor executes. A field initializer like `private userRepo = getDataSource().getRepository(User)` therefore throws `TypeORM DataSource has not been initialized` at construction time — caught internally and logged, so the app still appears to boot, but the service silently never finishes constructing. A getter defers the call until the service is actually used (a request being handled), by which point `DolphFactory` has run and the `DataSource` exists.
+:::
+
 ```typescript
 // src/user/user.service.ts
 import { DService } from '@dolphjs/dolph/decorators';
@@ -74,10 +78,10 @@ import { User } from '../models/user.entity';
 
 @DService('userService')
 export class UserService {
-  
-  // Retrieve the TypeORM DataSource globally
-  private dataSource = getDataSource();
-  private userRepo = this.dataSource.getRepository(User);
+  // A getter, not a field initializer — see the caution above.
+  private get userRepo() {
+    return getDataSource().getRepository(User);
+  }
 
   async createUser(firstName: string, lastName: string) {
     const user = new User();
