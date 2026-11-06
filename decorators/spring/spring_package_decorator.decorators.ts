@@ -21,11 +21,13 @@ export const Shield = (middlewares: Middleware | Middleware[]): ClassDecorator =
     };
 };
 
-export const UnShield = (middlewares: Middleware | Middleware[]): MethodDecorator => {
+/**
+ * Removes class-level shields from a route. With no arguments every shield is
+ * removed; otherwise only the ones passed, matched by function reference.
+ */
+export const UnShield = (...middlewares: Array<Middleware | Middleware[]>): MethodDecorator => {
     return (target: any, propertyKey: string, descriptor: PropertyDescriptor) => {
-        const middlewareList: Middleware[] = Array.isArray(middlewares) ? middlewares : [middlewares];
-
-        Reflect.defineMetadata(UN_SHIELD_METADATA_KEY, middlewareList, descriptor.value);
+        Reflect.defineMetadata(UN_SHIELD_METADATA_KEY, middlewares.flat(), descriptor.value);
     };
 };
 

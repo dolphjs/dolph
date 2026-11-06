@@ -73,5 +73,5 @@ export class AuthController extends DolphControllerHandler<Dolph> {
 ```
 
 :::note
-If you pass specific middlewares to `@UnShield(authMiddleware1, authMiddleware2)`, it will only bypass those specific shields, leaving other applied shields intact.
+If you pass specific middlewares to `@UnShield(authMiddleware1, authMiddleware2)`, it will only bypass those, leaving any other shields active. Pass the same function reference you gave to `@Shield`. A function that's built again won't match, even with identical code: for `@Shield(requireRole('admin'))`, store the result in a variable and use that in both places. If nothing matches, the route stays protected and a warning is logged at startup.
 :::
