@@ -68,7 +68,5 @@ export const errorHandler = (err: any, req: DRequest, res: DResponse, _next: DNe
         logger.error(clc.red(err));
     }
 
-    // TODO: remove this to allow for other content types
-    res.set('Content-Type', 'application/json');
     res.status(statusCode).json(response);
 };
