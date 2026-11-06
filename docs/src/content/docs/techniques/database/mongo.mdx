@@ -34,23 +34,7 @@ database:
 ```
 :::
 
-When you start your application using `DolphFactory`, DolphJS automatically establishes the Mongoose connection pool using the settings from `dolph_config.yaml`.
-
-### Programmatic Initialization (Alternative)
-
-If you prefer to skip `dolph_config.yaml` or want to manually control the connection timing (e.g. for testing or complex setups), you can initialize the database programmatically using `autoInitMongo` from `@dolphjs/packages`.
-
-```typescript
-import { autoInitMongo } from '@dolphjs/dolph';
-
-autoInitMongo({
-  url: 'mongodb://127.0.0.1:27017/dolph_app',
-  options: {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  }
-});
-```
+`dolph.start()` connects to MongoDB before the app takes traffic, and stops the app if it can't. Set `required: false` next to `url` to start without it.
 
 ## Defining the Schema
 

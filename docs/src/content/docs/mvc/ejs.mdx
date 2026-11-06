@@ -19,30 +19,19 @@ Install EJS:
 pnpm install ejs
 ```
 
-## Configuring the MVC Adapter
+## Configuring Views
 
-DolphJS provides an `MVCAdapter` specifically to configure view engines without digging into the underlying Express instance manually.
+Set the view engine in `dolph_config.yaml`.
 
-```typescript
-// src/server.ts
-import { DolphFactory, MVCAdapter } from '@dolphjs/dolph';
-import { PageComponent } from './page/page.component';
-import * as path from 'path';
-
-async function bootstrap() {
-  const dolph = new DolphFactory([PageComponent]);
-  
-  // Set the views directory
-  MVCAdapter.setViewsDir(path.join(process.cwd(), 'views'));
-  
-  // Set the view engine to ejs
-  MVCAdapter.setViewEngine('ejs');
-
-  dolph.start();
-}
-
-bootstrap();
+```yaml
+# dolph_config.yaml
+views:
+  engine: ejs
+  dir: views
+  assets: public
 ```
+
+`dir` holds your templates, and `assets` is served as static files. Both are relative to the project root.
 
 ## Creating the View
 

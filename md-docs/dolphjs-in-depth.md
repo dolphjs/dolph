@@ -80,24 +80,20 @@ app.start();
 2. HTTP app + sockets:
 
 ```ts
-const app = new DolphFactory(
-  [HealthComponent],
-  {
-    socketService: SocketService,
+const app = new DolphFactory([HealthComponent], {
+  sockets: {
     component: new RealtimeComponent(),
     options: { cors: { origin: "*" } }
   }
-);
+});
 app.start();
 ```
 
 3. GraphQL adapter mode:
 
 ```ts
-const app = new DolphFactory({
-  graphql: true,
-  schema,
-  context
+const app = new DolphFactory([], {
+  graphql: { schema, context }
 });
 app.start();
 ```
@@ -367,7 +363,7 @@ Supported keys include:
 - `middlewares.cors`
 - `database.mongo`
 - `database.typeorm` (auto-initializes a TypeORM DataSource)
-- `globalExceptionFilter`
+- `views`
 
 Example:
 

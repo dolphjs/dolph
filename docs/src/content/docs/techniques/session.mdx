@@ -28,13 +28,10 @@ import { DolphFactory } from '@dolphjs/dolph';
 import { AppComponent } from './app.component';
 import session from 'express-session';
 
-async function bootstrap() {
-    const dolph = new DolphFactory([AppComponent]);
-
-    // middlewares() runs these before your routes
-    dolph.middlewares([
+const dolph = new DolphFactory([AppComponent], {
+    middlewares: [
         session({
-            secret: 'my-super-secret-key', // Use env variables in production
+            secret: process.env.SESSION_SECRET,
             resave: false,
             saveUninitialized: false,
             cookie: {
@@ -42,12 +39,10 @@ async function bootstrap() {
                 maxAge: 1000 * 60 * 60 * 24, // 1 day
             },
         }),
-    ]);
+    ],
+});
 
-    dolph.start();
-}
-
-bootstrap();
+dolph.start();
 ```
 
 Don't use `dolph.engine().use(...)` for this. Routes are already mounted by the time you can call it, so the middleware would run after them and `req.session` would be undefined in your controllers.

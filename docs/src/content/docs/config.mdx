@@ -74,7 +74,7 @@ npm install typeorm
 If a driver is configured but not installed, the app stops at startup and says which package to install.
 
 :::tip
-When you define the `mongo` or `typeorm` keys in your configuration, the `DolphFactory` will automatically attempt to connect to these databases before starting the HTTP server. This saves you from writing manual connection boilerplate!
+When you define the `mongo` or `typeorm` keys, `dolph.start()` connects to them before the app takes traffic, and stops the app if one fails. Set `required: false` on a database to start without it.
 :::
 
 **Strictly Typed Configuration:**
@@ -128,7 +128,5 @@ import { AppComponent } from './app.component';
 
 const dolph = new DolphFactory([AppComponent]);
 
-// You can override configuration programmatically before starting
-// However, using dolph_config.yaml is the recommended approach.
 dolph.start();
 ```

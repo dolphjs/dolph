@@ -53,13 +53,11 @@ If you prefer a different response envelope, you can override this behavior glob
 
 ```typescript
 // server.ts
-const dolph = new DolphFactory([AppComponent]);
-
-dolph.setResponseInterceptor((data, req, res) => {
-    return {
+const dolph = new DolphFactory([AppComponent], {
+    onResponse: (data, req, res) => ({
         myCustomSuccess: true,
-        payload: data
-    };
+        payload: data,
+    }),
 });
 
 dolph.start();
