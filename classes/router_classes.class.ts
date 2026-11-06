@@ -1,4 +1,3 @@
-import { Router } from 'express';
 import { DolphControllerHandler } from '.';
 import { Dolph } from '../common';
 /**
@@ -17,7 +16,9 @@ import { Dolph } from '../common';
 abstract class DolphRouteHandler<T extends Dolph> {
     abstract path: T;
     abstract initRoutes(): void;
-    public router = Router();
+    // Required here so apps on the Fastify adapter never load Express.
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    public router = (require('express') as typeof import('express')).Router();
     abstract controller: DolphControllerHandler<T>;
 }
 

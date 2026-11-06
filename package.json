@@ -81,6 +81,9 @@
     },
     "devDependencies": {
         "@dolphjs/graphql": "^0.2.1",
+        "@fastify/middie": "^9.3.6",
+        "@fastify/static": "^9.3.0",
+        "@fastify/view": "^12.0.1",
         "@types/autocannon": "^7.12.5",
         "@types/bcryptjs": "^2.4.2",
         "@types/better-sqlite3": "^9.6.0",
@@ -110,6 +113,7 @@
         "eslint": "^8.57.1",
         "eslint-config-prettier": "^8.8.0",
         "eslint-plugin-import": "^2.27.5",
+        "fastify": "^5.12.8",
         "form-data": "^4.0.1",
         "fs-temp": "^2.0.1",
         "graphql-scalars": "^1.23.0",
@@ -143,6 +147,7 @@
         "class-validator": "^0.14.1",
         "cli-color": "^2.0.3",
         "concat-stream": "^2.0.0",
+        "cookie": "^0.7.2",
         "cookie-parser": "^1.4.6",
         "cors": "^2.8.5",
         "dotenv": "^16.3.1",
@@ -155,6 +160,7 @@
         "jsonwebtoken": "^9.0.1",
         "mime-types": "^2.1.35",
         "morgan": "^1.12.1",
+        "qs": "^6.17.1",
         "reflect-metadata": "^0.2.1",
         "socket.io": "^4.8.4",
         "typedi": "^0.10.0",
@@ -165,7 +171,11 @@
     "peerDependencies": {
         "mongoose": "^8.24.8",
         "sequelize": "^6.37.8",
-        "typeorm": "^1.1.0"
+        "typeorm": "^1.1.0",
+        "fastify": "^5.12.8",
+        "@fastify/middie": "^9.3.6",
+        "@fastify/view": "^12.0.1",
+        "@fastify/static": "^9.3.0"
     },
     "peerDependenciesMeta": {
         "mongoose": {
@@ -175,6 +185,18 @@
             "optional": true
         },
         "typeorm": {
+            "optional": true
+        },
+        "fastify": {
+            "optional": true
+        },
+        "@fastify/middie": {
+            "optional": true
+        },
+        "@fastify/view": {
+            "optional": true
+        },
+        "@fastify/static": {
             "optional": true
         }
     }
