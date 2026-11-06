@@ -9,7 +9,6 @@ import {
     DRequest,
     DRequestHandler,
     DResponse,
-    Dolph,
     DolphConfig,
     ErrorResponse,
     Middleware,
