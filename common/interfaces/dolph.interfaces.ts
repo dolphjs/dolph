@@ -15,6 +15,8 @@ export interface DolphConfig {
     env?: dolphEnv;
     jsonLimit?: string;
     globalExceptionFilter?: boolean;
+    /** The HTTP server to run on. Defaults to `express`. */
+    adapter?: 'express' | 'fastify';
 }
 
 export interface DolphConfigDbOption {
