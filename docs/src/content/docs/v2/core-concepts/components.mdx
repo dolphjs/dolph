@@ -1,0 +1,66 @@
+---
+title: Components
+description: Grouping and wiring modules via Components
+editUrl: false
+sidebar:
+    label: Components
+    order: 7
+pagefind: false
+banner:
+  content: |
+    You're reading the docs for DolphJS v2. <a href="/core-concepts/components/">See the latest version</a>.
+---
+
+Components are the architectural glue of DolphJS. They define how Controllers and Services are bound together and instantiate the Dependency Injection (DI) system.
+
+## The `@Component` Decorator
+
+A Component is simply a class decorated with `@Component()`. The decorator accepts a configuration object defining which controllers and services belong to this logical module.
+
+```typescript
+// src/order/order.component.ts
+import { Component } from '@dolphjs/dolph/decorators';
+import { OrderController } from './order.controller';
+import { OrderService } from './order.service';
+import { TransactionService } from './transaction.service';
+
+@Component({
+    controllers: [OrderController],
+    services: [OrderService, TransactionService],
+})
+export class OrderComponent {}
+```
+
+## How Components Work Internally
+
+When the `DolphFactory` boots up and receives an array of Components:
+
+1. It reads the metadata attached to `OrderComponent`.
+2. It instantiates the `OrderService` as a singleton instance.
+3. It instantiates the `OrderController`.
+4. It reflects upon the properties of `OrderController` and maps the `OrderService` singleton directly into the controller's property.
+5. It resolves the `@Route` definitions inside `OrderController` and mounts them to the underlying Express instance.
+
+## Bootstrapping Components
+
+Once you have defined your components, you must register them in the central entry point of your application using `DolphFactory`.
+
+```typescript
+// src/server.ts
+import { DolphFactory } from '@dolphjs/dolph';
+import { OrderComponent } from './order/order.component';
+import { UserComponent } from './user/user.component';
+
+// Pass all root components into the factory
+const dolph = new DolphFactory([OrderComponent, UserComponent]);
+
+dolph.start();
+```
+
+:::caution
+If a Service is omitted from the `services` array of a Component, the framework will throw an error at runtime when the Controller attempts to use it, because the DI container will not know how to resolve the dependency.
+:::
+
+## Testing Components
+
+Because a Component's services are resolved the moment its module is first imported, exercising a Component end-to-end (real routing, real `@Route` metadata) with a mocked service requires sequencing the mock *before* that import happens. `@dolphjs/testing`'s `createTestingApp` handles this for you — see [Testing → Tier 3](/v2/testing/#tier-3--component-e2e-tests).
