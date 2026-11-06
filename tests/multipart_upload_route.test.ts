@@ -2,7 +2,7 @@ import request from 'supertest';
 import { createServer } from 'http';
 import { DolphFactory } from '../core';
 import { DolphControllerHandler } from '../classes';
-import { Dolph, DRequest, DResponse, SuccessResponse } from '../common';
+import { Dolph, DRequest } from '../common';
 import { Component, Post, Route, UseMiddleware } from '../decorators';
 import { memoryStorage, useFileUploader } from '../packages/uploader';
 
@@ -16,16 +16,14 @@ class MultipartRouteController extends DolphControllerHandler<Dolph> {
             fieldname: 'doc',
         }),
     )
-    uploadSingle(req: DRequest, res: DResponse) {
+    uploadSingle(req: DRequest) {
         const file = req.file;
-        SuccessResponse({
-            res,
-            body: {
-                originalname: file?.originalname,
-                mimetype: file?.mimetype,
-                received: Boolean(file?.buffer && file.buffer.length > 0),
-            },
-        });
+
+        return {
+            originalname: file?.originalname,
+            mimetype: file?.mimetype,
+            received: Boolean(file?.buffer && file.buffer.length > 0),
+        };
     }
 }
 
@@ -50,8 +48,8 @@ describe('Multipart upload through Dolph route', () => {
             .attach('doc', Buffer.from('route-upload-bytes'), 'payload.txt');
 
         expect(res.status).toBe(200);
-        expect(res.body.originalname).toBe('payload.txt');
-        expect(res.body.mimetype).toBeDefined();
-        expect(res.body.received).toBe(true);
+        expect(res.body.data.originalname).toBe('payload.txt');
+        expect(res.body.data.mimetype).toBeDefined();
+        expect(res.body.data.received).toBe(true);
     });
 });

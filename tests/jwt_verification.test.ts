@@ -7,10 +7,9 @@ import jwt from 'jsonwebtoken';
 import request from 'supertest';
 import cookieParser from 'cookie-parser';
 import { DolphFactory } from '../core';
-import { Component, CookieAuthVerifyDec, Get, Route, UseMiddleware } from '../decorators';
-import { DolphControllerHandler, JwtBasicAuth, JWTAuthorizeDec, JWTAuthVerifyDec } from '../classes';
-import { Dolph, DNextFunc, DRequest, DResponse, JwtAuthMiddleware } from '../common';
-import { cookieAuthVerify } from '../utilities';
+import { Component, Get, Route, UseMiddleware } from '../decorators';
+import { DolphControllerHandler, jwtAuth } from '../classes';
+import { Dolph, DRequest } from '../common';
 
 const SECRET = 'hmac-secret-that-must-never-leak';
 const keyDir = mkdtempSync(join(tmpdir(), 'dolph-jwt-'));
@@ -32,44 +31,26 @@ const respond = (req: DRequest) => {
 @Route('jwt')
 class JwtController extends DolphControllerHandler<Dolph> {
     @Get('/hmac')
-    @UseMiddleware(JwtAuthMiddleware(new JwtBasicAuth(SECRET)))
+    @UseMiddleware(jwtAuth(SECRET))
     hmac(req: DRequest) {
         return respond(req);
     }
 
     @Get('/rsa')
-    @UseMiddleware(JwtAuthMiddleware(new JwtBasicAuth(PUBLIC_KEY_PATH, rsaOptions)))
+    @UseMiddleware(jwtAuth(PUBLIC_KEY_PATH, rsaOptions))
     rsa(req: DRequest) {
         return respond(req);
     }
 
-    @Get('/verify-dec')
-    @JWTAuthVerifyDec(SECRET)
-    verifyDec(req: DRequest, _res: DResponse, _next: DNextFunc) {
-        return respond(req);
-    }
-
-    @Get('/verify-dec-rsa')
-    @JWTAuthVerifyDec(PUBLIC_KEY_PATH, rsaOptions)
-    verifyDecRsa(req: DRequest, _res: DResponse, _next: DNextFunc) {
-        return respond(req);
-    }
-
-    @Get('/authorize-dec')
-    @JWTAuthorizeDec(SECRET, async (payload) => payload.sub === 'admin')
-    authorizeDec(req: DRequest, _res: DResponse, _next: DNextFunc) {
+    @Get('/authorize')
+    @UseMiddleware(jwtAuth(SECRET, { authorize: async (payload) => payload.sub === 'admin' }))
+    authorize(req: DRequest) {
         return respond(req);
     }
 
     @Get('/cookie')
-    @UseMiddleware(cookieAuthVerify(SECRET))
+    @UseMiddleware(jwtAuth(SECRET, { cookie: true }))
     cookie(req: DRequest) {
-        return respond(req);
-    }
-
-    @Get('/cookie-dec')
-    @CookieAuthVerifyDec(SECRET)
-    cookieDec(req: DRequest, _res: DResponse, _next: DNextFunc) {
         return respond(req);
     }
 }
@@ -99,7 +80,9 @@ describe('JWT verification', () => {
 
     const get = (path: string) => request(server).get(`/v1/jwt/${path}`);
 
-    describe.each(['hmac', 'verify-dec'])('HMAC on %s', (path) => {
+    describe('HMAC', () => {
+        const path = 'hmac';
+
         it('should accept a token signed with the secret', async () => {
             const res = await get(path).set('authorization', hmacToken());
 
@@ -148,7 +131,9 @@ describe('JWT verification', () => {
         });
     });
 
-    describe.each(['rsa', 'verify-dec-rsa'])('RSA on %s', (path) => {
+    describe('RSA', () => {
+        const path = 'rsa';
+
         it('should accept a token signed with the private key', async () => {
             const res = await get(path).set('x-auth-token', rsaToken());
 
@@ -179,31 +164,38 @@ describe('JWT verification', () => {
         });
     });
 
-    describe('JWTAuthorizeDec', () => {
+    describe('authorize option', () => {
         it('should return 403 when the authorize function refuses', async () => {
-            const res = await get('authorize-dec').set('authorization', hmacToken('user'));
+            const res = await get('authorize').set('authorization', hmacToken('user'));
 
             expect(res.status).toBe(403);
             expect(handlerRuns.count).toBe(0);
         });
 
         it('should run the handler when the authorize function allows', async () => {
-            const res = await get('authorize-dec').set('authorization', hmacToken('admin'));
+            const res = await get('authorize').set('authorization', hmacToken('admin'));
 
             expect(res.status).toBe(200);
         });
     });
 
-    describe.each(['cookie', 'cookie-dec'])('Cookie auth on %s', (path) => {
+    describe('cookie option', () => {
         it('should return 401 for an invalid cookie', async () => {
-            const res = await get(path).set('Cookie', 'xAuthToken=garbage');
+            const res = await get('cookie').set('Cookie', 'xAuthToken=garbage');
+
+            expect(res.status).toBe(401);
+            expect(handlerRuns.count).toBe(0);
+        });
+
+        it('should return 401 when the cookie is missing', async () => {
+            const res = await get('cookie');
 
             expect(res.status).toBe(401);
             expect(handlerRuns.count).toBe(0);
         });
 
         it('should accept a valid cookie', async () => {
-            const res = await get(path).set('Cookie', `xAuthToken=${hmacToken()}`);
+            const res = await get('cookie').set('Cookie', `xAuthToken=${hmacToken()}`);
 
             expect(res.status).toBe(200);
         });
@@ -213,18 +205,16 @@ describe('JWT verification', () => {
         const message = "pass { algorithm: 'RS256' }";
 
         it('should refuse to start with a key path as the HMAC secret', () => {
-            expect(() => new JwtBasicAuth(PUBLIC_KEY_PATH)).toThrow(message);
-            expect(() => JWTAuthVerifyDec(PUBLIC_KEY_PATH)).toThrow(message);
-            expect(() => JWTAuthorizeDec(PUBLIC_KEY_PATH)).toThrow(message);
+            expect(() => jwtAuth(PUBLIC_KEY_PATH)).toThrow(message);
         });
 
         it('should not put the value in the error', () => {
-            expect(() => new JwtBasicAuth(PUBLIC_KEY_PATH)).not.toThrow(PUBLIC_KEY_PATH);
+            expect(() => jwtAuth(PUBLIC_KEY_PATH)).not.toThrow(PUBLIC_KEY_PATH);
         });
 
         it('should still accept normal secrets', () => {
-            expect(() => new JwtBasicAuth(SECRET)).not.toThrow();
-            expect(() => new JwtBasicAuth('a'.repeat(5000))).not.toThrow();
+            expect(() => jwtAuth(SECRET)).not.toThrow();
+            expect(() => jwtAuth('a'.repeat(5000))).not.toThrow();
         });
     });
 

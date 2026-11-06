@@ -41,7 +41,8 @@ async function api(path, options = {}) {
         parsed = JSON.parse(text);
     } catch (_e) {}
     log(`${options.method || 'GET'} ${path} -> ${response.status}`, parsed);
-    return parsed;
+    // Controllers wrap what they return in { success, status, message, data }.
+    return parsed?.success ? parsed.data : parsed;
 }
 
 byId('loginBtn').onclick = async () => {

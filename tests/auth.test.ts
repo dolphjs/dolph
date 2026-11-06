@@ -1,5 +1,6 @@
 import { generateJWTwithHMAC, verifyJWTwithHMAC, generateJWTwithRSA, verifyJWTwithRSA } from '../utilities/auth/JWT_generator.utilities';
-import { newAuthCookie, cookieAuthVerify } from '../utilities/auth/cookie.utilities';
+import { newAuthCookie } from '../utilities/auth/cookie.utilities';
+import { jwtAuth } from '../classes';
 import { IPayload, ErrorException, HttpStatus } from '../common';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -67,7 +68,7 @@ describe('Auth Utilities', () => {
             expect(cookie.expires).toEqual(date);
         });
         
-        it('should verify cookie auth and inject payload', () => {
+        it('should verify cookie auth and inject payload', async () => {
             const date = new Date(Date.now() + 10000);
             const cookie = newAuthCookie('user-id', date, secret);
             
@@ -79,28 +80,28 @@ describe('Auth Utilities', () => {
             const res: any = {};
             const next = jest.fn();
             
-            cookieAuthVerify(secret)(req, res, next);
+            await jwtAuth(secret, { cookie: true })(req, res, next);
             expect(next).toHaveBeenCalledWith();
             expect(req.payload).toBeDefined();
             expect(req.payload.sub).toBe('user-id');
         });
 
-        it('should fail if no cookies exist', () => {
+        it('should fail if no cookies exist', async () => {
             const req: any = {};
             const res: any = {};
             const next = jest.fn();
             
-            cookieAuthVerify(secret)(req, res, next);
+            await jwtAuth(secret, { cookie: true })(req, res, next);
             expect(next).toHaveBeenCalledWith(expect.any(ErrorException));
             expect(next.mock.calls[0][0].statusCode).toBe(HttpStatus.UNAUTHORIZED);
         });
 
-        it('should fail if xAuthToken does not exist', () => {
+        it('should fail if xAuthToken does not exist', async () => {
             const req: any = { cookies: { otherCookie: 'value' } };
             const res: any = {};
             const next = jest.fn();
             
-            cookieAuthVerify(secret)(req, res, next);
+            await jwtAuth(secret, { cookie: true })(req, res, next);
             expect(next).toHaveBeenCalledWith(expect.any(ErrorException));
             expect(next.mock.calls[0][0].statusCode).toBe(HttpStatus.UNAUTHORIZED);
         });

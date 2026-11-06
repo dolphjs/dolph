@@ -8,7 +8,7 @@ import {
     IPayload,
     SocketMiddleware,
 } from '../common';
-import { rejectInvalidToken, verifyJWTwithHMAC, verifyJWTwithRSA } from '../utilities';
+import { AUTH_COOKIE_NAME, rejectInvalidToken, verifyJWTwithHMAC, verifyJWTwithRSA } from '../utilities';
 import { config } from 'dotenv';
 import { existsSync } from 'fs';
 config();
@@ -20,6 +20,13 @@ export type JwtVerifyOptions = {
      * the `x-auth-token` header.
      */
     algorithm?: 'HS256' | 'RS256';
+};
+
+export type JwtAuthOptions = JwtVerifyOptions & {
+    /** Read the token from the auth cookie instead of a header. */
+    cookie?: boolean;
+    /** Runs after the token is verified. Return false to answer 403. */
+    authorize?: AuthorizationFunction;
 };
 
 /**
@@ -66,66 +73,35 @@ const assertKeyMatchesAlgorithm = (tokenSecret: string, { algorithm = 'HS256' }:
 };
 
 /**
- * Takes the token secret, or the path to a public key with `{ algorithm: 'RS256' }`.
+ * Middleware that verifies a JWT and puts its payload on `req.payload`. Use it with
+ * `@Shield`, `@UseMiddleware` or the `middlewares` option:
  *
- * The Verify method resolves with the token payload and rejects if it is missing or invalid.
+ * - `jwtAuth(secret)` reads the `authorization` header.
+ * - `jwtAuth(publicKeyPath, { algorithm: 'RS256' })` reads the `x-auth-token` header.
+ * - `jwtAuth(secret, { cookie: true })` reads the cookie set by `newAuthCookie`.
+ * - `jwtAuth(secret, { authorize })` also answers 403 when `authorize(payload)` is false.
+ *
+ * Keep the result in a variable to pass the same reference to `@UnShield`.
  */
-class JwtBasicAuth {
-    constructor(
-        public tokenSecret: string,
-        public options: JwtVerifyOptions = {},
-    ) {
-        assertKeyMatchesAlgorithm(tokenSecret, options);
-    }
-
-    Verify = async (req: DRequest): Promise<IPayload> => verifyRequestToken(req, this.tokenSecret, this.options);
-}
-
-/**
- *
- * class-method decorator used for authorization based on the dolphjs default JWT authentication and authorization design
- *
- * @version 2.0.0
- */
-const JWTAuthVerifyDec = (tokenSecret: string, options?: JwtVerifyOptions) => {
+const jwtAuth = (tokenSecret: string, options: JwtAuthOptions = {}) => {
     assertKeyMatchesAlgorithm(tokenSecret, options);
 
-    return (_target: any, _propertyKey: string, descriptor?: TypedPropertyDescriptor<any>) => {
-        const originalMethod = descriptor.value;
+    const { authorize, cookie } = options;
 
-        // convert to normal func
-        descriptor.value = function (req: DRequest, res: DResponse, next: DNextFunc) {
-            try {
-                req.payload = verifyRequestToken(req, tokenSecret, options);
-            } catch (error) {
-                return next(error);
+    return async (req: DRequest, _res: DResponse, next: DNextFunc) => {
+        try {
+            const token = cookie ? req.cookies?.[AUTH_COOKIE_NAME] : req.headers[tokenHeader(options)];
+
+            req.payload = verifyToken(token, tokenSecret, options);
+
+            if (authorize && !(await authorize(req.payload))) {
+                return next(new ErrorException('Access denied', HttpStatus.FORBIDDEN));
             }
 
-            return originalMethod.apply(this, [req, res, next]);
-        };
-    };
-};
-
-const JWTAuthorizeDec = (tokenSecret: string, authorize?: AuthorizationFunction, options?: JwtVerifyOptions) => {
-    assertKeyMatchesAlgorithm(tokenSecret, options);
-
-    return (_target: any, _propertyKey: string, descriptor?: TypedPropertyDescriptor<any>) => {
-        const originalMethod = descriptor.value;
-
-        descriptor.value = async function (req: DRequest, res: DResponse, next: DNextFunc) {
-            try {
-                const payload = verifyRequestToken(req, tokenSecret, options);
-                req.payload = payload;
-
-                if (authorize && !(await authorize(payload))) {
-                    return next(new ErrorException('Access denied', HttpStatus.FORBIDDEN));
-                }
-            } catch (error) {
-                return next(error);
-            }
-
-            return originalMethod.apply(this, [req, res, next]);
-        };
+            return next();
+        } catch (error) {
+            return next(error);
+        }
     };
 };
 
@@ -155,4 +131,4 @@ const socketJwtAuth = (tokenSecret: string, options?: JwtVerifyOptions): SocketM
     };
 };
 
-export { JwtBasicAuth, JWTAuthVerifyDec, JWTAuthorizeDec, socketJwtAuth };
+export { jwtAuth, socketJwtAuth };

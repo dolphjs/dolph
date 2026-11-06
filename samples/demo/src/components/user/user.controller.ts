@@ -1,7 +1,6 @@
 import { DolphControllerHandler } from '../../../../../classes';
 import {
     Dolph,
-    SuccessResponse,
     DRequest,
     DResponse,
     InternalServerErrorException,
@@ -22,15 +21,12 @@ export class UserController extends DolphControllerHandler<Dolph> {
     }
 
     @Get('greet')
-    async greet(req: DRequest, res: DResponse) {
+    async greet(req: DRequest) {
         const result1 = this.UserService.createUser(12, 'hello');
 
         const result2 = this.User2Service.get();
 
-        SuccessResponse({
-            res,
-            body: { message: "you've reached the user endpoint.", resultOne: result1, resultTwo: result2 },
-        });
+        return { message: "you've reached the user endpoint.", resultOne: result1, resultTwo: result2 };
     }
 
     // Make a wrapper that returns the function : req: DRequest, res: DResponse, next: DNextFunc
@@ -50,8 +46,8 @@ export class UserController extends DolphControllerHandler<Dolph> {
             // }),
         }),
     )
-    async post(req: DRequest, res: DResponse) {
+    async post(req: DRequest) {
         console.log('req.files: ', req.file);
-        SuccessResponse({ res, body: req.body });
+        return req.body;
     }
 }
