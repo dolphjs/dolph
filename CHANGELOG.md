@@ -11,6 +11,14 @@
 - **Node:** `^20.19.0 || ^22.13.0 || >=24.11.0`. Node 18 is no longer supported.
 - **Local development:** set `NODE_ENV=development`, or `env: development` in `dolph_config.yaml`. Production mode is now the default, which hides stack traces and marks the auth cookie `secure`.
 
+- **Install your database driver.** `mongoose`, `typeorm` and `sequelize` are now optional peer dependencies, so a fresh install doesn't include them. Add the one you use:
+
+  ```bash
+  npm install mongoose
+  ```
+
+  TypeORM is `^1.1.0`, Sequelize `^6.37.8` and Mongoose `^8.24.8`. Apps using a driver without installing it stop at startup with a message saying which package to add.
+
 #### Authentication
 
 - **RSA JWTs must say so.** Passing a key path as an HMAC secret now stops the app at startup:
@@ -75,6 +83,7 @@
 
 ### Changed
 
+- Installs are smaller, because database drivers are no longer installed with the framework.
 - Mongoose, TypeORM, Sequelize, socket.io and express-handlebars load on first use, which halves framework load time.
 - Dependency minimums are raised to clear known vulnerabilities.
 - Failed DTO validation no longer writes a log line. The `400` response still names the fields.

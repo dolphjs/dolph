@@ -47,6 +47,16 @@ describe('Middlewares set in dolph_config.yaml', () => {
         expect(res.headers['x-content-type-options']).toBeUndefined();
     });
 
+    it('should only blame dolph_config.yaml when the file is missing', () => {
+        const errors = jest.spyOn(logger, 'error').mockImplementation(() => logger);
+        jest.spyOn(fs, 'readFileSync').mockImplementation((() => {
+            throw new Error('some other failure');
+        }) as typeof fs.readFileSync);
+
+        expect(() => new DolphFactory([])).toThrow('some other failure');
+        expect(errors).not.toHaveBeenCalled();
+    });
+
     describe('cors', () => {
         const preflight = (yaml: string, origin = 'https://app.example.com') =>
             request(appWithConfig(yaml))

@@ -1,11 +1,11 @@
 import { logger } from '../../utilities';
 import clc from 'cli-color';
+import { loadOptionalDriver } from '../../utilities/load_optional_driver.utilities';
 import type { DataSource } from 'typeorm';
 import { TypeOrmConfig } from '../../common';
 
-// Loaded on first use so apps that don't use this driver never pay to import it.
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const loadTypeOrm = (): typeof import('typeorm') => require('typeorm');
+// Apps install this themselves, and only load it if they use it.
+const loadTypeOrm = () => loadOptionalDriver<typeof import('typeorm')>('typeorm', () => require('typeorm'));
 
 let DolphDataSource: DataSource | null = null;
 

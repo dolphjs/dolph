@@ -757,7 +757,9 @@ class DolphFactoryClass {
                 this.globalFilter = true;
             }
         } catch (e) {
-            logger.error(clc.red(DolphErrors.noDolphConfigFile));
+            if (e?.code === 'ENOENT') {
+                logger.error(clc.red(DolphErrors.noDolphConfigFile));
+            }
             throw e;
         }
     }

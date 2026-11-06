@@ -88,7 +88,15 @@ Stack traces and the messages of unexpected errors are only sent to clients in d
 
 ### Database
 
-DolphJS provides out-of-the-box auto-initialization for **MongoDB**, **TypeORM**, and **Sequelize**.
+DolphJS provides out-of-the-box auto-initialization for **MongoDB**, **TypeORM**, and **Sequelize**. Install only the driver you use:
+
+```bash
+npm install mongoose
+npm install typeorm
+npm install sequelize
+```
+
+If a driver is configured but not installed, the app stops at startup and says which package to install.
 
 :::tip
 When you define the `mongo`, `typeorm`, or `sequelize` keys in your configuration, the `DolphFactory` will automatically attempt to connect to these databases before starting the HTTP server. This saves you from writing manual connection boilerplate!
