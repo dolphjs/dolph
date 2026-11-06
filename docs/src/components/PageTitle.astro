@@ -1,0 +1,29 @@
+---
+import Default from '@astrojs/starlight/components/PageTitle.astro';
+import { getCollection } from 'astro:content';
+import { counterpartId, hrefFor, isV2Page } from '../versions';
+
+const { id } = Astro.locals.starlightRoute;
+const v2Id = isV2Page(id) ? null : counterpartId(id);
+const hasV2Page = v2Id !== null && (await getCollection('docs')).some((entry) => entry.id === v2Id);
+---
+
+<Default />
+{
+	hasV2Page && (
+		<p class="v2-note">
+			<a href={hrefFor(v2Id)}>Looking for the v2 version of this page?</a>
+		</p>
+	)
+}
+
+<style>
+	.v2-note {
+		margin-top: 0.5rem;
+		font-size: var(--sl-text-sm);
+	}
+
+	.v2-note a {
+		color: var(--sl-color-gray-3);
+	}
+</style>

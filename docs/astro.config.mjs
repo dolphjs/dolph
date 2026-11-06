@@ -2,6 +2,29 @@
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 
+const docsSections = ({ isCurrent }) => {
+    const root = isCurrent ? '' : 'v2/';
+    const page = (label, slug) => ({ label, link: `/${root}${slug}/` });
+    const group = (label, directory) => ({
+        label,
+        items: [{ autogenerate: { directory: `${root}${directory}` } }],
+    });
+
+    return [
+        page('Getting Started', 'getting-started'),
+        page('Examples', 'examples'),
+        group('Core Concepts', 'core-concepts'),
+        group('Techniques', 'techniques'),
+        group('MVC', 'mvc'),
+        page('Architecture', 'architecture'),
+        page('Config', 'config'),
+        page('CLI', 'cli'),
+        page('Testing', 'testing'),
+        page('GraphQL', 'graphql'),
+        page('Websockets', 'websockets'),
+    ];
+};
+
 // https://astro.build/config
 export default defineConfig({
     integrations: [
@@ -46,51 +69,15 @@ export default defineConfig({
             },
             customCss: ['./src/styles/custom.css'],
             social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/dolphjs/dolph' }],
+            components: {
+                SiteTitle: './src/components/SiteTitle.astro',
+                PageTitle: './src/components/PageTitle.astro',
+            },
+            routeMiddleware: './src/route-data.ts',
+            // Each page only keeps the group for its own version. See src/route-data.ts.
             sidebar: [
-                {
-                    label: 'Getting Started',
-                    link: '/getting-started/',
-                },
-                {
-                    label: 'Examples',
-                    link: '/examples/',
-                },
-                {
-                    label: 'Core Concepts',
-                    items: [{ autogenerate: { directory: 'core-concepts' } }],
-                },
-                {
-                    label: 'Techniques',
-                    items: [{ autogenerate: { directory: 'techniques' } }],
-                },
-                {
-                    label: 'MVC',
-                    items: [{ autogenerate: { directory: 'mvc' } }],
-                },
-                {
-                    label: 'Architecture',
-                    link: '/architecture/',
-                },
-                {
-                    label: 'Config',
-                    link: '/config/',
-                },
-                {
-                    label: 'CLI',
-                    link: '/cli/',
-                },
-                {
-                    label: 'Testing',
-                    link: '/testing/',
-                },
-                {
-                    label: 'GraphQL',
-                    link: '/graphql/',
-                },
-                {
-                    label: 'Websockets',
-                    link: '/websockets/',
-                },
+                { label: 'v3', items: docsSections({ isCurrent: true }) },
+                { label: 'v2', items: docsSections({ isCurrent: false }) },
             ],
         }),
     ],

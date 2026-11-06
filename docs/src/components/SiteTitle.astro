@@ -1,0 +1,48 @@
+---
+import Default from '@astrojs/starlight/components/SiteTitle.astro';
+import { getCollection } from 'astro:content';
+import { counterpartId, hrefFor, isV2Page, V2_ROOT } from '../versions';
+
+const { id: routeId } = Astro.locals.starlightRoute;
+const ids = new Set((await getCollection('docs')).map((entry) => entry.id));
+
+// Generated pages like the 404 have no address of their own, so they link home.
+const id = ids.has(routeId) ? routeId : '';
+const onV2 = isV2Page(id);
+
+// Not every page exists in both versions, so fall back to the other version's home.
+const other = counterpartId(id);
+const otherExists = other === '' || ids.has(other);
+const otherHref = hrefFor(otherExists ? other : onV2 ? '' : V2_ROOT);
+---
+
+<Default />
+<nav class="version-switcher" aria-label="Documentation version">
+	<a href={onV2 ? otherHref : hrefFor(id)} aria-current={onV2 ? undefined : 'page'}>v3</a>
+	<a href={onV2 ? hrefFor(id) : otherHref} aria-current={onV2 ? 'page' : undefined}>v2</a>
+</nav>
+
+<style>
+	.version-switcher {
+		display: flex;
+		align-items: center;
+		gap: 0.125rem;
+		margin-inline-start: 0.75rem;
+		padding: 0.125rem;
+		border: 1px solid var(--sl-color-gray-5);
+		border-radius: 0.5rem;
+		font-size: var(--sl-text-xs);
+	}
+
+	.version-switcher a {
+		padding: 0.125rem 0.5rem;
+		border-radius: 0.375rem;
+		color: var(--sl-color-gray-2);
+		text-decoration: none;
+	}
+
+	.version-switcher a[aria-current='page'] {
+		background: var(--sl-color-gray-5);
+		color: var(--sl-color-white);
+	}
+</style>
