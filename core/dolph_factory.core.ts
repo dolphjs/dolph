@@ -48,6 +48,11 @@ type ExpressHttpMethod = 'get' | 'post' | 'patch' | 'put' | 'delete';
 const isExpressHttpMethod = (value: unknown): value is ExpressHttpMethod =>
     typeof value === 'string' && ['get', 'post', 'patch', 'put', 'delete'].includes(value);
 
+const isPromiseLike = (value: unknown): value is PromiseLike<unknown> =>
+    value !== null &&
+    (typeof value === 'object' || typeof value === 'function') &&
+    typeof (value as PromiseLike<unknown>).then === 'function';
+
 /**
  * Sends a controller method's return value as an HTTP response.
  * - `undefined`    → no-op (user handled the response manually)
@@ -251,10 +256,25 @@ const InitialiseControllersAsRouter = <T extends Dolph>(
                                         }
                                     });
                                 } else {
-                                    // Sync fast-path — plain handler, avoids Promise/async overhead on every request
+                                    // Sync fast-path — plain handler, avoids Promise/async overhead on every request.
+                                    // A non-`async` handler can still return a Promise (`return this.service.find()`,
+                                    // or a decorator wrapping an async method), so the result has to be checked here:
+                                    // `isAsyncMethod` only sees how the function was declared.
                                     router[method](fullPath, (req: DRequest, res: DResponse, next: DNextFunc) => {
                                         try {
                                             const result = controllerInstance[methodName](req, res, next);
+
+                                            if (isPromiseLike(result)) {
+                                                Promise.resolve(result)
+                                                    .then((resolved) => {
+                                                        if (!res.headersSent) {
+                                                            sendControllerResult(req, res, resolved, factory?.responseInterceptor);
+                                                        }
+                                                    })
+                                                    .catch(next);
+                                                return;
+                                            }
+
                                             if (!res.headersSent) sendControllerResult(req, res, result, factory?.responseInterceptor);
                                         } catch (error) {
                                             next(error);
