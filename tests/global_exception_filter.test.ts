@@ -1,9 +1,9 @@
 import request from 'supertest';
 import { createServer } from 'http';
-import { DolphFactory } from '/Users/utee/Documents/dolph/dolph/core';
-import { Component, Get, Route } from '/Users/utee/Documents/dolph/dolph/decorators';
-import { DolphControllerHandler } from '/Users/utee/Documents/dolph/dolph/classes';
-import { Dolph } from '/Users/utee/Documents/dolph/dolph/common';
+import { DolphFactory } from '../core';
+import { Component, Get, Route } from '../decorators';
+import { DolphControllerHandler } from '../classes';
+import { Dolph } from '../common';
 
 @Route('/error')
 class ErrorController extends DolphControllerHandler<Dolph> {

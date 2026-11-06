@@ -1,6 +1,6 @@
 {
     "name": "@dolphjs/dolph",
-    "version": "2.0.3",
+    "version": "3.0.0",
     "description": "New-Age, developer friendly node.js and bun framework",
     "main": "index.js",
     "types": "index.d.ts",
@@ -76,7 +76,7 @@
         ]
     },
     "engines": {
-        "node": ">= 18"
+        "node": "^20.19.0 || ^22.13.0 || >=24.11.0"
     },
     "devDependencies": {
         "@dolphjs/graphql": "^0.2.1",
@@ -115,7 +115,6 @@
         "graphql-scalars": "^1.23.0",
         "gulp": "^5.0.1",
         "gulp-clean": "^0.4.0",
-        "gulp-sourcemaps": "^3.0.0",
         "gulp-typescript": "^6.0.0-alpha.1",
         "jest": "^29.7.0",
         "nodemon": "^3.0.1",
@@ -143,19 +142,19 @@
         "cookie-parser": "^1.4.6",
         "cors": "^2.8.5",
         "dotenv": "^16.3.1",
-        "express": "^4.18.2",
+        "express": "^4.22.3",
         "express-handlebars": "^7.1.3",
         "helmet": "^7.1.0",
         "http-status": "^1.7.3",
-        "joi": "^17.9.2",
-        "js-yaml": "^4.1.0",
+        "joi": "^17.13.9",
+        "js-yaml": "^4.3.2",
         "jsonwebtoken": "^9.0.1",
         "mime-types": "^2.1.35",
-        "mongoose": "^8.0.1",
-        "morgan": "^1.10.0",
+        "mongoose": "^8.24.8",
+        "morgan": "^1.12.1",
         "reflect-metadata": "^0.2.1",
-        "sequelize": "^6.33.0",
-        "socket.io": "^4.7.5",
+        "sequelize": "^6.37.8",
+        "socket.io": "^4.8.4",
         "typedi": "^0.10.0",
         "typeorm": "^1.1.0",
         "winston": "^3.9.0",

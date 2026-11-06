@@ -1,3 +1,4 @@
+import 'reflect-metadata';
 import { ClassConstructor, plainToInstance } from 'class-transformer';
 import { validate, ValidationError } from 'class-validator';
 import clc from 'cli-color';
@@ -7,6 +8,8 @@ import { ValidationException } from './adapters/exception_handlers';
 export type TransformDtoOptions = {
     forbidNonWhitelisted?: boolean;
 };
+
+const NON_DTO_TYPES = new Set<unknown>([String, Number, Boolean, Object]);
 
 export async function transformAndValidateDto<T extends object>(
     dtoClass: ClassConstructor<T> | undefined,
@@ -18,8 +21,8 @@ export async function transformAndValidateDto<T extends object>(
     if (!dtoClass) {
         return source as T;
     }
-    if (typeof dtoClass !== 'function' || [String, Number, Boolean, Object].includes(dtoClass as any)) {
-        logger.error(clc.red(`Invalid DTO class provided for ${contextDescription}. Received:, dtoClass`));
+    if (typeof dtoClass !== 'function' || NON_DTO_TYPES.has(dtoClass)) {
+        logger.error(clc.red(`Invalid DTO class provided for ${contextDescription}. Received: ${String(dtoClass)}`));
         throw new Error(`Dolph: Misconfigured DTO type for ${contextDescription}.`);
     }
 
@@ -35,7 +38,8 @@ export async function transformAndValidateDto<T extends object>(
     });
 
     if (errors.length > 0) {
-        logger.error(clc.red(`Validation failed for ${contextDescription}:`), errors);
+        // Not logged: bad client input isn't a server fault, the response already
+        // names the failing fields, and a per-request log lets any client flood the logs.
         throw new ValidationException(errors, `Validation failed for ${contextDescription}`);
     }
 

@@ -1,9 +1,9 @@
 import request from 'supertest';
 import { createServer } from 'http';
-import { DolphFactory } from '/Users/utee/Documents/dolph/dolph/core';
-import { Component, DHeaders, DCookies, DAuth, Get, Route } from '/Users/utee/Documents/dolph/dolph/decorators';
-import { DolphControllerHandler } from '/Users/utee/Documents/dolph/dolph/classes';
-import { Dolph } from '/Users/utee/Documents/dolph/dolph/common';
+import { DolphFactory } from '../core';
+import { Component, DHeaders, DCookies, DAuth, Get, Route } from '../decorators';
+import { DolphControllerHandler } from '../classes';
+import { Dolph } from '../common';
 import cookieParser from 'cookie-parser';
 
 @Route('/test')

@@ -1,7 +1,11 @@
 import { logger } from '../../utilities';
 import clc from 'cli-color';
-import { Sequelize } from 'sequelize';
+import type { Sequelize } from 'sequelize';
 import { SqlConfig } from '../../common';
+
+// Loaded on first use so apps that don't use this driver never pay to import it.
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const loadSequelize = (): typeof import('sequelize') => require('sequelize');
 
 let DolphSequelize: Sequelize | null = null;
 
@@ -12,7 +16,8 @@ let DolphSequelize: Sequelize | null = null;
  * @version 2.0.0
  */
 const initSql = (config: SqlConfig): Sequelize => {
-    DolphSequelize = new Sequelize(config.database, config.user || '', config.pass || '', {
+    const { Sequelize: SequelizeClient } = loadSequelize();
+    DolphSequelize = new SequelizeClient(config.database, config.user || '', config.pass || '', {
         dialect: config.dialect as any,
         host: config.host || 'localhost',
         ...config.options,

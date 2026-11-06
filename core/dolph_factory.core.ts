@@ -37,7 +37,6 @@ import { GlobalInjection } from './initialisers';
 import { middlewareRegistry } from './initialisers/middleware_registrar';
 import { join } from 'path';
 import { MVCAdapter } from './adapters/mvc_registrar';
-import { engine as handlebars } from 'express-handlebars';
 import { ROUTE_ARGS_METADATA, RouteParamMetadata, routeParamsArr } from '../decorators';
 import httpStatus from 'http-status';
 import { ClassConstructor } from 'class-transformer';
@@ -463,12 +462,18 @@ const initMvcAdapter = (engine: import("express").Express) => {
 
         switch (MVCEngine) {
             case 'handlebars':
-                engine.engine(
-                    'handlebars',
-                    handlebars({
-                        defaultLayout: MVCViewsDir,
-                    }),
-                );
+                {
+                    // Loaded here so apps not using handlebars never pay to import it.
+                    // eslint-disable-next-line @typescript-eslint/no-var-requires
+                    const { engine: handlebars } = require('express-handlebars') as typeof import('express-handlebars');
+
+                    engine.engine(
+                        'handlebars',
+                        handlebars({
+                            defaultLayout: MVCViewsDir,
+                        }),
+                    );
+                }
                 break;
             case 'ejs':
                 engine.use('views', express.static(MVCViewsDir));

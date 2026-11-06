@@ -1,7 +1,11 @@
 import { logger } from '../../utilities';
 import clc from 'cli-color';
-import { DataSource } from 'typeorm';
+import type { DataSource } from 'typeorm';
 import { TypeOrmConfig } from '../../common';
+
+// Loaded on first use so apps that don't use this driver never pay to import it.
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const loadTypeOrm = (): typeof import('typeorm') => require('typeorm');
 
 let DolphDataSource: DataSource | null = null;
 
@@ -12,7 +16,8 @@ let DolphDataSource: DataSource | null = null;
  * @version 2.0.0
  */
 const initTypeOrm = (config: TypeOrmConfig): DataSource => {
-    DolphDataSource = new DataSource(config.options);
+    const { DataSource: TypeOrmDataSource } = loadTypeOrm();
+    DolphDataSource = new TypeOrmDataSource(config.options);
     return DolphDataSource;
 };
 

@@ -1,10 +1,22 @@
 import { DNextFunc, DRequest, DResponse } from '../common';
-import mongoose from 'mongoose';
 import httpStatus from 'http-status';
 import { configs } from './config.core';
 import { logger } from '../utilities';
 import clc from 'cli-color';
 import { DefaultException } from '../common/api/exceptions/default_exception.api';
+
+// Matched by class name rather than `instanceof mongoose.Error`, which would
+// force every app to load mongoose just to classify errors.
+const isMongooseError = (error: unknown): boolean => {
+    let proto = Object.getPrototypeOf(error);
+
+    while (proto && proto !== Object.prototype) {
+        if (proto.constructor?.name === 'MongooseError') return true;
+        proto = Object.getPrototypeOf(proto);
+    }
+
+    return false;
+};
 
 export const errorConverter = (err: any, req: DRequest, res: DResponse, next: DNextFunc) => {
     let error = err;
@@ -12,7 +24,7 @@ export const errorConverter = (err: any, req: DRequest, res: DResponse, next: DN
     if (!(error instanceof DefaultException)) {
         const statusCode =
             error.statusCode ||
-            (error instanceof mongoose.Error ? httpStatus.BAD_REQUEST : httpStatus.INTERNAL_SERVER_ERROR);
+            (isMongooseError(error) ? httpStatus.BAD_REQUEST : httpStatus.INTERNAL_SERVER_ERROR);
         const message = error.message || httpStatus[statusCode];
         error = new DefaultException(message, statusCode, false, err.stack);
     }
