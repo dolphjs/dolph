@@ -1,10 +1,9 @@
-import { DolphControllerHandler, JWTAuthVerifyDec } from '../../../../../classes';
+import { DolphControllerHandler, jwtAuth } from '../../../../../classes';
 import { DPayload, DBody, DReq, DRes, Post, Route, Get, UseMiddleware } from '../../../../../decorators';
-import { DRequest, DResponse, Dolph, SuccessResponse } from '../../../../../common';
+import { DRequest, DResponse, Dolph } from '../../../../../common';
 import { APP_SECRET } from '../../constants';
 import { AuthService } from './auth.service';
 import { LoginDto, RefreshDto } from './auth.dto';
-import { cookieAuthVerify } from '../../../../../utilities';
 
 @Route('/auth')
 export class AuthController extends DolphControllerHandler<Dolph> {
@@ -27,35 +26,29 @@ export class AuthController extends DolphControllerHandler<Dolph> {
             sameSite: cookie.sameSite,
         });
 
-        SuccessResponse({
-            res,
-            body: {
-                user: { username: body.username, role },
-                ...tokenPair,
-            },
-        });
+        return {
+            user: { username: body.username, role },
+            ...tokenPair,
+        };
     }
 
     @Post('/refresh')
-    refresh(@DBody(RefreshDto) body: RefreshDto, @DRes() res: DResponse) {
-        SuccessResponse({
-            res,
-            body: {
-                refreshed: true,
-                tokenHint: body.refreshToken.slice(0, 16),
-            },
-        });
+    refresh(@DBody(RefreshDto) body: RefreshDto) {
+        return {
+            refreshed: true,
+            tokenHint: body.refreshToken.slice(0, 16),
+        };
     }
 
     @Get('/me')
-    @JWTAuthVerifyDec(APP_SECRET)
-    me(@DReq() req: DRequest, @DRes() res: DResponse, @DPayload() payload: any) {
-        SuccessResponse({ res, body: { payload, headers: req.headers } });
+    @UseMiddleware(jwtAuth(APP_SECRET))
+    me(@DReq() req: DRequest, @DPayload() payload: any) {
+        return { payload, headers: req.headers };
     }
 
     @Get('/cookie-me')
-    @UseMiddleware(cookieAuthVerify(APP_SECRET))
-    cookieMe(@DPayload() payload: any, @DRes() res: DResponse) {
-        SuccessResponse({ res, body: { payload } });
+    @UseMiddleware(jwtAuth(APP_SECRET, { cookie: true }))
+    cookieMe(@DPayload() payload: any) {
+        return { payload };
     }
 }

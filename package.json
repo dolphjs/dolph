@@ -152,7 +152,6 @@
         "express-handlebars": "^7.1.3",
         "helmet": "^7.1.0",
         "http-status": "^1.7.3",
-        "joi": "^17.13.9",
         "js-yaml": "^4.3.2",
         "jsonwebtoken": "^9.0.1",
         "mime-types": "^2.1.35",

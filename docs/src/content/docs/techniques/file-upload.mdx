@@ -54,7 +54,7 @@ Use the `@UseMiddleware` decorator to apply the newly created `uploadMedia` midd
 
 ```typescript
 // src/upload/upload.controller.ts
-import { Route, Post, DReq, DRes, UseMiddleware, SuccessResponse, ErrorResponse, DRequest, DResponse } from '@dolphjs/dolph';
+import { Route, Post, DReq, UseMiddleware, BadRequestException, DRequest } from '@dolphjs/dolph';
 import { uploadMedia } from '../utils/uploader.config';
 
 @Route('files')
@@ -62,19 +62,16 @@ export class UploadController {
 
   @Post('single')
   @UseMiddleware(uploadMedia)
-  async uploadSingleFile(@DReq() req: DRequest, @DRes() res: DResponse) {
+  async uploadSingleFile(@DReq() req: DRequest) {
     if (!req.file) {
-      return ErrorResponse({ res, body: 'No file uploaded or invalid format', status: 400 });
+      throw new BadRequestException('No file uploaded or invalid format');
     }
 
     // Pass file data to a service, or return the path
-    SuccessResponse({
-      res,
-      body: {
-        message: 'File uploaded successfully',
-        filePath: req.file.path,
-      },
-    });
+    return {
+      message: 'File uploaded successfully',
+      filePath: req.file.path,
+    };
   }
 }
 ```

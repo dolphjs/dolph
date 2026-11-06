@@ -53,15 +53,10 @@ Extract specific data from the Express request object securely.
 | :-------------------------------------- | :--------------------------------------- | :------------------------------------------------ |
 | `@Component({ controllers, services })` | Binds controllers and services for DI.   | `@Component({ controllers: [C], services: [S] })` |
 | `@InjectMongo(name, model)`             | Injects a Mongoose model into a service. | `@InjectMongo('user', UserModel)`                 |
-| `@InjectMySQL(name, model)`             | Injects a MySQL model into a service.    | `@InjectMySQL('user', UserModel)`                 |
 
-## Authentication Decorators
+## Authentication
 
-DolphJS provides specialized decorators for validating JWTs out of the box.
-
-- **`@JWTAuthVerifyDec(secret)`**: Method decorator that verifies a JWT from the `authorization` header using HMAC (`HS256`), and injects the payload.
-- **`@JWTAuthVerifyDec(publicKeyPath, { algorithm: 'RS256' })`**: Verifies a JWT from the `x-auth-token` header using RSA.
-- **`@CookieAuthVerifyDec(secret)`**: Extracts and verifies JWT from cookies.
+Protect routes with `jwtAuth()`, using `@Shield` for a whole controller or `@UseMiddleware` for one route. See [Shields](/core-concepts/shields).
 
 :::tip
 Everything in DolphJS can be imported from `@dolphjs/dolph`.

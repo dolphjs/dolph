@@ -45,13 +45,10 @@ DolphJS now runs on Fastify 5 as well as Express. Install `fastify` and `@fastif
 - **RSA JWTs must say so.** Passing a key path as an HMAC secret now stops the app at startup:
 
   ```ts
-  new JwtBasicAuth('keys/public.pem', { algorithm: 'RS256' });
-  @JWTAuthVerifyDec('keys/public.pem', { algorithm: 'RS256' })
-  @JWTAuthorizeDec('keys/public.pem', authorizeFn, { algorithm: 'RS256' })
+  jwtAuth('keys/public.pem', { algorithm: 'RS256' });
   ```
 
   HMAC reads only the `authorization` header, and RSA reads only `x-auth-token`.
-- **`JwtBasicAuth.Verify`** now takes only `req`, and rejects instead of calling `next`.
 - **Bad tokens** return `401` instead of `500`.
 - **`@UnShield` needs the same function you gave `@Shield`.** A guard rebuilt by calling a factory again no longer matches. Store it in a variable:
 
@@ -74,16 +71,32 @@ DolphJS now runs on Fastify 5 as well as Express. Install `fastify` and `@fastif
 - **`DRequest` and `DResponse` are now DolphJS's own interfaces**, covering what works on both adapters. Express-only members such as `res.sendFile` are gone from them. Use `req.raw` and `res.raw`, or the Express types in Express-only code.
 - **`express.Router()` and `DolphRouteHandler` only work on the Express adapter.**
 
+#### Controllers and routes
+
+There is now one way to do each job inside a request too:
+
+| Removed | Use instead |
+|---|---|
+| `SuccessResponse({ res, body })` | `return body` |
+| `SuccessResponse({ res, status: 201, body })` | `res.status(201); return body;` with `@DRes()` |
+| `ErrorResponse({ res, status, body })` | `throw new BadRequestException(message)`, or another exception |
+| `@JWTAuthVerifyDec(secret)`, `JwtAuthMiddleware(new JwtBasicAuth(secret))` | `@UseMiddleware(jwtAuth(secret))` or `@Shield(jwtAuth(secret))` |
+| `@JWTAuthorizeDec(secret, authorize)` | `jwtAuth(secret, { authorize })` |
+| `@CookieAuthVerifyDec(secret)`, `cookieAuthVerify(secret)` | `jwtAuth(secret, { cookie: true })` |
+| `validateBodyMiddleware(Dto)`, and the param and query versions | `@DBody(Dto)`, `@DParam(Dto)`, `@DQuery(Dto)` |
+| `reqValidatorMiddleware`, `@ValidateReq` | A DTO with `class-validator` |
+| `TryCatchAsyncDec`, `TryCatchDec` | Remove them. Controllers already catch errors |
+| `TryCatchFn`, `TryCatchAsyncFn` | `DolphAsyncMiddleware`, for functions on an Express router |
+
+- **Controller responses now use the envelope.** Replacing `SuccessResponse` with `return` changes the body from your object to `{ success, status, message, data }`. Pass `onResponse` to `DolphFactory` to keep your own shape.
+- **`joi` is no longer installed with Dolph.** Add it to your app if you use it directly.
+- **`@UseMiddleware(a, b)`** takes several functions, left to right. Stacked `@UseMiddleware` keeps its bottom-first order.
+
 #### Validation and responses
 
 - **Controller strings are never sent as HTML.** They always go out as JSON. Use `res.send()` or `@Render` for HTML.
-- **`validateBodyMiddleware` and `validateParamMiddleware`** return `400` for fields that aren't on the DTO.
-- **`validateParamMiddleware`** now reads route params, not the query string, and **`validateQueryMiddleware`** no longer overwrites `req.body`.
-- **Joi `params` schemas now run.** Routes that were passing without validation may start returning `400`.
 - **`UseDto` is removed.** Use `@DBody`, `@DQuery` or `@DParam`.
-- **Responses with only `msg`** are sent as `text/plain` instead of `application/json`.
-
-- **`validatePassword` is removed.** Its rules were too weak to rely on. Use a Joi or `class-validator` rule that matches your own password policy.
+- **`validatePassword` is removed.** Its rules were too weak to rely on. Use a `class-validator` rule that matches your own password policy.
 
 #### Sockets
 
@@ -166,5 +179,4 @@ await dolph.start();
 - `this.socket` works straight away in socket services, so the documented example no longer crashes at startup.
 - Non-`async` handlers that return a Promise are awaited.
 - GraphQL mode starts.
-- `SuccessResponse` and `ErrorResponse` no longer send twice when given both `body` and `msg`.
 - `hashString` no longer blocks the event loop.

@@ -30,10 +30,13 @@ export const UnShield = (...middlewares: Array<Middleware | Middleware[]>): Meth
     };
 };
 
-export const UseMiddleware = (middleware: Middleware): MethodDecorator => {
+/**
+ * Runs middleware before this route, left to right: `@UseMiddleware(authenticate, authorize)`.
+ */
+export const UseMiddleware = (...middlewares: Middleware[]): MethodDecorator => {
     return (target: any, propertyKey: string, descriptor: PropertyDescriptor) => {
         const existingMiddleware: Middleware[] = Reflect.getMetadata('middleware', descriptor.value) || [];
-        existingMiddleware.push(middleware);
+        existingMiddleware.push(...middlewares);
         Reflect.defineMetadata('middleware', existingMiddleware, descriptor.value);
     };
 };

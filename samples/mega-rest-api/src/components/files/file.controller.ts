@@ -1,5 +1,5 @@
 import { DolphControllerHandler } from '../../../../../classes';
-import { DRequest, DResponse, Dolph, SuccessResponse } from '../../../../../common';
+import { DRequest, DResponse, Dolph } from '../../../../../common';
 import { Get, Post, Route, UseMiddleware } from '../../../../../decorators';
 import { diskStorage, useFileUploader } from '../../../../../packages';
 import { extname } from 'path';
@@ -22,16 +22,13 @@ export class FileController extends DolphControllerHandler<Dolph> {
             extensions: ['.png', '.jpg', '.jpeg', '.pdf', '.txt'],
         }),
     )
-    uploadSingle(req: DRequest, res: DResponse) {
+    uploadSingle(req: DRequest) {
         const file = req.file;
-        SuccessResponse({
-            res,
-            body: this.FileService.save({
-                mode: 'single',
-                file,
-                body: req.body,
-                extension: file?.originalname ? extname(file.originalname) : null,
-            }),
+        return this.FileService.save({
+            mode: 'single',
+            file,
+            body: req.body,
+            extension: file?.originalname ? extname(file.originalname) : null,
         });
     }
 
@@ -45,8 +42,8 @@ export class FileController extends DolphControllerHandler<Dolph> {
             extensions: ['.png', '.jpg', '.jpeg', '.pdf', '.txt'],
         }),
     )
-    uploadArray(req: DRequest, res: DResponse) {
-        SuccessResponse({ res, body: this.FileService.save({ mode: 'array', files: req.files, body: req.body }) });
+    uploadArray(req: DRequest) {
+        return this.FileService.save({ mode: 'array', files: req.files, body: req.body });
     }
 
     @Post('/fields')
@@ -62,12 +59,12 @@ export class FileController extends DolphControllerHandler<Dolph> {
             storage: diskStorage({ destination: './tmp-uploads' }),
         }),
     )
-    uploadFields(req: DRequest, res: DResponse) {
-        SuccessResponse({ res, body: this.FileService.save({ mode: 'fields', files: req.files, body: req.body }) });
+    uploadFields(req: DRequest) {
+        return this.FileService.save({ mode: 'fields', files: req.files, body: req.body });
     }
 
     @Get('/history')
-    history(_req: DRequest, res: DResponse) {
-        SuccessResponse({ res, body: { uploads: this.FileService.list() } });
+    history(_req: DRequest) {
+        return { uploads: this.FileService.list() };
     }
 }

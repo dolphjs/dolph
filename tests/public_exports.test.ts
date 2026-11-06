@@ -15,23 +15,19 @@ import {
     getDataSource,
     Get,
     IPayload,
-    JwtBasicAuth,
+    jwtAuth,
     NotFoundException,
     Route,
     socketJwtAuth,
-    SuccessResponse,
     useFileUploader,
 } from '../index';
 
 const modules = { core, common, classes, decorators, packages, utilities };
 
-// Exported by more than one module with different values, so the root has to pick one.
-const resolvedClashes: Record<string, unknown> = { TryCatchAsyncDec: decorators.TryCatchAsyncDec };
-
 describe('Root package exports', () => {
     it.each(Object.keys(modules) as (keyof typeof modules)[])('should expose everything from %s', (name) => {
         const missing = Object.keys(modules[name]).filter(
-            (key) => key !== 'default' && !(key in resolvedClashes) && !(key in root),
+            (key) => key !== 'default' && !(key in root),
         );
 
         expect(missing).toEqual([]);
@@ -48,21 +44,17 @@ describe('Root package exports', () => {
             });
         });
 
-        expect(clashes).toEqual(Object.keys(resolvedClashes));
-    });
-
-    it('should resolve clashes to the intended export', () => {
-        expect(root.TryCatchAsyncDec).toBe(decorators.TryCatchAsyncDec);
+        expect(clashes).toEqual([]);
     });
 
     it('should give the same object as the sub-paths', () => {
         expect(root.Route).toBe(decorators.Route);
-        expect(root.SuccessResponse).toBe(common.SuccessResponse);
-        expect(root.JwtBasicAuth).toBe(classes.JwtBasicAuth);
+        expect(root.NotFoundException).toBe(common.NotFoundException);
+        expect(root.jwtAuth).toBe(classes.jwtAuth);
     });
 
     it('should keep the namespaced exports', () => {
-        expect(root.common.SuccessResponse).toBe(common.SuccessResponse);
+        expect(root.common.NotFoundException).toBe(common.NotFoundException);
         expect(root.decorators.Get).toBe(decorators.Get);
     });
 
@@ -78,11 +70,10 @@ describe('Root package exports', () => {
             generateVerificationCode,
             getDataSource,
             Get,
-            JwtBasicAuth,
+            jwtAuth,
             NotFoundException,
             Route,
             socketJwtAuth,
-            SuccessResponse,
             useFileUploader,
         ].every(Boolean)).toBe(true);
         expect([payload, req]).toEqual([undefined, undefined]);

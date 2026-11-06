@@ -11,7 +11,6 @@ import {
     DolphConfig,
     DolphConfigViews,
     DolphOptions,
-    ErrorResponse,
     Middleware,
     dolphPort,
     ResponseInterceptor,
@@ -59,11 +58,13 @@ const isPromiseLike = (value: unknown): value is PromiseLike<unknown> =>
  * Sends a controller method's return value as an HTTP response.
  * - `undefined`    → no-op (user handled the response manually)
  * - `null`         → 204 No Content
- * - `string`       → 200 JSON, as `message`. Never sniffed as HTML: a string often holds
+ * - `string`       → JSON, as `message`. Never sniffed as HTML: a string often holds
  *                    user input, so that would be reflected XSS. Use `res.send()` for HTML.
- * - `Buffer`       → 200 binary send
- * - `object/array` → 200 application/json
- * - anything else  → 200 JSON (numbers, booleans, etc.)
+ * - `Buffer`       → binary send
+ * - `object/array` → application/json
+ * - anything else  → JSON (numbers, booleans, etc.)
+ *
+ * The status is 200 unless the handler chose one with `res.status(201)`.
  */
 const sendControllerResult = (req: DRequest, res: DResponse, result: unknown, interceptor?: ResponseInterceptor): void => {
     if (result === undefined) return;
@@ -74,41 +75,25 @@ const sendControllerResult = (req: DRequest, res: DResponse, result: unknown, in
     }
 
     if (Buffer.isBuffer(result)) {
-        res.status(200).send(result);
+        res.send(result);
         return;
     }
 
-    if (typeof result === 'string') {
-        if (interceptor) {
-            const customData = interceptor(result, req, res);
-            if (customData !== undefined && !res.headersSent) res.status(200).json(customData);
-            return;
-        }
-
-        res.status(200).json({
-            success: true,
-            status: 200,
-            message: result,
-            data: {}
-        });
-        return;
-    }
-
-    // object, array, number, boolean — serialise as JSON
     if (interceptor) {
         const customData = interceptor(result, req, res);
-        if (customData !== undefined && !res.headersSent) res.status(200).json(customData);
+        if (customData !== undefined && !res.headersSent) res.json(customData);
         return;
     }
 
-    res.status(200).json({
+    const isMessage = typeof result === 'string';
+
+    res.json({
         success: true,
-        status: 200,
-        message: 'Request successful',
-        data: result
+        status: res.statusCode,
+        message: isMessage ? result : 'Request successful',
+        data: isMessage ? {} : result,
     });
 };
-
 
 // function add cors middleware to express
 const corsMiddleware = (corsOptions: CorsOptions) => cors(corsOptions) as AdapterHandler;
@@ -400,7 +385,7 @@ const initViews = (adapter: HttpAdapter, views?: DolphConfigViews) => {
 // default not found endpoint
 const initNotFoundError = (adapter: HttpAdapter) => {
     adapter.useNotFound((_req: DRequest, res: DResponse) => {
-        ErrorResponse({ res, status: httpStatus.NOT_FOUND, body: { message: 'this endpoint does not exist' } });
+        res.status(httpStatus.NOT_FOUND).json({ message: 'this endpoint does not exist' });
     });
 };
 

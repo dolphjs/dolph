@@ -1,6 +1,8 @@
 import { configs } from '../../core/config.core';
-import { DNextFunc, DRequest, DResponse, ErrorException, HttpStatus, IPayload, cookieContent, sub } from '../../common';
-import { generateJWTwithHMAC, rejectInvalidToken, verifyJWTwithHMAC } from './JWT_generator.utilities';
+import { IPayload, cookieContent, sub } from '../../common';
+import { generateJWTwithHMAC } from './JWT_generator.utilities';
+
+export const AUTH_COOKIE_NAME = 'xAuthToken';
 
 /**
  *
@@ -21,7 +23,7 @@ export const newAuthCookie = (sub: sub, exp: Date, secret: string, info?: string
     const token = generateJWTwithHMAC({ payload, secret });
 
     return {
-        name: 'xAuthToken',
+        name: AUTH_COOKIE_NAME,
         value: token,
         expires: new Date(exp.getTime()),
         httpOnly: true,
@@ -29,29 +31,4 @@ export const newAuthCookie = (sub: sub, exp: Date, secret: string, info?: string
         secure: configs.NODE_ENV !== 'development',
         sameSite: 'lax',
     };
-};
-
-/**
- * function used for authorization based on the dolphjs default cookie authentication and authorization pattern
- *
- * @version 1.1
- */
-export const cookieAuthVerify = (tokenSecret: string) => (req: DRequest, _res: DResponse, next: DNextFunc) => {
-    const cookies = req.cookies;
-
-    if (!cookies) return next(new ErrorException('user not authorized, login and try again', HttpStatus.UNAUTHORIZED));
-
-    const { xAuthToken } = cookies;
-
-    if (!xAuthToken) return next(new ErrorException('user not authorized, login and try again', HttpStatus.UNAUTHORIZED));
-
-    try {
-        req.payload = rejectInvalidToken(() =>
-            verifyJWTwithHMAC({ token: xAuthToken, secret: tokenSecret }),
-        ) as IPayload;
-    } catch (error) {
-        return next(error);
-    }
-
-    next();
 };

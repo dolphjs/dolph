@@ -70,4 +70,4 @@ npm run bench:quick
 
 **ts-node startup time**: dolph, nest-express, and nest-fastify servers use ts-node for compilation. There is a cold-start cost (5–30s) before the server is ready; the runner waits automatically. Once running, this does not affect per-request throughput numbers.
 
-**Response format**: dolph wraps responses in a `SuccessResponse` envelope (`{ status, body }`), while Express, Hono, and NestJS return data directly. Response payload size is slightly larger for dolph.
+**Response format**: dolph wraps returned values in an envelope (`{ success, status, message, data }`), while Express, Hono, and NestJS return data directly. Response payload size is slightly larger for dolph.

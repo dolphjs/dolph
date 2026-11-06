@@ -13,7 +13,3 @@ export * from './classes';
 export * from './decorators';
 export * from './packages';
 export * from './utilities';
-
-// In both common and decorators, and `export *` silently drops a name that two
-// modules export. The decorators version is the current one.
-export { TryCatchAsyncDec } from './decorators';

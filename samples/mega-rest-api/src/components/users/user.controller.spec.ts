@@ -14,14 +14,6 @@
  */
 import { UserController } from './user.controller';
 import { UserService } from './user.service';
-import type { DResponse } from '../../../../../common';
-
-const mockResponse = () =>
-    ({
-        set: jest.fn().mockReturnThis(),
-        status: jest.fn().mockReturnThis(),
-        json: jest.fn().mockReturnThis(),
-    }) as unknown as DResponse;
 
 describe('UserController', () => {
     let controller: UserController;
@@ -43,41 +35,37 @@ describe('UserController', () => {
 
     it('list() delegates to the service and returns the count', () => {
         mockService.list.mockReturnValue([{ id: 'u-1' } as any]);
-        const res = mockResponse();
 
-        controller.list({} as any, res);
+        const result = controller.list({} as any);
 
         expect(mockService.list).toHaveBeenCalledWith(undefined);
-        expect(res.json).toHaveBeenCalledWith({ users: [{ id: 'u-1' }], total: 1 });
+        expect(result).toEqual({ users: [{ id: 'u-1' }], total: 1 });
     });
 
     it('list() forwards the role query param as a filter', () => {
         mockService.list.mockReturnValue([]);
-        const res = mockResponse();
 
-        controller.list({ role: 'admin' } as any, res);
+        controller.list({ role: 'admin' } as any);
 
         expect(mockService.list).toHaveBeenCalledWith('admin');
     });
 
     it('details() returns the user found by the service', () => {
         mockService.getById.mockReturnValue({ id: 'u-1', username: 'alpha' } as any);
-        const res = mockResponse();
 
-        controller.details({ id: 'u-1' } as any, res);
+        const result = controller.details({ id: 'u-1' } as any);
 
         expect(mockService.getById).toHaveBeenCalledWith('u-1');
-        expect(res.json).toHaveBeenCalledWith({ id: 'u-1', username: 'alpha' });
+        expect(result).toEqual({ id: 'u-1', username: 'alpha' });
     });
 
     it('create() passes the body straight through to the service', () => {
         const body = { username: 'charlie', role: 'user', age: 19 };
         mockService.create.mockReturnValue({ id: 'u-3', ...body } as any);
-        const res = mockResponse();
 
-        controller.create(body as any, res);
+        const result = controller.create(body as any);
 
         expect(mockService.create).toHaveBeenCalledWith(body);
-        expect(res.json).toHaveBeenCalledWith({ id: 'u-3', ...body });
+        expect(result).toEqual({ id: 'u-3', ...body });
     });
 });
