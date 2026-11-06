@@ -1,10 +1,10 @@
 import type { HelmetOptions } from 'helmet';
-import { DolphMiddlewareOption, dolphEnv, dolphPort } from '..';
+import { DolphMiddlewareOption, MVCEngine, ResponseInterceptor, dolphEnv, dolphPort } from '..';
 import { IPayload, MongooseConfig } from '.';
 import type { Router } from 'express';
 import { IncomingHttpHeaders, IncomingMessage, ServerResponse } from 'http';
 import { FileInfo, UploadConfig } from '../types/dolph_uploader.type';
-import { Options as SequelizeOptions } from 'sequelize';
+import { DSocketInit } from './socket.interfaces';
 import { DataSourceOptions } from 'typeorm';
 
 export interface DolphConfig {
@@ -14,7 +14,8 @@ export interface DolphConfig {
     routing?: DolphConfigRouting;
     env?: dolphEnv;
     jsonLimit?: string;
-    globalExceptionFilter?: boolean;
+    /** Server-rendered pages. All three keys are needed. */
+    views?: DolphConfigViews;
     /** The HTTP server to run on. Defaults to `express`. */
     adapter?: 'express' | 'fastify';
 }
@@ -22,20 +23,12 @@ export interface DolphConfig {
 export interface DolphConfigDbOption {
     mongo?: MongooseConfig;
     typeorm?: TypeOrmConfig;
-    sequelize?: SqlConfig;
-}
-
-export interface SqlConfig {
-    dialect: 'mysql' | 'postgres' | 'sqlite' | 'mariadb' | 'mssql';
-    database: string;
-    host?: string;
-    user?: string;
-    pass?: string | null;
-    options?: SequelizeOptions;
 }
 
 export interface TypeOrmConfig {
     options: DataSourceOptions;
+    /** Set to `false` to start without this database when it can't connect. */
+    required?: boolean;
 }
 
 export interface DolphConfigMiddlewares {
@@ -46,6 +39,35 @@ export interface DolphConfigMiddlewares {
 
 export interface DolphConfigRouting {
     base?: string;
+}
+
+export interface DolphConfigViews {
+    engine: MVCEngine;
+    /** Folder holding the templates, relative to the project root. */
+    dir: string;
+    /** Folder served as static files, relative to the project root. */
+    assets: string;
+}
+
+/**
+ * Functions and objects for `new DolphFactory(components, options)`. Plain values
+ * that change between environments go in `dolph_config.yaml` instead.
+ */
+export interface DolphOptions {
+    /** Run on every request, in order, after body parsing and before routes. */
+    middlewares?: DRequestHandler[];
+    sockets?: DSocketInit;
+    /** Served at `/graphql`. */
+    graphql?: DolphGraphQLOptions;
+    /** Runs before Dolph's own error handling. Call `next(error)` to pass an error on. */
+    onError?: DErrorHandler;
+    /** Reshapes what controllers return. See `ResponseInterceptor`. */
+    onResponse?: ResponseInterceptor;
+}
+
+export interface DolphGraphQLOptions {
+    schema: unknown;
+    context?: unknown;
 }
 
 export interface DolphConstructor<T = any> {
@@ -121,6 +143,10 @@ export type DNextFunc = (error?: unknown) => void;
 // middleware written for Express, like cookieParser(), be passed where this is expected.
 export type DRequestHandler = {
     handler(req: DRequest, res: DResponse, next: DNextFunc): unknown;
+}['handler'];
+
+export type DErrorHandler = {
+    handler(error: any, req: DRequest, res: DResponse, next: DNextFunc): unknown;
 }['handler'];
 
 export type DRouter = Router;

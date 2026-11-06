@@ -13,5 +13,5 @@ const schema = async function createSchema() {
 const context = async ({ req }) => ({ token: req.headers.token });
 
 const dolph = new DolphFactory([UserComponent]);
-// const dolph = new DolphFactory({ graphql: true, schema: schema(), context });
+// const dolph = new DolphFactory([UserComponent], { graphql: { schema: schema(), context } });
 dolph.start();

@@ -1,10 +1,9 @@
-import { Server } from 'http';
 import { AddressInfo } from 'net';
 import { io as ioClient, ManagerOptions, Socket as ClientSocket, SocketOptions } from 'socket.io-client';
 import { DolphFactory } from '../../core';
 import { Socket } from '../../decorators';
 import { DSocketInit } from '../../common/interfaces/socket.interfaces';
-import { SocketComponent, SocketService } from '../../packages';
+import { SocketComponent } from '../../packages';
 
 type ClientOptions = Partial<ManagerOptions & SocketOptions>;
 
@@ -21,11 +20,12 @@ export const startSocketApp = async (
     class TestSocketComponent extends SocketComponent {}
     Socket({ services: [], socketServices: [socketService] })(TestSocketComponent);
 
-    const dolph = new DolphFactory([], { socketService: SocketService, component: new TestSocketComponent(), ...init });
-    dolph.port = 0;
+    process.env.PORT = '0';
 
-    const server: Server = dolph.start();
-    await new Promise((resolve) => server.once('listening', resolve));
+    const dolph = new DolphFactory([], { sockets: { component: new TestSocketComponent(), ...init } });
+    const server = await dolph.start();
+
+    delete process.env.PORT;
 
     const url = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
     const clients: ClientSocket[] = [];
@@ -40,7 +40,7 @@ export const startSocketApp = async (
 
     const close = async () => {
         clients.forEach((client) => client.close());
-        await dolph.socket()?.getSocket().close();
+        await dolph.stop();
         jest.restoreAllMocks();
     };
 

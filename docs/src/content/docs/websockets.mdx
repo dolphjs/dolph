@@ -84,17 +84,18 @@ Finally, pass your newly created Socket Component and the internal DolphJS `Sock
 
 ```typescript
 // src/server.ts
-import { DolphFactory, SocketService, socketJwtAuth } from '@dolphjs/dolph';
+import { DolphFactory, socketJwtAuth } from '@dolphjs/dolph';
 import { AppComponent } from './app.component';
 import { ChatSocketComponent } from './websockets/chat.socket.component';
 
 const dolph = new DolphFactory([AppComponent], {
-  component: new ChatSocketComponent(),
-  socketService: SocketService,
-  auth: socketJwtAuth(process.env.JWT_SECRET),
-  options: {
-    cors: {
-      origin: 'https://app.example.com' // socket.io options
+  sockets: {
+    component: new ChatSocketComponent(),
+    auth: socketJwtAuth(process.env.JWT_SECRET),
+    options: {
+      cors: {
+        origin: 'https://app.example.com' // socket.io options
+      }
     }
   }
 });

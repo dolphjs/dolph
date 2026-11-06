@@ -102,7 +102,6 @@
         "@types/multer": "^1.4.12",
         "@types/node": "^20.3.2",
         "@types/pug": "^2.0.10",
-        "@types/sequelize": "^4.28.15",
         "@types/socket.io": "^3.0.2",
         "@typescript-eslint/eslint-plugin": "^8.59.2",
         "@typescript-eslint/parser": "^8.59.2",
@@ -125,9 +124,7 @@
         "nodemon": "^3.0.1",
         "pug": "^3.0.3",
         "rimraf": "^6.0.1",
-        "sequelize": "^6.37.8",
         "socket.io-client": "^4.7.5",
-        "sqlite3": "^6.0.1",
         "supertest": "^7.0.0",
         "ts-jest": "^29.2.3",
         "ts-node": "^10.9.1",
@@ -170,7 +167,6 @@
     },
     "peerDependencies": {
         "mongoose": "^8.24.8",
-        "sequelize": "^6.37.8",
         "typeorm": "^1.1.0",
         "fastify": "^5.12.8",
         "@fastify/middie": "^9.3.6",
@@ -179,9 +175,6 @@
     },
     "peerDependenciesMeta": {
         "mongoose": {
-            "optional": true
-        },
-        "sequelize": {
             "optional": true
         },
         "typeorm": {

@@ -36,29 +36,27 @@ DolphJS allows you to override the default error handler with a **Global Excepti
 
 ### Set the Global Exception Handler
 
-No config is needed. Before calling `dolph.start()`, use the `setGlobalExceptionHandler` method to attach an Express-compatible error handler. This handler will receive all unhandled exceptions thrown during the HTTP request lifecycle.
+Pass `onError` to `DolphFactory`. It receives every unhandled exception thrown while handling a request.
 
 ```typescript
 import { DolphFactory, DRequest, DResponse, DNextFunc } from '@dolphjs/dolph';
 import { AppComponent } from './app.component';
 
-const dolph = new DolphFactory([AppComponent]);
+const dolph = new DolphFactory([AppComponent], {
+  onError: (err: any, req: DRequest, res: DResponse, next: DNextFunc) => {
+    console.error("Custom Error Tracker:", err.message);
 
-// Define your custom global exception filter
-dolph.setGlobalExceptionHandler((err: any, req: DRequest, res: DResponse, next: DNextFunc) => {
-  console.error("Custom Error Tracker:", err.message);
-
-  // Return a completely customized response structure
-  return res.status(err.statusCode || 500).json({
-    success: false,
-    timestamp: new Date().toISOString(),
-    path: req.url,
-    error: err.message || 'Internal Server Error'
-  });
+    // Return a completely customized response structure
+    return res.status(err.statusCode || 500).json({
+      success: false,
+      timestamp: new Date().toISOString(),
+      path: req.url,
+      error: err.message || 'Internal Server Error'
+    });
+  },
 });
 
-// Start the server
 dolph.start();
 ```
 
-When you define a custom global exception handler, DolphJS routes all exceptions to it *instead* of its default `errorHandler`, giving you absolute control over the final HTTP response.
+`onError` runs first, giving you control over the final HTTP response. To fall back to Dolph's own handling, call `next(err)`.

@@ -2,7 +2,7 @@
 
 ## 3.0.0 (unreleased)
 
-3.0.0 adds Fastify support, closes several security holes and changes some defaults. Apps stay on 2.x until they upgrade. **If you use RSA JWTs, `@UnShield` or `validateBodyMiddleware`, read the upgrade steps first.**
+3.0.0 adds Fastify support, gives every startup job one way to do it, closes several security holes and changes some defaults. Apps stay on 2.x until they upgrade. **If you use RSA JWTs, `@UnShield` or `validateBodyMiddleware`, read the upgrade steps first.**
 
 ### Fastify
 
@@ -15,13 +15,30 @@ DolphJS now runs on Fastify 5 as well as Express. Install `fastify` and `@fastif
 - **Node:** `^20.19.0 || ^22.13.0 || >=24.11.0`. Node 18 is no longer supported.
 - **Local development:** set `NODE_ENV=development`, or `env: development` in `dolph_config.yaml`. Production mode is now the default, which hides stack traces and marks the auth cookie `secure`.
 
-- **Install your database driver.** `mongoose`, `typeorm` and `sequelize` are now optional peer dependencies, so a fresh install doesn't include them. Add the one you use:
+- **Install your database driver.** `mongoose` and `typeorm` are now optional peer dependencies, so a fresh install doesn't include them. Add the one you use:
 
   ```bash
   npm install mongoose
   ```
 
-  TypeORM is `^1.1.0`, Sequelize `^6.37.8` and Mongoose `^8.24.8`. Apps using a driver without installing it stop at startup with a message saying which package to add.
+  TypeORM is `^1.1.0` and Mongoose `^8.24.8`. Apps using a driver without installing it stop at startup with a message saying which package to add.
+
+#### Databases
+
+- **Sequelize support is gone.** Dolph's SQL path is now TypeORM. `database.sequelize`, `getSequelize()`, `initSql()`, `autoInitSql()` and `@InjectMySQL` are removed. Move your models to TypeORM entities and configure MySQL under `database.typeorm`:
+
+  ```yaml
+  database:
+    typeorm:
+      options:
+        type: mysql
+        host: sensitive
+        username: sensitive
+        password: sensitive
+        database: my_app
+        entities:
+          - src/**/*.entity.ts
+  ```
 
 #### Authentication
 
@@ -84,9 +101,42 @@ DolphJS now runs on Fastify 5 as well as Express. Install `fastify` and `@fastif
 
 #### Startup and middleware
 
+There is now one way to set up an app. Plain values go in `dolph_config.yaml`, and functions go in the options passed to `DolphFactory`:
+
+```ts
+const dolph = new DolphFactory([UserComponent], {
+    middlewares: [cookieParser()],
+    sockets: { component: new ChatComponent(), auth: socketJwtAuth(secret) },
+    graphql: { schema, context },
+    onError: myErrorHandler,
+    onResponse: myInterceptor,
+});
+
+await dolph.start();
+```
+
+| Removed | Use instead |
+|---|---|
+| `new DolphFactory(routes, [middleware], sockets)` | `new DolphFactory(routes, { middlewares, sockets })` |
+| `middlewareRegistry`, `dolph.middlewares()` | `middlewares` option |
+| `enableHelmet()`, `enableHemet()`, `enableCors()` | `middlewares.helmet` and `middlewares.cors` in YAML |
+| `setGlobalExceptionHandler()`, `globalExceptionFilter` | `onError` option |
+| `setResponseInterceptor()` | `onResponse` option |
+| `socketService: SocketService` | Leave it out. Put the rest under the `sockets` option |
+| `new DolphFactory({ graphql: true, schema, context })` | `new DolphFactory([], { graphql: { schema, context } })` |
+| `MVCAdapter` | `views: { engine, dir, assets }` in YAML |
+| `autoInitMongo()`, `autoInitTypeOrm()` | `database` in YAML |
+| `dolph.port = 4000` | `port` in YAML, or the `PORT` variable |
+
+- **`new DolphFactory()` no longer does anything on its own.** Setup errors now appear at `start()`, `ready()` or `engine()`.
+- **`start()` returns a promise.** It used to return the server. Use `const server = await dolph.start()`.
+- **A database that can't connect stops the app.** It used to be logged while the app kept serving. Set `required: false` on the database to keep the old behaviour.
+- **`getDataSource()` works after `await dolph.ready()`**, not straight after the constructor. Inside a request nothing changes.
+- **`PORT` beats `port` in `dolph_config.yaml`.** It was the other way round, which broke hosts like Heroku and Render that assign the port.
+- **GraphQL is served at `/graphql` only.** It used to answer every path, and now sits alongside controllers.
+- **`@Render` on Handlebars no longer applies a default layout.** Name a layout when rendering if you need one.
 - **CORS needs an `origin`.** An empty `origin` used to allow every site. It now allows none, and logs a warning. Use `origin: '*'` if you want every site.
 - **Wiring errors stop the app.** Invalid `@Component` params and service or controller setup errors used to be logged, leaving the app running without those services or routes.
-- **`.middlewares()`, `enableHelmet()` and `enableCors()`** now run before your routes. Error handlers passed to `.middlewares()` no longer catch route errors, so use `setGlobalExceptionHandler()`.
 - **`middlewares.helmet` in `dolph_config.yaml` now works.** Apps that already set it get real headers, including a Content Security Policy that may block inline scripts.
 
 ### Added
@@ -95,7 +145,8 @@ DolphJS now runs on Fastify 5 as well as Express. Install `fastify` and `@fastif
 - Everything can be imported from `@dolphjs/dolph`. Sub-paths like `@dolphjs/dolph/decorators` still work.
 - Controllers and services can be plain classes. `DolphControllerHandler` and `DolphServiceHandler` stay for existing code, but the base class, `super('name')` and `<Dolph>` are no longer needed. Add `@DService()` to a service with constructor dependencies.
 - `socketJwtAuth(secret, options)` and the `auth` socket option, which covers every namespace.
-- `enableHelmet()`, the correctly spelled `enableHemet()`, which still works but logs a deprecation warning.
+- `dolph.ready()` and `dolph.stop()`. `stop()` finishes open requests and closes sockets and databases, and `SIGTERM` now uses it.
+- `required: false` on a database, to start without it.
 - `compareHashedStringAsync`, a non-blocking password check. Prefer it on login routes.
 - `generateVerificationCode(digits)`.
 - `helmet` in `dolph_config.yaml`, as `true` or an options object.
@@ -104,7 +155,7 @@ DolphJS now runs on Fastify 5 as well as Express. Install `fastify` and `@fastif
 ### Changed
 
 - Installs are smaller, because database drivers are no longer installed with the framework.
-- Mongoose, TypeORM, Sequelize, socket.io and express-handlebars load on first use, which halves framework load time.
+- Mongoose, TypeORM, socket.io and express-handlebars load on first use, which halves framework load time.
 - Dependency minimums are raised to clear known vulnerabilities.
 - Failed DTO validation no longer writes a log line. The `400` response still names the fields.
 - In production, unexpected client errors keep their status with a generic message, instead of becoming `500`.

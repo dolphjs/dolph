@@ -244,7 +244,7 @@ describe('Large component: 9 services + 3 controllers', () => {
 
         // The first factory also imports the server package, which is a one-off
         // cost. This budget is for DI and route registration.
-        new DolphFactory([]);
+        new DolphFactory([]).engine();
 
         const t0 = process.hrtime.bigint();
         const engine = new DolphFactory([BigComponent]).engine();

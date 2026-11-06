@@ -17,27 +17,19 @@ Install Pug:
 pnpm install pug
 ```
 
-## Configuring the MVC Adapter
+## Configuring Views
 
-Configure the `MVCAdapter` in your server bootstrap file to use Pug.
+Set the view engine in `dolph_config.yaml`.
 
-```typescript
-// src/server.ts
-import { DolphFactory, MVCAdapter } from '@dolphjs/dolph';
-import { PageComponent } from './page/page.component';
-import * as path from 'path';
-
-async function bootstrap() {
-  const dolph = new DolphFactory([PageComponent]);
-  
-  MVCAdapter.setViewsDir(path.join(process.cwd(), 'views'));
-  MVCAdapter.setViewEngine('pug');
-
-  dolph.start();
-}
-
-bootstrap();
+```yaml
+# dolph_config.yaml
+views:
+  engine: pug
+  dir: views
+  assets: public
 ```
+
+`dir` holds your templates, and `assets` is served as static files. Both are relative to the project root.
 
 ## Creating the View
 

@@ -1,0 +1,104 @@
+---
+title: The Application
+description: Creating, starting and stopping a DolphJS app
+editUrl: https://github.com/dolphjs/dolph/edit/main/docs/content/docs/core-concepts/application.mdx
+sidebar:
+    label: The Application
+    order: 0
+---
+
+Every DolphJS app is created the same way:
+
+```typescript
+import { DolphFactory } from '@dolphjs/dolph';
+import { UserComponent } from './components/user/user.component';
+
+const dolph = new DolphFactory([UserComponent]);
+
+dolph.start();
+```
+
+## Where settings go
+
+Each setting has one home, decided by what it is:
+
+| Kind of setting | Where it goes | Example |
+|---|---|---|
+| Plain values that vary by environment | `dolph_config.yaml` | port, adapter, database, CORS origin, views |
+| Functions and objects | The `DolphFactory` options | middleware, error handler, sockets |
+| Anything for one route | Decorators | `@UseMiddleware`, `@Shield`, `@DBody` |
+
+## Options
+
+The second argument holds everything that can't be written in YAML:
+
+```typescript
+const dolph = new DolphFactory([UserComponent, AuthComponent], {
+    middlewares: [cookieParser(), session({ secret })],
+    sockets: { component: new ChatComponent(), auth: socketJwtAuth(secret) },
+    graphql: { schema, context },
+    onError: reportToSentry,
+    onResponse: wrapResponse,
+});
+```
+
+| Option | What it does |
+|---|---|
+| `middlewares` | Runs on every request, in order, after body parsing and before routes |
+| `sockets` | Starts Socket.IO. See [WebSockets](/websockets) |
+| `graphql` | Serves GraphQL at `/graphql`, alongside any controllers. See [GraphQL](/graphql) |
+| `onError` | Runs before Dolph's error handling. See [Exception Filters](/core-concepts/exception-filters) |
+| `onResponse` | Reshapes what controllers return. See [Controllers](/core-concepts/controllers) |
+
+To add middleware in one environment only, spread it into the array:
+
+```typescript
+middlewares: [cookieParser(), ...(isProduction ? [] : [morgan('dev')])],
+```
+
+Helmet and CORS are set in `dolph_config.yaml`. See [Configuration](/config).
+
+## Startup
+
+The constructor only stores what you give it. The rest happens in stages, and each runs once:
+
+| Stage | What it does | Triggered by |
+|---|---|---|
+| Wire | Reads `dolph_config.yaml`, creates the server, adds middleware and routes | `engine()`, `ready()`, `start()` |
+| Connect | Connects databases, GraphQL and sockets | `ready()`, `start()` |
+| Listen | Binds the port | `start()` |
+
+`start()` returns a promise, so you can wait for the app to be listening:
+
+```typescript
+await dolph.start();
+```
+
+### When a database can't connect
+
+The app won't take traffic without a database it needs. If one fails, `start()` rejects before the port is bound. A plain `dolph.start()` with no `await` logs the error and exits with code 1.
+
+To start anyway, set `required: false` on that database:
+
+```yaml
+database:
+  mongo:
+    url: sensitive
+    required: false
+```
+
+The app logs a warning and starts without it.
+
+## Shutdown
+
+`await dolph.stop()` finishes open requests, then closes sockets and databases. On `SIGTERM`, Dolph does this for you and exits. Requests still open after 10 seconds are cut off.
+
+## Reaching the server directly
+
+`dolph.engine()` returns the underlying Express app or Fastify instance. It wires the app but connects nothing, which makes it the right tool for tests:
+
+```typescript
+const res = await request(new DolphFactory([UserComponent]).engine()).get('/v1/users');
+```
+
+If a test needs its database, use `await dolph.ready()` first. Prefer the options above in app code, because anything added through `engine()` is specific to one adapter.

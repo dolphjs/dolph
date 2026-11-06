@@ -441,13 +441,11 @@ export class FastifyAdapter implements HttpAdapter {
         });
     }
 
-    listen(port: number, host: string, onListening: () => void) {
-        this.app.listen({ port, host }, (error) => {
-            if (error) {
-                this.server.emit('error', error);
-                return;
-            }
-            onListening();
-        });
+    async listen(port: number, host: string) {
+        await this.app.listen({ port, host });
+    }
+
+    close() {
+        return this.app.close();
     }
 }

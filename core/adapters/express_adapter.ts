@@ -9,9 +9,8 @@ export class ExpressAdapter implements HttpAdapter {
 
     private readonly app: Express = express();
 
-    // Routes are mounted in the constructor of DolphFactory, but enableHelmet(),
-    // enableCors() and middlewares() can only be called after it. These routers are
-    // mounted ahead of the routes so whatever those methods add still runs before them.
+    // GraphQL is mounted after routes because it has to start first. Mounting these
+    // routers ahead of the routes keeps anything added late running before them.
     private readonly securityMiddlewares = Router();
     private readonly middlewares = Router();
     private readonly routes = Router();
@@ -57,10 +56,10 @@ export class ExpressAdapter implements HttpAdapter {
             // eslint-disable-next-line @typescript-eslint/no-var-requires
             const { engine: handlebars } = require('express-handlebars') as typeof import('express-handlebars');
 
-            this.app.engine('handlebars', handlebars({ defaultLayout: viewsDir }));
-        } else if (engine === 'ejs' || engine === 'pug') {
-            this.app.use('views', express.static(viewsDir));
+            this.app.engine('handlebars', handlebars({ defaultLayout: false }));
         }
+
+        this.app.set('views', viewsDir);
     }
 
     mountRouter(path: string, router: Router) {
@@ -88,7 +87,24 @@ export class ExpressAdapter implements HttpAdapter {
         return this.app;
     }
 
-    listen(port: number, host: string, onListening: () => void) {
-        this.server.listen(port, host, onListening);
+    listen(port: number, host: string) {
+        return new Promise<void>((resolve, reject) => {
+            this.server.once('error', reject);
+            this.server.listen(port, host, () => {
+                this.server.off('error', reject);
+                resolve();
+            });
+        });
+    }
+
+    close() {
+        return new Promise<void>((resolve, reject) => {
+            if (!this.server.listening) {
+                resolve();
+                return;
+            }
+
+            this.server.close((error) => (error ? reject(error) : resolve()));
+        });
     }
 }

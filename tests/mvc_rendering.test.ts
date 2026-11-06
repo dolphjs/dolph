@@ -1,10 +1,9 @@
-import { mkdtempSync, rmSync, writeFileSync } from 'fs';
-import { tmpdir } from 'os';
-import { join } from 'path';
+import { mkdirSync, writeFileSync } from 'fs';
 import { createServer, Server } from 'http';
 import request from 'supertest';
-import { DolphFactory, MVCAdapter } from '../core';
+import { DolphFactory } from '../core';
 import { Component, Get, Render, Route } from '../decorators';
+import { useConfig } from './utils/isolated_config';
 
 @Route('pages')
 class PageController {
@@ -18,34 +17,27 @@ class PageController {
 @Component({ controllers: [PageController], services: [] })
 class PageComponent {}
 
-// Each case boots its own server, so the view engine set on the shared adapter
-// can't leak into another case.
 describe.each([
     ['ejs', '<h1><%= title %></h1>'],
     ['pug', 'h1= title'],
+    ['handlebars', '<h1>{{title}}</h1>'],
 ])('Rendering %s views', (engine, template) => {
     let server: Server;
-    let directory: string;
+    let restoreConfig: () => void;
 
     beforeAll(() => {
-        directory = mkdtempSync(join(tmpdir(), 'dolph-views-'));
-        writeFileSync(join(directory, `home.${engine}`), template);
-        writeFileSync(join(directory, 'asset.txt'), 'static content');
+        restoreConfig = useConfig({ views: { engine, dir: 'views', assets: 'public' } });
 
-        MVCAdapter.setViewEngine(engine as 'ejs' | 'pug');
-        MVCAdapter.setStaticAssets(directory);
-        MVCAdapter.setViewsDir(directory);
+        mkdirSync('views');
+        mkdirSync('public');
+        writeFileSync(`views/home.${engine}`, template);
+        writeFileSync('public/asset.txt', 'static content');
 
-        const dolph = new DolphFactory([PageComponent]);
-        const app = dolph.engine() as unknown as { set?: (key: string, value: string) => void };
-
-        // Express reads its folder from app settings, not the adapter.
-        app.set?.('views', directory);
-        server = createServer(app as never).listen(0);
+        server = createServer(new DolphFactory([PageComponent]).engine()).listen(0);
     });
 
     afterAll((done) => {
-        rmSync(directory, { recursive: true, force: true });
+        restoreConfig();
         server.close(done);
     });
 

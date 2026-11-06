@@ -2,13 +2,14 @@ import { execFileSync } from 'child_process';
 import mongoose from 'mongoose';
 import request from 'supertest';
 import express, { Express } from 'express';
-import { DolphFactory, MVCAdapter } from '../core';
+import { DolphFactory } from '../core';
+import { useConfig } from './utils/isolated_config';
 import { errorConverter, errorHandler } from '../core/error.core';
 import { DNextFunc, DRequest, DResponse, MongooseConfig } from '../common';
 import { initMongo } from '../packages';
 import { loadOptionalDriver } from '../utilities/load_optional_driver.utilities';
 
-const OPTIONAL_PACKAGES = ['mongoose', 'typeorm', 'sequelize', 'socket.io', 'express-handlebars', 'fastify'];
+const OPTIONAL_PACKAGES = ['mongoose', 'typeorm', 'socket.io', 'express-handlebars', 'fastify'];
 
 // Runs in a fresh process: inside jest the registry is shared with this file's
 // own imports, so it can't show what the framework alone pulls in.
@@ -51,10 +52,7 @@ describe('Lazy loading optional packages', () => {
     });
 
     it('should register handlebars when it is the configured view engine', async () => {
-        MVCAdapter.setViewEngine('handlebars');
-        MVCAdapter.setStaticAssets('tests');
-        MVCAdapter.setViewsDir('views');
-
+        const restoreConfig = useConfig({ views: { engine: 'handlebars', dir: 'views', assets: 'public' } });
         const engine = new DolphFactory([]).engine();
 
         const app = engine as unknown as {
@@ -65,6 +63,8 @@ describe('Lazy loading optional packages', () => {
 
         // Express registers engines straight away, Fastify when it's ready.
         await app.ready?.();
+
+        restoreConfig();
 
         expect(app.engines?.['.handlebars'] ?? app.hasReplyDecorator?.('view')).toBeTruthy();
     });

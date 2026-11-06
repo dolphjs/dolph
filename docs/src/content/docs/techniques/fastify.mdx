@@ -41,10 +41,10 @@ With `helmet` and `cookie-parser` also running on every request, the gain is 2.2
 
 ## Express middleware
 
-Packages written for Express work through [`@fastify/middie`](https://github.com/fastify/middie), so `.middlewares([...])`, `middlewareRegistry` and `enableHelmet()` keep working:
+Packages written for Express work through [`@fastify/middie`](https://github.com/fastify/middie), so the `middlewares` option and the `helmet` and `cors` settings keep working:
 
 ```typescript
-dolph.middlewares([cookieParser(), session({ secret })]);
+new DolphFactory([AppComponent], { middlewares: [cookieParser(), session({ secret })] });
 ```
 
 Your own middleware works too, including `res.status(401).json(...)`, and anything it sets on `req.payload`, `req.user`, `req.session` or `req.cookies` reaches your handlers.

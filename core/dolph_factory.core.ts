@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import { ErrorRequestHandler, RequestHandler, Router } from 'express';
+import { Router } from 'express';
 import { CorsOptions } from 'cors';
 import { readFileSync } from 'fs';
 import yaml from 'js-yaml';
@@ -7,39 +7,43 @@ import clc from 'cli-color';
 import {
     DNextFunc,
     DRequest,
-    DRequestHandler,
     DResponse,
     DolphConfig,
+    DolphConfigViews,
+    DolphOptions,
     ErrorResponse,
     Middleware,
-    MongooseConfig,
-    TypeOrmConfig,
-    SqlConfig,
     dolphPort,
     ResponseInterceptor,
 } from '../common';
 import { inAppLogger, logger } from '../utilities';
-import { autoInitMongo, autoInitSql, autoInitTypeOrm, SocketService } from '../packages';
+import { SocketService } from '../packages';
 import { DolphErrors, dolphMessages } from '../common/constants';
 import cors from 'cors';
 import { configLoader, configs } from './config.core';
+import { connectDatabases, DatabaseCloser } from './database.core';
 import helmet, { HelmetOptions } from 'helmet';
 import { errorConverter, errorHandler } from './error.core';
-import { IncomingMessage, Server, ServerResponse } from 'http';
+import { Server } from 'http';
 import { normalizePath } from '../utilities/normalize_path.utilities';
 import { getControllersFromMetadata } from '../utilities/get_controllers_from_component';
 import { getShieldMiddlewares, getUnShieldMiddlewares, resolveRouteShields } from '../utilities/spring_helpers.utilities';
-import { DSocketInit } from '../common/interfaces/socket.interfaces';
 import { GlobalInjection } from './initialisers';
-import { middlewareRegistry } from './initialisers/middleware_registrar';
-import { join } from 'path';
-import { MVCAdapter } from './adapters/mvc_registrar';
+import { join, resolve } from 'path';
 import { createHttpAdapter } from './adapters/create_http_adapter';
-import { AdapterErrorHandler, AdapterHandler, HttpAdapter } from './adapters/http_adapter';
+import { AdapterHandler, HttpAdapter } from './adapters/http_adapter';
 import { ROUTE_ARGS_METADATA, RouteParamMetadata, routeParamsArr } from '../decorators';
 import httpStatus from 'http-status';
 import { ClassConstructor } from 'class-transformer';
 import { transformAndValidateDto } from './transformer';
+
+const DEFAULT_PORT = 3030;
+const GRAPHQL_PATH = '/graphql';
+// Open requests get this long to finish, and shutdown as a whole gets a little longer.
+const DRAIN_TIMEOUT_MS = 10_000;
+const EXIT_TIMEOUT_MS = 15_000;
+
+type DolphComponents = Array<{ new (): any } | { path?: string; router: Router }>;
 
 type ExpressHttpMethod = 'get' | 'post' | 'patch' | 'put' | 'delete';
 
@@ -129,7 +133,7 @@ const InitialiseControllersAsRouter = (
     adapter: HttpAdapter,
     controllers: Array<{ new (): object }>,
     basePath: string,
-    factory?: any
+    interceptor?: ResponseInterceptor,
 ) => {
     const registeredShields: string[] = [];
 
@@ -224,7 +228,7 @@ const InitialiseControllersAsRouter = (
                                     adapter.route(method, fullPath, [async (req: DRequest, res: DResponse, next: DNextFunc) => {
                                         try {
                                             const result = await controllerInstance[methodName](req, res, next);
-                                            if (!res.headersSent) sendControllerResult(req, res, result, factory?.responseInterceptor);
+                                            if (!res.headersSent) sendControllerResult(req, res, result, interceptor);
                                         } catch (error) {
                                             next(error);
                                         }
@@ -242,14 +246,14 @@ const InitialiseControllersAsRouter = (
                                                 Promise.resolve(result)
                                                     .then((resolved) => {
                                                         if (!res.headersSent) {
-                                                            sendControllerResult(req, res, resolved, factory?.responseInterceptor);
+                                                            sendControllerResult(req, res, resolved, interceptor);
                                                         }
                                                     })
                                                     .catch(next);
                                                 return;
                                             }
 
-                                            if (!res.headersSent) sendControllerResult(req, res, result, factory?.responseInterceptor);
+                                            if (!res.headersSent) sendControllerResult(req, res, result, interceptor);
                                         } catch (error) {
                                             next(error);
                                         }
@@ -361,7 +365,7 @@ const InitialiseControllersAsRouter = (
                                         // Previously this incorrectly re-invoked the controller method a second time.
                                         res.render(renderTemplate, result ?? {});
                                     } else if (!res.headersSent) {
-                                        sendControllerResult(req, res, result, factory?.responseInterceptor);
+                                        sendControllerResult(req, res, result, interceptor);
                                     }
                                 } catch (error) {
                                     next(error);
@@ -381,28 +385,16 @@ const InitialiseControllersAsRouter = (
     });
 };
 
-// used to increment the limit of listeners for express engine
-const incrementHandlers = () => {
-    process.setMaxListeners(10);
-};
+const initViews = (adapter: HttpAdapter, views?: DolphConfigViews) => {
+    if (!views) return;
 
-// registers middlewares defined by user
-const initExternalMiddlewares = (adapter: HttpAdapter, middlewares: DRequestHandler[]) => {
-    middlewares?.forEach((middleware) => adapter.use(middleware));
-};
+    const { engine, dir, assets } = views;
 
-const initGlobalMiddlewares = (adapter: HttpAdapter) => {
-    middlewareRegistry.getMiddlewares().forEach((middleware) => adapter.use(middleware));
-};
-
-const initMvcAdapter = (adapter: HttpAdapter) => {
-    const engine = MVCAdapter.getViewEngine();
-    const assetsPath = MVCAdapter.getAssetsPath();
-    const viewsDir = MVCAdapter.getViewsDir();
-
-    if (engine && assetsPath?.length && viewsDir?.length) {
-        adapter.useViews({ engine, assetsPath, viewsDir });
+    if (!engine || !dir || !assets) {
+        throw new Error('`views` in dolph_config.yaml needs `engine`, `dir` and `assets`.');
     }
+
+    adapter.useViews({ engine, assetsPath: resolve(assets), viewsDir: resolve(dir) });
 };
 
 // default not found endpoint
@@ -412,150 +404,64 @@ const initNotFoundError = (adapter: HttpAdapter) => {
     });
 };
 
-// loads configs from env
-const InitialiseConfigLoader = (configEnv?: string) => {
-    configLoader(configEnv);
-};
+// Apollo's middleware has no path of its own, so unscoped it would answer every URL.
+const onlyAtGraphQLPath = (middleware: AdapterHandler): AdapterHandler => (req, res, next) => {
+    const path = String(req.originalUrl ?? req.url).split('?')[0];
 
-// exist handler
-const exitHandler = (server: Server<typeof IncomingMessage, typeof ServerResponse>) => {
-    if (server) {
-        server.close(() => {
-            logger.error(clc.red(DolphErrors.serverClosed));
-            process.exit(1);
-        });
-    } else {
-        process.exit(1);
-    }
-};
-
-const unexpectedErrorHandler = (server: Server<typeof IncomingMessage, typeof ServerResponse>, error: Error) => {
-    logger.error(clc.red(error));
-    exitHandler(server);
-};
-
-const initClosureHandler = (server: Server<typeof IncomingMessage, typeof ServerResponse>) => {
-    process.on('uncaughtException', (err) => unexpectedErrorHandler(server, err));
-    process.on('unhandledRejection', (err: Error) => unexpectedErrorHandler(server, err));
-
-    process.on('SIGTERM', () => {
-        if (server) {
-            server.close(() => {
-                process.exit(0);
-            });
-            // Force exit after 10 s if keep-alive connections don't drain
-            setTimeout(() => {
-                process.exit(0);
-            }, 10_000).unref();
-        }
-    });
+    return path === GRAPHQL_PATH || path === `${GRAPHQL_PATH}/` ? middleware(req, res, next) : next();
 };
 
 /**
- * The main engine for the dolph framework
+ * The main engine for the dolph framework. The constructor only stores what it's given.
+ * Nothing runs until it's asked for, in three stages that each run once:
  *
+ * - `engine()` wires the HTTP server, which is enough for tests.
+ * - `ready()` also connects databases, GraphQL and sockets.
+ * - `start()` also listens on the port.
  *
- * @version 2.0
+ * `stop()` undoes all of it.
+ *
+ * @version 3.0
  */
 class DolphFactoryClass {
-    private routes: Array<{ path?: string; router: Router }> = [];
+    private readonly routes: Array<{ path?: string; router: Router }> = [];
     private controllers: Array<{ new (): any }> = [];
-    private sockets?: DSocketInit;
-    private socketService?: SocketService;
-    private server: Server<typeof IncomingMessage, typeof ServerResponse>;
-    private routingBase = '';
-    private isGraphQL = false;
-    private graphqlReady?: Promise<void>;
+    private readonly options: DolphOptions;
 
-    port: dolphPort = process.env.PORT || 3030;
-    env = configs.NODE_ENV;
-    configs: DolphConfig = {};
-    externalMiddlewares: RequestHandler[] = [];
-    jsonLimit = '5mb';
-    globalFilter = false;
-    private globalExceptionFilterHandler?: ErrorRequestHandler;
+    private configs: DolphConfig = {};
     private adapter: HttpAdapter;
-    private responseInterceptor?: ResponseInterceptor;
+    private server: Server;
+    private port: number = DEFAULT_PORT;
+    private env = configs.NODE_ENV;
+    private routingBase = '';
+    private jsonLimit = '5mb';
+    private socketService?: SocketService;
+    private databaseClosers: DatabaseCloser[] = [];
+    private processHandlers: Array<[string, (...args: any[]) => void]> = [];
 
-    constructor(adapter: { graphql: boolean; schema: any; context?: any });
-    constructor(
-        routes: Array<{ new (): any } | { path?: string; router: Router }>,
-        middlewares?: RequestHandler[] | DSocketInit,
-        sockets?: DSocketInit,
-    );
+    private wired = false;
+    private connecting?: Promise<void>;
+    private starting?: Promise<Server>;
+    private stopping?: Promise<void>;
 
-    constructor(
-        adapterOrRoutes?:
-            | Array<{ new (): any } | { path?: string; router: Router }>
-            | { graphql: boolean; schema: any; context?: any },
-        middlewares?: RequestHandler[] | DSocketInit,
-        socketsInit?: DSocketInit,
-    ) {
-        /**
-         * Start dolphjs initialisation time
-         */
-        const startTime = process.hrtime();
-        let graphqlAdapter: { graphql: boolean; schema: any; context?: any } | undefined;
-
-        if (this.isAdapter(adapterOrRoutes)) {
-            graphqlAdapter = adapterOrRoutes;
-            this.isGraphQL = graphqlAdapter.graphql;
-        } else {
-            const routes = adapterOrRoutes;
-
-            if (!routes || !Array.isArray(routes)) return;
-
-            routes.forEach((item) => {
-                if ('router' in item) {
-                    this.routes.push(item);
-                } else {
-                    if (!this.controllers.some((c) => c === item)) {
-                        this.controllers.push(item);
-                    }
-                }
-            });
-
-            if (Array.isArray(middlewares)) {
-                this.externalMiddlewares = middlewares as RequestHandler[];
-            } else if (typeof middlewares === 'object' && middlewares !== null && 'socketService' in middlewares) {
-                this.sockets = middlewares as DSocketInit;
-            }
-            if (typeof socketsInit === 'object' && socketsInit !== null && 'socketService' in socketsInit) {
-                this.sockets = socketsInit;
-            }
+    constructor(components: DolphComponents = [], options: DolphOptions = {}) {
+        // These shapes were valid in 2.x, and a JavaScript app would otherwise lose
+        // its middleware or GraphQL schema without a word.
+        if (!Array.isArray(components) || Array.isArray(options)) {
+            throw new TypeError(
+                'DolphFactory takes (components, options), for example new DolphFactory([UserComponent], { middlewares: [] }).',
+            );
         }
 
-        this.extractControllersFromComponent();
-        this.readConfigFile();
-        this.intiDolphEngine(startTime);
+        this.options = options;
 
-        // Runs after the engine exists: Apollo's drain plugin needs the real
-        // HTTP server, which isn't created until just above.
-        if (graphqlAdapter?.graphql) {
-            this.initGraphQL(graphqlAdapter);
-        }
-    }
-
-    private initGraphQL(adapter: { schema: any; context?: any }) {
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
-        const { GraphQLAdapter } = require('@dolphjs/graphql');
-
-        this.graphqlReady = GraphQLAdapter.apolloServer(this.server, adapter.schema, adapter.context).then(
-            (middleware: RequestHandler) => {
-                this.adapter.use(middleware as AdapterHandler);
-            },
-        );
-
-        // start() reports this failure too, but callers using engine() never reach it.
-        this.graphqlReady.catch((err: Error) => {
-            logger.error(`${clc.red('DOLPH ERROR: ')}`, err);
+        components.forEach((item) => {
+            if ('router' in item) {
+                this.routes.push(item);
+            } else if (!this.controllers.includes(item)) {
+                this.controllers.push(item);
+            }
         });
-    }
-
-    private isAdapter(arg: any): arg is { graphql: boolean; schema: any; context?: any } {
-        return (
-            arg !== null && typeof arg == 'object' && 'graphql' in arg && 'schema' in arg && typeof arg.graphql == 'boolean'
-        );
     }
 
     /**
@@ -579,198 +485,155 @@ class DolphFactoryClass {
      */
     private readConfigFile() {
         try {
-            const configContents = readFileSync('dolph_config.yaml', 'utf8');
-
-            const config: DolphConfig = yaml.load(configContents) as unknown as DolphConfig;
-
-            this.configs = config;
-            this.adapter = createHttpAdapter(config.adapter);
-            this.server = this.adapter.server;
-
-            if (config.port) {
-                const parsedPort = typeof config.port === 'string' ? Number(config.port) : config.port;
-                if (Number.isFinite(parsedPort) && parsedPort > 0) {
-                    this.changePort(parsedPort);
-                } else {
-                    inAppLogger.warn(
-                        clc.yellow(
-                            `Invalid port '${String(config.port)}' in dolph_config.yaml; using current/default port.`,
-                        ),
-                    );
-                }
-            }
-
-            if (config.routing?.base?.length) {
-                this.routingBase = config.routing.base;
-            }
-
-            if (config.jsonLimit?.length) {
-                this.jsonLimit = config.jsonLimit;
-            } else {
-                inAppLogger.warn(
-                    clc.yellow(
-                        "jsonLimit value should be added to `dolph_config` file else default value of '5mb' would be used",
-                    ),
-                );
-            }
-
-            const mongoCfgConfig: MongooseConfig | undefined = this.configs?.database?.mongo;
-            if (mongoCfgConfig?.url?.length && mongoCfgConfig.url.length > 1) {
-                const mongoCfg = { ...mongoCfgConfig };
-                if (mongoCfg.url === 'sensitive') {
-                    if (!configs.MONGO_URL) {
-                        logger.error('cannot find `MONGO_URL` in the projects `.env` file');
-                    }
-                    mongoCfg.url = configs.MONGO_URL || '';
-                }
-                autoInitMongo(mongoCfg);
-            }
-
-            const typeOrmConfig: TypeOrmConfig | undefined = this.configs?.database?.typeorm;
-            if (typeOrmConfig?.options) {
-                if ((typeOrmConfig.options as any).url === 'sensitive') (typeOrmConfig.options as any).url = configs.SQL_URL;
-                if ((typeOrmConfig.options as any).username === 'sensitive') (typeOrmConfig.options as any).username = configs.SQL_USER;
-                if ((typeOrmConfig.options as any).password === 'sensitive') (typeOrmConfig.options as any).password = configs.SQL_PASSWORD;
-                if ((typeOrmConfig.options as any).host === 'sensitive') (typeOrmConfig.options as any).host = configs.SQL_HOST;
-                autoInitTypeOrm(typeOrmConfig);
-            }
-
-            const sequelizeConfig: SqlConfig | undefined = this.configs?.database?.sequelize;
-            if (sequelizeConfig?.database) {
-                if (sequelizeConfig.user === 'sensitive') sequelizeConfig.user = configs.SQL_USER;
-                if (sequelizeConfig.pass === 'sensitive') sequelizeConfig.pass = configs.SQL_PASSWORD;
-                if (sequelizeConfig.host === 'sensitive') sequelizeConfig.host = configs.SQL_HOST;
-                
-                if (sequelizeConfig.options) {
-                    if ((sequelizeConfig.options as any).username === 'sensitive') (sequelizeConfig.options as any).username = configs.SQL_USER;
-                    if ((sequelizeConfig.options as any).password === 'sensitive') (sequelizeConfig.options as any).password = configs.SQL_PASSWORD;
-                    if (sequelizeConfig.options.host === 'sensitive') sequelizeConfig.options.host = configs.SQL_HOST;
-                }
-
-                autoInitSql(sequelizeConfig);
-            }
-
-            if (config.middlewares) {
-                if (config.middlewares.cors?.activate) {
-                    const { activate: _activate, origin, ...corsOptions } = config.middlewares.cors;
-
-                    if (!origin) {
-                        inAppLogger.warn(
-                            clc.yellow(
-                                "CORS is on but `origin` is empty, so no cross-origin requests are allowed. Set `origin` in dolph_config.yaml, or use '*' to allow every site.",
-                            ),
-                        );
-                    }
-
-                    // Unset keys are left out: the cors package would treat an
-                    // explicit undefined as a value and lose its own defaults.
-                    this.adapter.useSecurity(
-                        corsMiddleware({
-                            ...Object.fromEntries(Object.entries(corsOptions).filter(([, value]) => value != null)),
-                            // An empty origin used to mean every site. Allowing everyone has to be asked for.
-                            origin: origin || false,
-                        }),
-                    );
-                }
-
-                const helmetConfig = config.middlewares.helmet;
-                if (helmetConfig) {
-                    this.adapter.useSecurity(helmetMiddleware(helmetConfig === true ? undefined : helmetConfig));
-                }
-            }
-
-            if (config.globalExceptionFilter) {
-                this.globalFilter = true;
-            }
+            this.configs = (yaml.load(readFileSync('dolph_config.yaml', 'utf8')) as DolphConfig) ?? {};
         } catch (e) {
             if (e?.code === 'ENOENT') {
                 logger.error(clc.red(DolphErrors.noDolphConfigFile));
             }
             throw e;
         }
-    }
 
-    private changePort(port: dolphPort) {
-        this.port = port;
-    }
+        const config = this.configs;
 
-    public middlewares(middlewares?: RequestHandler[]) {
-        initExternalMiddlewares(this.adapter, middlewares ?? []);
-    }
+        // Left in place after upgrading, this would otherwise mean an app with no database.
+        if ('sequelize' in (config.database ?? {})) {
+            throw new Error('`database.sequelize` is no longer supported. Use `database.typeorm`.');
+        }
 
-    private intiDolphEngine(startTime: [number, number]) {
+        if ('globalExceptionFilter' in config) {
+            inAppLogger.warn(
+                clc.yellow('`globalExceptionFilter` is no longer read. Pass `onError` to DolphFactory instead.'),
+            );
+        }
 
-        InitialiseConfigLoader(this.configs?.env);
+        configLoader(config.env);
         this.env = configs.NODE_ENV;
-        incrementHandlers();
+        this.port = this.resolvePort(config.port);
+
+        if (config.routing?.base?.length) {
+            this.routingBase = config.routing.base;
+        }
+
+        if (config.jsonLimit?.length) {
+            this.jsonLimit = config.jsonLimit;
+        } else {
+            inAppLogger.warn(
+                clc.yellow(
+                    "jsonLimit value should be added to `dolph_config` file else default value of '5mb' would be used",
+                ),
+            );
+        }
+    }
+
+    // Hosts like Heroku and Render assign the port through PORT, so it has to beat the file.
+    private resolvePort(configured?: dolphPort) {
+        const value = process.env.PORT || configured;
+
+        if (value === undefined || value === null) return DEFAULT_PORT;
+
+        const port = Number(value);
+
+        if (Number.isInteger(port) && port >= 0) return port;
+
+        inAppLogger.warn(clc.yellow(`Invalid port '${String(value)}'; using ${DEFAULT_PORT}.`));
+
+        return DEFAULT_PORT;
+    }
+
+    private initSecurityMiddlewares() {
+        const { cors: corsConfig, helmet: helmetConfig } = this.configs.middlewares ?? {};
+
+        if (corsConfig?.activate) {
+            const { activate: _activate, origin, ...corsOptions } = corsConfig;
+
+            if (!origin) {
+                inAppLogger.warn(
+                    clc.yellow(
+                        "CORS is on but `origin` is empty, so no cross-origin requests are allowed. Set `origin` in dolph_config.yaml, or use '*' to allow every site.",
+                    ),
+                );
+            }
+
+            // Unset keys are left out: the cors package would treat an
+            // explicit undefined as a value and lose its own defaults.
+            this.adapter.useSecurity(
+                corsMiddleware({
+                    ...Object.fromEntries(Object.entries(corsOptions).filter(([, value]) => value != null)),
+                    // An empty origin used to mean every site. Allowing everyone has to be asked for.
+                    origin: origin || false,
+                }),
+            );
+        }
+
+        if (helmetConfig) {
+            this.adapter.useSecurity(helmetMiddleware(helmetConfig === true ? undefined : helmetConfig));
+        }
+    }
+
+    private wire() {
+        if (this.wired) return;
+        this.wired = true;
+
+        const startTime = process.hrtime();
+
+        this.extractControllersFromComponent();
+        this.readConfigFile();
+
+        this.adapter = createHttpAdapter(this.configs.adapter);
+        this.server = this.adapter.server;
+
+        this.initSecurityMiddlewares();
         this.adapter.useBodyParsers({ jsonLimit: this.jsonLimit });
-        initExternalMiddlewares(this.adapter, this.externalMiddlewares || []);
-        initGlobalMiddlewares(this.adapter);
-        initMvcAdapter(this.adapter);
+        this.options.middlewares?.forEach((middleware) => this.adapter.use(middleware));
+        initViews(this.adapter, this.configs.views);
         InitialiseRoutes(this.adapter, this.routes, this.routingBase);
-        InitialiseControllersAsRouter(this.adapter, this.controllers, this.routingBase, this);
+        InitialiseControllersAsRouter(this.adapter, this.controllers, this.routingBase, this.options.onResponse);
 
+        this.adapter.useErrorHandlers([
+            ...(this.options.onError ? [this.options.onError] : []),
+            errorConverter,
+            errorHandler,
+        ]);
+        initNotFoundError(this.adapter);
 
-        /**
-         * End the time recording and obtain duration
-         */
         const endTime = process.hrtime(startTime);
-
         const durationInMilliseconds = Math.round(endTime[0] * 1000 + endTime[1] / 1e6);
 
         logger.info(`${clc.blueBright('Initialised application in')} ${clc.white(`${durationInMilliseconds}ms`)}`);
-
-        middlewareRegistry.seal();
     }
 
-    public setGlobalExceptionHandler(handler: ErrorRequestHandler) {
-        this.globalExceptionFilterHandler = handler;
-        this.globalFilter = true;
-    }
+    private async connectGraphQL() {
+        const { graphql } = this.options;
+        if (!graphql) return;
 
-    public setResponseInterceptor(interceptor: ResponseInterceptor) {
-        this.responseInterceptor = interceptor;
-    }
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        const { GraphQLAdapter } = require('@dolphjs/graphql');
 
-    /**
-     * @deprecated Configure CORS via the `middlewares.cors` section in `dolph_config.yaml` instead.
-     * This method will be removed in the next major version.
-     */
-    public enableCors(options?: CorsOptions) {
-        inAppLogger.warn(
-            clc.yellow(
-                '`enableCors()` is deprecated and will be removed in the next major version. Use the `middlewares.cors` section in `dolph_config.yaml` instead.',
-            ),
-        );
-        this.adapter.useSecurity(corsMiddleware(options || { origin: '*' }));
-    }
+        const middleware = await GraphQLAdapter.apolloServer(this.server, graphql.schema, graphql.context);
 
-    public enableHelmet(options?: HelmetOptions) {
-        this.adapter.useSecurity(helmetMiddleware(options));
-    }
-
-    /**
-     * @deprecated Misspelled. Use `enableHelmet()` instead.
-     */
-    public enableHemet(options?: HelmetOptions) {
-        inAppLogger.warn(clc.yellow('`enableHemet()` is deprecated. Use `enableHelmet()` instead.'));
-        this.enableHelmet(options);
-    }
-
-    private initSockets(server: Server<typeof IncomingMessage, typeof ServerResponse>) {
-        const socketInit = this.sockets;
-        if (!socketInit?.socketService) {
-            return;
+        // The registrar logs its own failure and resolves with nothing.
+        if (!middleware) {
+            throw new Error('GraphQL server failed to start.');
         }
 
-        const SocketServiceCtor = socketInit.socketService;
-        this.socketService = new SocketServiceCtor({ server, options: socketInit.options ?? {}, auth: socketInit.auth });
+        this.adapter.use(onlyAtGraphQLPath(middleware));
+    }
 
-        GlobalInjection(SocketServiceCtor.name, this.socketService);
+    private connectSockets() {
+        const { sockets } = this.options;
+        if (!sockets) return;
+
+        this.socketService = new SocketService({
+            server: this.server,
+            options: sockets.options ?? {},
+            auth: sockets.auth,
+        });
+
+        GlobalInjection(SocketService.name, this.socketService);
 
         logger.info(`${clc.blue(`SocketIO Initialised Successfully`)}`);
 
-        const socketsMetadata = Reflect.getMetadata('sockets', socketInit.component.constructor.prototype);
+        const socketsMetadata = Reflect.getMetadata('sockets', sockets.component.constructor.prototype);
 
         if (socketsMetadata && Array.isArray(socketsMetadata)) {
             socketsMetadata.forEach((socketServiceClass) => {
@@ -783,96 +646,111 @@ class DolphFactoryClass {
         }
     }
 
-    private engineFinalized = false;
+    private async connect() {
+        this.wire();
+        this.databaseClosers = await connectDatabases(this.configs.database);
+        await this.connectGraphQL();
+        this.connectSockets();
+    }
 
-    /**
-     * Registers the global exception filter (if configured), the error
-     * converter/handler chain, and the catch-all 404 fallback.
-     *
-     * This used to run inline at the top of `start()`, which meant it never
-     * ran at all for `engine()` — the Express app handed to a test runner
-     * (or anything else that only wants the request handler, not a bound
-     * port) silently had no 404 fallback and ignored `setGlobalExceptionHandler()`.
-     * Both `engine()` and `start()` call this now, guarded to run once, so
-     * the two only differ in whether a socket actually gets bound.
-     */
-    private finalizeEngine() {
-        if (this.engineFinalized) return;
-        this.engineFinalized = true;
+    private async bootstrap() {
+        this.installProcessHandlers();
 
-        const errorHandlers: AdapterErrorHandler[] = [errorConverter, errorHandler];
+        await this.ready();
+        await this.adapter.listen(this.port, '0.0.0.0');
 
-        if (this.globalFilter) {
-            if (this.globalExceptionFilterHandler) {
-                errorHandlers.unshift(this.globalExceptionFilterHandler);
-                logger.info(clc.blueBright(`Dolph app using custom global exception filter`));
-            } else {
-                inAppLogger.warn(
-                    clc.yellow(
-                        'globalExceptionFilter is true in config, but no handler was provided via setGlobalExceptionHandler(). Error handling will fall back to default.',
-                    ),
-                );
-            }
-        }
+        logger.info(
+            clc.blueBright(`Dolph app running on port ${clc.white(`${this.port}`)} in ${this.env.toUpperCase()} mode`),
+        );
 
-        this.adapter.useErrorHandlers(errorHandlers);
+        return this.server;
+    }
 
-        if (!this.isGraphQL) {
-            initNotFoundError(this.adapter);
+    private async shutdown() {
+        this.processHandlers.forEach(([event, handler]) => process.off(event, handler));
+        this.processHandlers = [];
+
+        // Closing during startup has to wait, or a database connecting right now would stay open.
+        await this.connecting?.catch(() => undefined);
+
+        // Nothing to close if the app never wired, or failed before reaching the adapter.
+        if (!this.adapter) return;
+
+        const forceClose = setTimeout(() => this.server.closeAllConnections(), DRAIN_TIMEOUT_MS);
+        forceClose.unref();
+
+        try {
+            await Promise.all([this.adapter.close(), this.socketService?.getSocket().close()]);
+        } finally {
+            clearTimeout(forceClose);
+            await Promise.all(this.databaseClosers.map((close) => close()));
         }
     }
 
+    private exit(code: number) {
+        const forceExit = setTimeout(() => process.exit(code), EXIT_TIMEOUT_MS);
+        forceExit.unref();
+
+        this.stop()
+            .catch((error) => logger.error(clc.red(error)))
+            .finally(() => {
+                clearTimeout(forceExit);
+                process.exit(code);
+            });
+    }
+
+    // A failed startup lands here too when start() isn't awaited, which is how a
+    // one-line `dolph.start()` still logs the reason and exits.
+    private installProcessHandlers() {
+        const crash = (error: Error) => {
+            logger.error(clc.red(error?.stack ?? error));
+            this.exit(1);
+        };
+
+        this.processHandlers = [
+            ['uncaughtException', crash],
+            ['unhandledRejection', crash],
+            ['SIGTERM', () => this.exit(0)],
+        ];
+
+        this.processHandlers.forEach(([event, handler]) => process.on(event, handler));
+    }
+
+    /**
+     * The request listener, for `createServer()`, supertest, or reaching Express or Fastify
+     * directly. Doesn't connect anything, so tests need no database.
+     */
     public engine = () => {
-        this.finalizeEngine();
+        this.wire();
         return this.adapter.requestListener() as import('express').Express;
     };
+
     public socket = () => this.socketService;
 
     /**
-     * Initialises and returns the dolphjs engine
+     * Wires the app and connects databases, GraphQL and sockets, without listening.
+     * Rejects if a required database can't connect.
      */
-    public start() {
-        this.finalizeEngine();
+    public ready(): Promise<void> {
+        this.connecting ??= this.connect();
+        return this.connecting;
+    }
 
-        if (!this.isGraphQL) {
-            this.adapter.listen(+this.port, '0.0.0.0', () => {
-                logger.info(
-                    clc.blueBright(
-                        `Dolph app running on port ${clc.white(`${this.port}`)} in ${this.env.toUpperCase()} mode`,
-                    ),
-                );
-                this.initSockets(this.server);
-            });
-        } else {
-            const start = async () => {
-                // Wait for Apollo first so no request can arrive before /graphql is mounted.
-                await this.graphqlReady;
-                await new Promise<void>((resolve, reject) => {
-                    this.server.once('error', reject);
-                    this.adapter.listen(+this.port, '0.0.0.0', () => {
-                        this.server.off('error', reject);
-                        resolve();
-                    });
-                });
-            };
+    /**
+     * Connects everything, then listens on the port. Rejects if startup fails. Without
+     * `await` or a `catch`, a failed startup logs the error and exits with code 1.
+     */
+    public start(): Promise<Server> {
+        this.starting ??= this.bootstrap();
+        return this.starting;
+    }
 
-            start()
-                .then(() => {
-                    logger.info(
-                        clc.blueBright(
-                            `Dolph app running on port ${clc.white(`${this.port}`)} in ${this.env.toUpperCase()} mode`,
-                        ),
-                    );
-
-                    this.initSockets(this.server);
-                })
-                .catch((err) => {
-                    logger.error(clc.red(`Cannot start Dolph Server: ${err}`));
-                });
-        }
-
-        initClosureHandler(this.server);
-        return this.server;
+    /**
+     * Finishes open requests, then closes sockets and databases. Also runs on SIGTERM.
+     */
+    public stop(): Promise<void> {
+        this.stopping ??= this.shutdown();
+        return this.stopping;
     }
 }
 

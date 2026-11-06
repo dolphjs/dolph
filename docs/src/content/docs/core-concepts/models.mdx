@@ -7,7 +7,7 @@ sidebar:
   order: 3
 ---
 
-In DolphJS, Models represent the data structure of your application and handle direct interactions with your database. While DolphJS does not enforce a specific ORM, it provides excellent integration and auto-initialization for **Mongoose** (MongoDB) and **Sequelize** (MySQL/PostgreSQL).
+In DolphJS, Models represent the data structure of your application and handle direct interactions with your database. While DolphJS does not enforce a specific ORM, it provides excellent integration and auto-initialization for **Mongoose** (MongoDB) and **TypeORM** (MySQL, PostgreSQL and other SQL databases).
 
 ## Defining a Mongoose Model
 
@@ -47,7 +47,7 @@ export const UserModel = model<IUser>('User', UserSchema);
 
 ## Using the Model in a Service
 
-Once your model is defined, you inject it into your Service using the `@InjectMongo` or `@InjectMySQL` decorators provided by Dolph.
+Once your model is defined, you inject it into your Service using the `@InjectMongo` decorator provided by Dolph.
 
 ```typescript
 import { InjectMongo, DService } from '@dolphjs/dolph';

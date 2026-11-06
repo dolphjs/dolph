@@ -53,7 +53,7 @@ describe('Middlewares set in dolph_config.yaml', () => {
             throw new Error('some other failure');
         }) as typeof fs.readFileSync);
 
-        expect(() => new DolphFactory([])).toThrow('some other failure');
+        expect(() => new DolphFactory([]).engine()).toThrow('some other failure');
         expect(errors).not.toHaveBeenCalled();
     });
 
