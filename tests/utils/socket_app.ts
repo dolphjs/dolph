@@ -44,5 +44,5 @@ export const startSocketApp = async (
         jest.restoreAllMocks();
     };
 
-    return { connect, close, dolph };
+    return { connect, close, dolph, url };
 };

@@ -4,6 +4,7 @@ import { DSocket } from '../../common/interfaces/socket.interfaces';
 import { inAppLogger } from '../../utilities';
 import clc from 'cli-color';
 import { forEachNamespace, guardSocketHandlers } from './socket_guard';
+import { originAllowRequest } from './socket_origin';
 
 const applySocketAuth = (io: SocketServer, auth: DSocket['auth']) => {
     if (auth === undefined) {
@@ -28,7 +29,10 @@ export class SocketService {
         // Loaded here so apps without sockets never pay to import socket.io.
         // eslint-disable-next-line @typescript-eslint/no-var-requires
         const { Server } = require('socket.io') as typeof import('socket.io');
-        this.socketIo = new Server(params.server, params.options);
+        this.socketIo = new Server(params.server, {
+            ...params.options,
+            allowRequest: originAllowRequest(params.options),
+        });
         guardSocketHandlers(this.socketIo);
         applySocketAuth(this.socketIo, params.auth);
     }
