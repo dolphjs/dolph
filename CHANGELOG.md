@@ -2,7 +2,11 @@
 
 ## 3.0.0 (unreleased)
 
-3.0.0 closes several security holes and changes some defaults. Apps stay on 2.x until they upgrade. **If you use RSA JWTs, `@UnShield` or `validateBodyMiddleware`, read the upgrade steps first.**
+3.0.0 adds Fastify support, closes several security holes and changes some defaults. Apps stay on 2.x until they upgrade. **If you use RSA JWTs, `@UnShield` or `validateBodyMiddleware`, read the upgrade steps first.**
+
+### Fastify
+
+DolphJS now runs on Fastify 5 as well as Express. Install `fastify` and `@fastify/middie`, then set `adapter: fastify` in `dolph_config.yaml`. Controllers, services, shields and middleware don't change, and Express middleware keeps working. In benchmarks it handled 2.2x to 3.1x the requests of Express. See the Fastify guide for the differences.
 
 ### Upgrading from 2.x
 
@@ -48,6 +52,11 @@
 - **`newAuthCookie`** now returns `sameSite: 'lax'`, and is always `httpOnly`. Pass `sameSite` to `res.cookie`.
 - **`uniqueFiveDigitsCode`, `uniqueSixDigitsCode` and `uniqueSevenDigitsCode` are removed.** They were fixed for the life of the process. Call `generateVerificationCode(digits)` for each code.
 
+#### Types
+
+- **`DRequest` and `DResponse` are now DolphJS's own interfaces**, covering what works on both adapters. Express-only members such as `res.sendFile` are gone from them. Use `req.raw` and `res.raw`, or the Express types in Express-only code.
+- **`express.Router()` and `DolphRouteHandler` only work on the Express adapter.**
+
 #### Validation and responses
 
 - **Controller strings are never sent as HTML.** They always go out as JSON. Use `res.send()` or `@Render` for HTML.
@@ -82,6 +91,7 @@
 
 ### Added
 
+- A Fastify adapter, chosen with `adapter: fastify` or `DOLPH_ADAPTER`.
 - Everything can be imported from `@dolphjs/dolph`. Sub-paths like `@dolphjs/dolph/decorators` still work.
 - Controllers and services can be plain classes. `DolphControllerHandler` and `DolphServiceHandler` stay for existing code, but the base class, `super('name')` and `<Dolph>` are no longer needed. Add `@DService()` to a service with constructor dependencies.
 - `socketJwtAuth(secret, options)` and the `auth` socket option, which covers every namespace.

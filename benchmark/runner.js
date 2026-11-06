@@ -39,6 +39,14 @@ const ALL_FRAMEWORKS = [
         env: { PORT: '4001' },
     },
     {
+        name: 'dolph-fastify',
+        port: 4006,
+        cmd: ROOT_TS_NODE,
+        args: ['--project', path.join(ROOT_DIR, 'tsconfig.json'), path.join(BENCH_DIR, 'servers', 'dolph.ts')],
+        cwd: BENCH_DIR,
+        env: { PORT: '4006', DOLPH_ADAPTER: 'fastify' },
+    },
+    {
         name: 'express',
         port: 4002,
         cmd: process.execPath,
