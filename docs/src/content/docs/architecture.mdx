@@ -24,7 +24,7 @@ In this pattern:
 4. **DolphFactory** reads the components, resolves dependencies, and boots the application.
 
 ```typescript
-import { Component } from '@dolphjs/dolph/decorators';
+import { Component } from '@dolphjs/dolph';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 
@@ -38,8 +38,7 @@ export class AuthComponent {}
 For developers migrating legacy Express applications or those who prefer manual routing, DolphJS offers the `DolphRouteHandler`. 
 
 ```typescript
-import { DolphRouteHandler } from '@dolphjs/dolph/classes';
-import { Dolph } from '@dolphjs/dolph/common';
+import { DolphRouteHandler, Dolph } from '@dolphjs/dolph';
 import { Router } from 'express';
 
 export class AuthRouter extends DolphRouteHandler<Dolph> {
@@ -84,10 +83,8 @@ A controller can receive that instance one of two ways:
 // Constructor injection (recommended) — DolphJS resolves the parameter
 // type and passes the singleton in automatically.
 @Route('users')
-export class UserController extends DolphControllerHandler<Dolph> {
-  constructor(private readonly userService: UserService) {
-    super();
-  }
+export class UserController {
+  constructor(private readonly userService: UserService) {}
 }
 ```
 
@@ -96,7 +93,7 @@ export class UserController extends DolphControllerHandler<Dolph> {
 // parameters. DolphJS assigns the instance to a property named after the
 // service's class itself, i.e. `instance.UserService`, not `instance.userService`.
 @Route('users')
-export class UserController extends DolphControllerHandler<Dolph> {
+export class UserController {
   private UserService!: UserService;
 }
 ```

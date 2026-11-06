@@ -82,6 +82,8 @@
 
 ### Added
 
+- Everything can be imported from `@dolphjs/dolph`. Sub-paths like `@dolphjs/dolph/decorators` still work.
+- Controllers and services can be plain classes. `DolphControllerHandler` and `DolphServiceHandler` stay for existing code, but the base class, `super('name')` and `<Dolph>` are no longer needed. Add `@DService()` to a service with constructor dependencies.
 - `socketJwtAuth(secret, options)` and the `auth` socket option, which covers every namespace.
 - `enableHelmet()`, the correctly spelled `enableHemet()`, which still works but logs a deprecation warning.
 - `compareHashedStringAsync`, a non-blocking password check. Prefer it on login routes.

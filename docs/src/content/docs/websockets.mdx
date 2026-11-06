@@ -29,13 +29,11 @@ A Socket Service handles the actual WebSocket events. By extending `DolphSocketS
 
 ```typescript
 // src/websockets/chat.socket.service.ts
-import { DolphSocketServiceHandler } from '@dolphjs/dolph/classes';
-import { Dolph } from '@dolphjs/dolph/common';
-import { DService } from '@dolphjs/dolph/decorators';
+import { DolphSocketServiceHandler, Dolph, DService } from '@dolphjs/dolph';
 import { UserService } from '../user/user.service'; // standard Dolph service
 
 @DService()
-export class ChatSocketService extends DolphSocketServiceHandler<Dolph> {
+export class ChatSocketService extends DolphSocketServiceHandler {
   // The @Socket decorator will automatically inject UserService onto this class!
   declare UserService: UserService; 
 
@@ -69,8 +67,7 @@ The Socket Component acts as a module to bundle your Socket Services together an
 
 ```typescript
 // src/websockets/chat.socket.component.ts
-import { Socket } from '@dolphjs/dolph/decorators';
-import { SocketComponent } from '@dolphjs/dolph/packages';
+import { Socket, SocketComponent } from '@dolphjs/dolph';
 import { ChatSocketService } from './chat.socket.service';
 import { UserService } from '../user/user.service';
 
@@ -87,11 +84,9 @@ Finally, pass your newly created Socket Component and the internal DolphJS `Sock
 
 ```typescript
 // src/server.ts
-import { DolphFactory } from '@dolphjs/dolph';
+import { DolphFactory, SocketService, socketJwtAuth } from '@dolphjs/dolph';
 import { AppComponent } from './app.component';
 import { ChatSocketComponent } from './websockets/chat.socket.component';
-import { SocketService } from '@dolphjs/dolph/packages';
-import { socketJwtAuth } from '@dolphjs/dolph/classes';
 
 const dolph = new DolphFactory([AppComponent], {
   component: new ChatSocketComponent(),

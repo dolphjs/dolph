@@ -64,7 +64,7 @@ export class User {
 
 ## Using TypeORM in Services
 
-Since TypeORM is globally auto-initialized by DolphJS, you can easily access the underlying `DataSource` anywhere inside your services using the `getDataSource()` function from `@dolphjs/dolph/packages/typeorm`.
+Since TypeORM is globally auto-initialized by DolphJS, you can easily access the underlying `DataSource` anywhere inside your services using the `getDataSource()` function from `@dolphjs/dolph`.
 
 :::caution
 **Call `getDataSource()` lazily, not as a field initializer.** If a service is wired up through `@Component({ services: [...] })`, that component resolves and constructs every listed service the moment its module is imported — which happens before `new DolphFactory(...)` ever runs, since imports are evaluated first. `autoInitTypeOrm()` (which is what actually creates the `DataSource`) only runs once `DolphFactory`'s constructor executes. A field initializer like `private userRepo = getDataSource().getRepository(User)` therefore throws `TypeORM DataSource has not been initialized` at construction time — caught internally and logged, so the app still appears to boot, but the service silently never finishes constructing. A getter defers the call until the service is actually used (a request being handled), by which point `DolphFactory` has run and the `DataSource` exists.
@@ -72,8 +72,7 @@ Since TypeORM is globally auto-initialized by DolphJS, you can easily access the
 
 ```typescript
 // src/user/user.service.ts
-import { DService } from '@dolphjs/dolph/decorators';
-import { getDataSource } from '@dolphjs/dolph/packages/typeorm';
+import { DService, getDataSource } from '@dolphjs/dolph';
 import { User } from '../models/user.entity';
 
 @DService('userService')

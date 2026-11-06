@@ -109,8 +109,7 @@ Under the hood, the `dolph_config.yaml` values map directly to the official conf
 Once auto-initialized, you can instantly grab your database clients anywhere in your application:
 
 ```typescript
-import { getDataSource } from '@dolphjs/dolph/packages/typeorm';
-import { getSequelize } from '@dolphjs/dolph/packages/sequelize';
+import { getDataSource, getSequelize } from '@dolphjs/dolph';
 
 // Retrieve TypeORM DataSource
 const dataSource = getDataSource();

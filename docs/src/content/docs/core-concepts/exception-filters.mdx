@@ -16,8 +16,7 @@ By default, DolphJS catches any exceptions thrown within your routes, components
 If you throw a standard Node `Error`, or one of DolphJS's built-in exceptions (like `DefaultException`, `BadRequestException`, etc.), the framework will automatically extract the status code and message.
 
 ```typescript
-import { Get, Route } from '@dolphjs/dolph/decorators';
-import { BadRequestException } from '@dolphjs/dolph/common';
+import { Get, Route, BadRequestException } from '@dolphjs/dolph';
 
 @Route('/users')
 export class UserController {
@@ -40,9 +39,8 @@ DolphJS allows you to override the default error handler with a **Global Excepti
 No config is needed. Before calling `dolph.start()`, use the `setGlobalExceptionHandler` method to attach an Express-compatible error handler. This handler will receive all unhandled exceptions thrown during the HTTP request lifecycle.
 
 ```typescript
-import { DolphFactory } from '@dolphjs/dolph/core';
+import { DolphFactory, DRequest, DResponse, DNextFunc } from '@dolphjs/dolph';
 import { AppComponent } from './app.component';
-import { DRequest, DResponse, DNextFunc } from '@dolphjs/dolph/common';
 
 const dolph = new DolphFactory([AppComponent]);
 
