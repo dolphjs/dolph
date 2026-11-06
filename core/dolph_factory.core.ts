@@ -48,6 +48,11 @@ type ExpressHttpMethod = 'get' | 'post' | 'patch' | 'put' | 'delete';
 const isExpressHttpMethod = (value: unknown): value is ExpressHttpMethod =>
     typeof value === 'string' && ['get', 'post', 'patch', 'put', 'delete'].includes(value);
 
+const isPromiseLike = (value: unknown): value is PromiseLike<unknown> =>
+    value !== null &&
+    (typeof value === 'object' || typeof value === 'function') &&
+    typeof (value as PromiseLike<unknown>).then === 'function';
+
 /**
  * Sends a controller method's return value as an HTTP response.
  * - `undefined`    → no-op (user handled the response manually)
@@ -108,12 +113,15 @@ const sendControllerResult = (req: DRequest, res: DResponse, result: unknown, in
 };
 
 
+// Anything middleware can be mounted on: the Express app or one of its routers
+type MiddlewareHost = Pick<Router, 'use'>;
+
 // function add cors middleware to express
-const enableCorsFunc = (engine: import("express").Express, corsOptions: CorsOptions) => {
+const enableCorsFunc = (engine: MiddlewareHost, corsOptions: CorsOptions) => {
     engine.use(cors(corsOptions));
 };
 
-const enableHelmetFunc = (engine: import("express").Express, helmetOptions?: HelmetOptions) => {
+const enableHelmetFunc = (engine: MiddlewareHost, helmetOptions?: HelmetOptions) => {
     engine.use(helmet(helmetOptions));
 };
 
@@ -251,10 +259,25 @@ const InitialiseControllersAsRouter = <T extends Dolph>(
                                         }
                                     });
                                 } else {
-                                    // Sync fast-path — plain handler, avoids Promise/async overhead on every request
+                                    // Sync fast-path — plain handler, avoids Promise/async overhead on every request.
+                                    // A non-`async` handler can still return a Promise (`return this.service.find()`,
+                                    // or a decorator wrapping an async method), so the result has to be checked here:
+                                    // `isAsyncMethod` only sees how the function was declared.
                                     router[method](fullPath, (req: DRequest, res: DResponse, next: DNextFunc) => {
                                         try {
                                             const result = controllerInstance[methodName](req, res, next);
+
+                                            if (isPromiseLike(result)) {
+                                                Promise.resolve(result)
+                                                    .then((resolved) => {
+                                                        if (!res.headersSent) {
+                                                            sendControllerResult(req, res, resolved, factory?.responseInterceptor);
+                                                        }
+                                                    })
+                                                    .catch(next);
+                                                return;
+                                            }
+
                                             if (!res.headersSent) sendControllerResult(req, res, result, factory?.responseInterceptor);
                                         } catch (error) {
                                             next(error);
@@ -385,8 +408,8 @@ const InitialiseControllersAsRouter = <T extends Dolph>(
             // register the router object in the express engine
             engine.use('/', router);
         } catch (e) {
-            console.error(e);
-            logger.error(clc.red(`Error initialising controller ${Controller.name}: ${e.message}`));
+            // Fail at boot: continuing would silently drop every route on this controller.
+            throw new Error(`Error initialising controller ${Controller.name}: ${e.message}`, { cause: e });
         }
     });
 };
@@ -413,7 +436,7 @@ const InitialiseMiddlewares = (engine: import("express").Express, { jsonLimit }:
 };
 
 // registers middlewares defined by user
-const initExternalMiddlewares = (engine: import("express").Express, middlewares: DRequestHandler[]) => {
+const initExternalMiddlewares = (engine: MiddlewareHost, middlewares: DRequestHandler[]) => {
     if (middlewares?.length) {
         middlewares.forEach((middleware) => {
             engine.use(middleware);
@@ -525,6 +548,13 @@ class DolphFactoryClass {
     private server: Server<typeof IncomingMessage, typeof ServerResponse>;
     private routingBase = '';
     private isGraphQL = false;
+    private graphqlReady?: Promise<void>;
+
+    // Routes are mounted in the constructor, but enableHemet(), enableCors() and
+    // middlewares() can only be called after it. These routers are mounted ahead
+    // of the routes so whatever those methods add later still runs before them.
+    private readonly securityMiddlewares = Router();
+    private readonly lateMiddlewares = Router();
 
     port: dolphPort = process.env.PORT || 3030;
     env = process.env.NODE_ENV || 'development';
@@ -554,24 +584,11 @@ class DolphFactoryClass {
          * Start dolphjs initialisation time
          */
         const startTime = process.hrtime();
+        let graphqlAdapter: { graphql: boolean; schema: any; context?: any } | undefined;
 
         if (this.isAdapter(adapterOrRoutes)) {
-            const adapter = adapterOrRoutes;
-
-            if (adapter.graphql) {
-                this.isGraphQL = adapter.graphql;
-
-                // eslint-disable-next-line @typescript-eslint/no-var-requires
-                const { GraphQLAdapter } = require('@dolphjs/graphql');
-
-                GraphQLAdapter.apolloServer(this.server, adapter.schema, adapter.context)
-                    .then((middleware: RequestHandler) => {
-                        this.dolph.use(middleware);
-                    })
-                    .catch((err: Error) => {
-                        logger.error(`${clc.red('DOLPH ERROR: ')}`, err);
-                    });
-            }
+            graphqlAdapter = adapterOrRoutes;
+            this.isGraphQL = graphqlAdapter.graphql;
         } else {
             const routes = adapterOrRoutes;
 
@@ -603,6 +620,28 @@ class DolphFactoryClass {
         this.extractControllersFromComponent();
         this.readConfigFile();
         this.intiDolphEngine(startTime);
+
+        // Runs after the engine exists: Apollo's drain plugin needs the real
+        // HTTP server, which isn't created until just above.
+        if (graphqlAdapter?.graphql) {
+            this.initGraphQL(graphqlAdapter);
+        }
+    }
+
+    private initGraphQL(adapter: { schema: any; context?: any }) {
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        const { GraphQLAdapter } = require('@dolphjs/graphql');
+
+        this.graphqlReady = GraphQLAdapter.apolloServer(this.server, adapter.schema, adapter.context).then(
+            (middleware: RequestHandler) => {
+                this.dolph.use(middleware);
+            },
+        );
+
+        // start() reports this failure too, but callers using engine() never reach it.
+        this.graphqlReady.catch((err: Error) => {
+            logger.error(`${clc.red('DOLPH ERROR: ')}`, err);
+        });
     }
 
     private isAdapter(arg: any): arg is { graphql: boolean; schema: any; context?: any } {
@@ -742,15 +781,18 @@ class DolphFactoryClass {
     }
 
     public middlewares(middlewares?: RequestHandler[]) {
-        initExternalMiddlewares(this.dolph, middlewares ?? []);
+        initExternalMiddlewares(this.lateMiddlewares, middlewares ?? []);
     }
 
     private intiDolphEngine(startTime: [number, number]) {
-        
+
         InitialiseConfigLoader();
         incrementHandlers();
+        // Ahead of the body parsers so a malformed-body 400 still gets security headers
+        this.dolph.use(this.securityMiddlewares);
         InitialiseMiddlewares(this.dolph, { jsonLimit: this.jsonLimit });
         initExternalMiddlewares(this.dolph, this.externalMiddlewares || []);
+        this.dolph.use(this.lateMiddlewares);
         initGlobalMiddlewares(this.dolph);
         initMvcAdapter(this.dolph);
         InitialiseRoutes(this.dolph, this.routes, this.routingBase);
@@ -788,15 +830,11 @@ class DolphFactoryClass {
                 '`enableCors()` is deprecated and will be removed in the next major version. Use the `middlewares.cors` section in `dolph_config.yaml` instead.',
             ),
         );
-        enableCorsFunc(this.dolph, options || { origin: '*' });
+        enableCorsFunc(this.securityMiddlewares, options || { origin: '*' });
     }
 
     public enableHemet(options?: HelmetOptions) {
-        if (options) {
-            enableHelmetFunc(this.dolph, options);
-        } else {
-            enableHelmetFunc(this.dolph);
-        }
+        enableHelmetFunc(this.securityMiddlewares, options);
     }
 
     private initSockets(server: Server<typeof IncomingMessage, typeof ServerResponse>) {
@@ -885,8 +923,15 @@ class DolphFactoryClass {
             });
         } else {
             const start = async () => {
-                //@ts-expect-error -- server.listen callback typing does not match Promise resolve
-                await new Promise((resolve) => this.server.listen({ port }, resolve));
+                // Wait for Apollo first so no request can arrive before /graphql is mounted.
+                await this.graphqlReady;
+                await new Promise<void>((resolve, reject) => {
+                    this.server.once('error', reject);
+                    this.server.listen({ port: +this.port }, () => {
+                        this.server.off('error', reject);
+                        resolve();
+                    });
+                });
             };
 
             start()

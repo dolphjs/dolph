@@ -31,8 +31,8 @@ import session from 'express-session';
 async function bootstrap() {
     const dolph = new DolphFactory([AppComponent]);
 
-    // Access the underlying Express engine to apply global middleware
-    dolph.engine().use(
+    // middlewares() runs these before your routes
+    dolph.middlewares([
         session({
             secret: 'my-super-secret-key', // Use env variables in production
             resave: false,
@@ -42,13 +42,15 @@ async function bootstrap() {
                 maxAge: 1000 * 60 * 60 * 24, // 1 day
             },
         }),
-    );
+    ]);
 
     dolph.start();
 }
 
 bootstrap();
 ```
+
+Don't use `dolph.engine().use(...)` for this. Routes are already mounted by the time you can call it, so the middleware would run after them and `req.session` would be undefined in your controllers.
 
 ## Using Sessions in Controllers
 

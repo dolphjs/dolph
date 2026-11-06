@@ -1,6 +1,6 @@
 {
     "name": "@dolphjs/dolph",
-    "version": "2.0.2",
+    "version": "2.0.3",
     "description": "New-Age, developer friendly node.js and bun framework",
     "main": "index.js",
     "types": "index.d.ts",
@@ -129,7 +129,7 @@
         "type-graphql": "^2.0.0-rc.2",
         "typescript": "^5.1.5"
     },
-    "resolutions": {
+    "overrides": {
         "diff": ">=3.5.1",
         "postcss": ">=8.4.31"
     },

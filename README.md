@@ -6,8 +6,8 @@ See [documentation](https://dolphjs.com)
 
 ## Architecture
 
-- Runtime overview and module boundaries: `docs/architecture.md`
-- Full API and usage guide: `docs/dolphjs-in-depth.md`
+- Runtime overview and module boundaries: `md-docs/architecture.md`
+- Full API and usage guide: `md-docs/dolphjs-in-depth.md`
 
 ## Samples
 

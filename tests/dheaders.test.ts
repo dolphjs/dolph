@@ -42,9 +42,9 @@ describe('DHeaders, DCookies, and DAuth', () => {
         expect(res.body.message).toBe('dolph');
     });
 
-    it('should inject cookies (fallback to empty object if unparsed)', async () => {
+    it('should inject cookies parsed by middleware added through middlewares()', async () => {
         const res = await request(server).get('/v1/test/cookies').set('Cookie', 'custom_cookie=cookie-value');
-        expect(res.body.data).toEqual({});
+        expect(res.body.data).toEqual({ custom_cookie: 'cookie-value' });
     });
 
     it('should inject authorization header', async () => {
