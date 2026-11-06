@@ -17,5 +17,9 @@ export const defaultFileExtensions = [
     '.flv',
     '.avi',
     '.wav',
-    '.bmi',
+    '.bmp',
+    '.webp',
+    '.gif',
+    '.heic',
+    '.avif',
 ];

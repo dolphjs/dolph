@@ -307,6 +307,9 @@ const InitialiseControllersAsRouter = (
                                                     case 'file':
                                                         args[meta.index] = req.file;
                                                         break;
+                                                    case 'files':
+                                                        args[meta.index] = req.files;
+                                                        break;
                                                     case 'headers':
                                                         args[meta.index] = req.headers;
                                                         break;

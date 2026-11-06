@@ -50,7 +50,7 @@ describe('Upload timeout', () => {
     const serve = (options: Partial<Parameters<typeof useFileUploader>[0]>) => {
         const app = express();
 
-        app.post('/', useFileUploader({ type: 'array', fieldname: 'photos', maxCount: 3, ...options }), (_req, res) => {
+        app.post('/', useFileUploader({ type: 'array', fieldname: 'photos', maxCount: 3, verifyContent: false, ...options }), (_req, res) => {
             res.json({ ok: true });
         });
         app.use((err: { statusCode?: number; message: string }, _req: DRequest, res: DResponse, _next: DNextFunc) => {
@@ -92,6 +92,14 @@ describe('Upload timeout', () => {
         expect(res.status).toBe(408);
         await waitUntil(() => readdirSync(directory).length === 0);
         expect(readdirSync(directory)).toEqual([]);
+    });
+
+    it('should return 408 when a stall leaves a file too short to check', async () => {
+        const server = serve({ storage: memoryStorage(), timeout: 150, verifyContent: true });
+
+        const res = await stalledUpload(server, filePart('photos', 'short.pdf', '%PDF-'));
+
+        expect(res.status).toBe(408);
     });
 
     it('should return 408 with memory storage', async () => {

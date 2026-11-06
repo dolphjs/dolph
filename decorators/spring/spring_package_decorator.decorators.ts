@@ -275,12 +275,12 @@ export function Render(template: string): MethodDecorator {
 // Unique symbol for metadata key
 export const ROUTE_ARGS_METADATA = Symbol('dolph:route_args_metadata');
 
-export const routeParamsArr = ['req', 'res', 'next', 'body', 'query', 'param', 'file', 'payload', 'headers', 'cookies', 'auth'];
+export const routeParamsArr = ['req', 'res', 'next', 'body', 'query', 'param', 'file', 'files', 'payload', 'headers', 'cookies', 'auth'];
 
 export interface RouteParamMetadata {
     // Parameter index
     index: number;
-    type: 'req' | 'res' | 'next' | 'body' | 'query' | 'param' | 'file' | 'payload' | 'headers' | 'cookies' | 'auth';
+    type: 'req' | 'res' | 'next' | 'body' | 'query' | 'param' | 'file' | 'files' | 'payload' | 'headers' | 'cookies' | 'auth';
     // For DTO type, specific param name, etc.
     data?: any;
 }
@@ -340,6 +340,18 @@ export function DNext(): ParameterDecorator {
 export function DPayload(): ParameterDecorator {
     return (target: Object, propertyKey: string | symbol, parameterIndex: number) => {
         addParameterMetadata(target, propertyKey, parameterIndex, 'payload');
+    };
+}
+
+export function DFile(): ParameterDecorator {
+    return (target: Object, propertyKey: string | symbol, parameterIndex: number) => {
+        addParameterMetadata(target, propertyKey, parameterIndex, 'file');
+    };
+}
+
+export function DFiles(): ParameterDecorator {
+    return (target: Object, propertyKey: string | symbol, parameterIndex: number) => {
+        addParameterMetadata(target, propertyKey, parameterIndex, 'files');
     };
 }
 

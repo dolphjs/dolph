@@ -3,7 +3,9 @@ import { randomBytes } from 'crypto';
 import { createWriteStream, mkdirSync, unlink } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
+import { PassThrough, Readable } from 'stream';
 import {
+    CloudStorageOptions,
     DiskStorageOptions,
     FileInfo,
     Storage,
@@ -12,6 +14,7 @@ import {
 } from '../../common/types/dolph_uploader.type';
 import { DRequest } from '../../common';
 import { logger } from '../../utilities';
+import { pipeInto } from './header_guard';
 import { makeMiddleware } from './make_middleware';
 
 /**
@@ -48,18 +51,26 @@ class DiskStorage implements Storage {
 
                 if (!file.stream) return callback(new Error('file stream is missing'));
 
+                // Naming a file is async, so a rejected upload can already be gone by now.
+                // Its error has fired, so nothing below would ever clean up the new file.
+                if ((file.stream as Readable).destroyed) return callback(new Error('upload was cancelled'));
+
                 const finalPath = join(destination, filename);
                 const outStream = createWriteStream(finalPath);
 
                 // pipe() leaves the destination open when its source fails, which
                 // would keep a partial file on disk.
                 file.stream.on('error', () => {
-                    outStream.destroy();
-                    unlink(finalPath, (unlinkError) => {
-                        if (unlinkError && unlinkError.code !== 'ENOENT') {
-                            logger.warn(`Could not remove partial upload ${filename}: ${unlinkError.message}`);
-                        }
+                    // The file can still be opening, and removing it before that finishes
+                    // would leave an empty file behind.
+                    outStream.once('close', () => {
+                        unlink(finalPath, (unlinkError) => {
+                            if (unlinkError && unlinkError.code !== 'ENOENT') {
+                                logger.warn(`Could not remove partial upload ${filename}: ${unlinkError.message}`);
+                            }
+                        });
                     });
+                    outStream.destroy();
                 });
 
                 file.stream.pipe(outStream);
@@ -103,6 +114,33 @@ class MemoryStorage implements Storage {
     removeFile(req: DRequest, file: FileInfo, callback: (error: Error | null) => void): void {
         delete file.buffer;
         callback(null);
+    }
+}
+
+class CloudStorage implements Storage {
+    constructor(private readonly options: CloudStorageOptions) {}
+
+    handleFile(req: DRequest, file: FileInfo, callback: (error: Error | null, info?: Partial<FileInfo>) => void): void {
+        if (!file.stream) return callback(new Error('file stream is missing'));
+
+        // Providers don't report a size, and a file's final size is only known once it's sent.
+        let size = 0;
+        const counted = new PassThrough();
+        counted.on('data', (chunk: Buffer) => (size += chunk.length));
+
+        const stream = pipeInto(file.stream as Readable, counted);
+
+        this.options.put(file, stream, req).then(
+            (result) => callback(null, { ...result, size }),
+            (error) => callback(error),
+        );
+    }
+
+    removeFile(req: DRequest, file: FileInfo, callback: (error: Error | null) => void): void {
+        this.options.remove(file, req).then(
+            () => callback(null),
+            (error) => callback(error),
+        );
     }
 }
 
@@ -186,3 +224,5 @@ function createUploadMiddleware(options: Partial<UploadOptionAndConfig> = {}) {
 export const fileUploader = createUploadMiddleware;
 export const diskStorage = (options: DiskStorageOptions) => new DiskStorage(options);
 export const memoryStorage = () => new MemoryStorage();
+/** Streams uploads to any provider, such as S3 or Cloudinary, through a `put` and `remove` you supply. */
+export const cloudStorage = (options: CloudStorageOptions) => new CloudStorage(options);
