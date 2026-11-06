@@ -28,14 +28,16 @@ Extract specific data from the Express request object securely.
 
 | Decorator       | Description                                                      | Example                              |
 | :-------------- | :--------------------------------------------------------------- | :----------------------------------- |
-| `@DReq()`       | Injects the raw Express Request object.                          | `(@DReq() req: DRequest)`            |
-| `@DRes()`       | Injects the raw Express Response object.                         | `(@DRes() res: DResponse)`           |
-| `@DNext()`      | Injects the Express Next function.                               | `(@DNext() next: DNextFunc)`         |
-| `@DBody()`      | Extracts `req.body`.                                             | `(@DBody() body: any)`               |
-| `@DParam(name)` | Extracts a route parameter (`req.params[name]`).                 | `(@DParam('id') id: string)`         |
-| `@DQuery(name)` | Extracts a query parameter (`req.query[name]`).                  | `(@DQuery('search') search: string)` |
+| `@DReq()`       | Injects the request object.                          | `(@DReq() req: DRequest)`            |
+| `@DRes()`       | Injects the response object.                         | `(@DRes() res: DResponse)`           |
+| `@DNext()`      | Injects the next function.                               | `(@DNext() next: DNextFunc)`         |
+| `@DBody(Dto?)`  | Extracts `req.body`, validated when given a DTO.                 | `(@DBody(UserDto) body: UserDto)`    |
+| `@DParam(Dto?)` | Extracts `req.params`, validated when given a DTO.               | `(@DParam(IdDto) params: IdDto)`     |
+| `@DQuery(Dto?)` | Extracts `req.query`, validated when given a DTO.                | `(@DQuery(ListDto) query: ListDto)`  |
 | `@DHeaders()`   | Extracts `req.headers`.                                          | `(@DHeaders() headers: any)`         |
 | `@DCookies()`   | Extracts `req.cookies`.                                          | `(@DCookies() cookies: any)`         |
+| `@DFile()`      | Extracts `req.file`, from a single upload.                       | `(@DFile() image: UploadedImage)`    |
+| `@DFiles()`     | Extracts `req.files`, from a multiple upload.                    | `(@DFiles() images: FileInfo[])`     |
 | `@DAuth()`      | Extracts the `Authorization` header.                             | `(@DAuth() auth: string)`            |
 | `@DPayload()`   | Extracts authenticated payload (usually set by JWT middlewares). | `(@DPayload() payload: any)`         |
 

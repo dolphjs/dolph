@@ -68,8 +68,8 @@ You can also pass path parameters to these decorators.
 
 ```typescript
 @Get(':id')
-async findOne(@DParam('id') id: string) {
-  return `This action returns cat #${id}`;
+async findOne(@DParam() params: { id: string }) {
+  return `This action returns cat #${params.id}`;
 }
 ```
 
@@ -77,9 +77,11 @@ async findOne(@DParam('id') id: string) {
 
 DolphJS provides decorators to extract payloads from the incoming request cleanly.
 
-- `@DBody()`: Extracts the `req.body`.
-- `@DParam('name')`: Extracts a specific route parameter `req.params.name`.
-- `@DQuery('name')`: Extracts a query parameter `req.query.name`.
+- `@DBody()`: Extracts `req.body`.
+- `@DParam()`: Extracts `req.params`.
+- `@DQuery()`: Extracts `req.query`.
+
+Pass a DTO class to validate what comes in, as in `@DBody(CreateCatDto)`. Invalid input returns `400`.
 
 ### Example with DTOs
 

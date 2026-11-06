@@ -17,13 +17,13 @@ DolphJS is the **New-Age, developer-friendly Node.js framework** that bridges th
 
 DolphJS was designed with a core philosophy: **Architectural elegance without sacrificing the ecosystem**.
 
-Built entirely in TypeScript on top of the battle-tested **Express** engine, DolphJS introduces a robust, **Component-based architecture** inspired by enterprise frameworks (like Spring Boot and NestJS) but tailored for the modern Node developer.
+Built entirely in TypeScript, running on **Express** or **Fastify**, DolphJS introduces a robust, **Component-based architecture** inspired by enterprise frameworks (like Spring Boot and NestJS) but tailored for the modern Node developer.
 
 Here is why developers love DolphJS:
 
 - **Zero-Config Dependency Injection**: No more manual wiring! Services and Controllers are seamlessly injected and managed for you via advanced TypeScript Decorators.
-- **Uncompromised Flexibility**: Unlike other enterprise frameworks that hide the underlying HTTP engine, DolphJS gives you full access to Express. If a package works in Express, it works in DolphJS.
-- **Batteries Included, but Swappable**: Out of the box, you get native wrappers for GraphQL (via Apollo), WebSockets (via Socket.io), and deep Auto-wiring for MongoDB and MySQL—all configured through a single `dolph_config.yaml` file.
+- **Uncompromised Flexibility**: Unlike other enterprise frameworks that hide the underlying HTTP engine, DolphJS gives you full access to it. Choose Express or Fastify, and Express middleware works on both.
+- **Batteries Included, but Swappable**: Out of the box, you get native wrappers for GraphQL (via Apollo), WebSockets (via Socket.io), and database connections for MongoDB and SQL through TypeORM—all configured through a single `dolph_config.yaml` file.
 - **Developer Experience First**: The Dolph CLI automates boilerplate generation so you can focus strictly on your business logic.
 
 Whether you are building a lightning-fast REST API, a robust GraphQL server, or a real-time WebSocket application, DolphJS provides the guardrails to keep your code clean and the freedom to build it your way.
