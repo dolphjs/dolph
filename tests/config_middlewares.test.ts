@@ -1,6 +1,7 @@
 import fs from 'fs';
 import request from 'supertest';
 import { DolphFactory } from '../core';
+import { logger } from '../utilities';
 
 const realReadFileSync = fs.readFileSync;
 
@@ -44,6 +45,70 @@ describe('Middlewares set in dolph_config.yaml', () => {
         const res = await request(appWithConfig('port: 3030\n')).get('/missing');
 
         expect(res.headers['x-content-type-options']).toBeUndefined();
+    });
+
+    describe('cors', () => {
+        const preflight = (yaml: string, origin = 'https://app.example.com') =>
+            request(appWithConfig(yaml))
+                .options('/anything')
+                .set('Origin', origin)
+                .set('Access-Control-Request-Method', 'PUT');
+
+        const cors = (lines: string) => `middlewares:\n  cors:\n    activate: true\n${lines}`;
+
+        it.each([
+            ['missing', ''],
+            ['empty', "    origin: ''\n"],
+            ['null', '    origin:\n'],
+        ])('should allow no site when origin is %s', async (_name, lines) => {
+            const warn = jest.spyOn(logger, 'warn').mockImplementation(() => logger);
+
+            const res = await request(appWithConfig(cors(lines)))
+                .get('/missing')
+                .set('Origin', 'https://evil.example.com');
+
+            expect(res.headers['access-control-allow-origin']).toBeUndefined();
+            expect(warn).toHaveBeenCalledWith(expect.stringContaining('`origin` is empty'));
+        });
+
+        it('should allow every site when origin is explicitly *', async () => {
+            const res = await request(appWithConfig(cors("    origin: '*'\n")))
+                .get('/missing')
+                .set('Origin', 'https://anyone.example.com');
+
+            expect(res.headers['access-control-allow-origin']).toBe('*');
+        });
+
+        it('should only name the configured site', async () => {
+            const res = await request(appWithConfig(cors("    origin: 'https://app.example.com'\n")))
+                .get('/missing')
+                .set('Origin', 'https://evil.example.com');
+
+            expect(res.headers['access-control-allow-origin']).toBe('https://app.example.com');
+        });
+
+        it('should accept a list of sites', async () => {
+            const yaml = cors("    origin:\n      - 'https://a.example.com'\n      - 'https://b.example.com'\n");
+
+            const allowed = await request(appWithConfig(yaml)).get('/missing').set('Origin', 'https://b.example.com');
+            const blocked = await request(appWithConfig(yaml)).get('/missing').set('Origin', 'https://c.example.com');
+
+            expect(allowed.headers['access-control-allow-origin']).toBe('https://b.example.com');
+            expect(blocked.headers['access-control-allow-origin']).toBeUndefined();
+        });
+
+        it('should answer preflight requests with the default status', async () => {
+            const res = await preflight(cors("    origin: 'https://app.example.com'\n"));
+
+            expect(res.status).toBe(204);
+            expect(res.headers['access-control-allow-methods']).toContain('PUT');
+        });
+
+        it('should apply configured methods', async () => {
+            const res = await preflight(cors("    origin: 'https://app.example.com'\n    methods:\n      - GET\n"));
+
+            expect(res.headers['access-control-allow-methods']).toBe('GET');
+        });
     });
 
     it('should apply helmet headers to responses for malformed bodies', async () => {

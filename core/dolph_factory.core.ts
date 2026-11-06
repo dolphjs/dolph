@@ -728,23 +728,22 @@ class DolphFactoryClass {
 
             if (config.middlewares) {
                 if (config.middlewares.cors?.activate) {
-                    const {
-                        optionsSuccessStatus,
-                        allowedHeaders,
-                        credentials,
-                        exposedHeaders,
-                        maxAge,
-                        origin,
-                        preflightContinue,
-                    } = config.middlewares.cors;
+                    const { activate, origin, ...corsOptions } = config.middlewares.cors;
+
+                    if (!origin) {
+                        inAppLogger.warn(
+                            clc.yellow(
+                                "CORS is on but `origin` is empty, so no cross-origin requests are allowed. Set `origin` in dolph_config.yaml, or use '*' to allow every site.",
+                            ),
+                        );
+                    }
+
+                    // Unset keys are left out: the cors package would treat an
+                    // explicit undefined as a value and lose its own defaults.
                     enableCorsFunc(this.dolph, {
-                        optionsSuccessStatus,
-                        allowedHeaders: allowedHeaders ?? undefined,
-                        exposedHeaders: exposedHeaders ?? undefined,
-                        credentials,
-                        maxAge,
-                        origin: origin || '*',
-                        preflightContinue,
+                        ...Object.fromEntries(Object.entries(corsOptions).filter(([, value]) => value != null)),
+                        // An empty origin used to mean every site. Allowing everyone has to be asked for.
+                        origin: origin || false,
                     });
                 }
 

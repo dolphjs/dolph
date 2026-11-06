@@ -59,6 +59,7 @@
 
 #### Startup and middleware
 
+- **CORS needs an `origin`.** An empty `origin` used to allow every site. It now allows none, and logs a warning. Use `origin: '*'` if you want every site.
 - **Wiring errors stop the app.** Invalid `@Component` params and service or controller setup errors used to be logged, leaving the app running without those services or routes.
 - **`.middlewares()`, `enableHelmet()` and `enableCors()`** now run before your routes. Error handlers passed to `.middlewares()` no longer catch route errors, so use `setGlobalExceptionHandler()`.
 - **`middlewares.helmet` in `dolph_config.yaml` now works.** Apps that already set it get real headers, including a Content Security Policy that may block inline scripts.
