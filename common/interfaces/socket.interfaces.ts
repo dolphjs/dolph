@@ -5,10 +5,12 @@ import { SocketComponent, SocketService } from '../../packages';
 export interface DSocket {
     server: Server<typeof IncomingMessage, typeof ServerResponse>;
     options?: Partial<ServerOptions>;
+    auth?: false;
 }
 
 export interface DSocketInit {
     options?: Partial<ServerOptions>;
     component: SocketComponent;
     socketService?: typeof SocketService;
+    auth?: false;
 }

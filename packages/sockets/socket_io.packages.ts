@@ -1,6 +1,7 @@
 import { Service } from 'typedi';
 import type { Server as SocketServer } from 'socket.io';
 import { DSocket } from '../../common/interfaces/socket.interfaces';
+import { guardSocketHandlers } from './socket_guard';
 
 @Service()
 export class SocketService {
@@ -11,6 +12,7 @@ export class SocketService {
         // eslint-disable-next-line @typescript-eslint/no-var-requires
         const { Server } = require('socket.io') as typeof import('socket.io');
         this.socketIo = new Server(params.server, params.options);
+        guardSocketHandlers(this.socketIo);
     }
 
     public getSocket(): SocketServer {
