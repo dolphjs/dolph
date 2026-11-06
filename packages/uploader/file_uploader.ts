@@ -11,6 +11,7 @@ import {
     UploadOptionAndConfig,
 } from '../../common/types/dolph_uploader.type';
 import { DRequest } from '../../common';
+import { logger } from '../../utilities';
 import { makeMiddleware } from './make_middleware';
 
 /**
@@ -45,10 +46,22 @@ class DiskStorage implements Storage {
             this.getFilename(req, file, (err, filename) => {
                 if (err) return callback(err);
 
+                if (!file.stream) return callback(new Error('file stream is missing'));
+
                 const finalPath = join(destination, filename);
                 const outStream = createWriteStream(finalPath);
 
-                if (!file.stream) return callback(new Error('file stream is missing'));
+                // pipe() leaves the destination open when its source fails, which
+                // would keep a partial file on disk.
+                file.stream.on('error', () => {
+                    outStream.destroy();
+                    unlink(finalPath, (unlinkError) => {
+                        if (unlinkError && unlinkError.code !== 'ENOENT') {
+                            logger.warn(`Could not remove partial upload ${filename}: ${unlinkError.message}`);
+                        }
+                    });
+                });
+
                 file.stream.pipe(outStream);
                 outStream.on('error', callback);
                 outStream.on('finish', () => {

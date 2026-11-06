@@ -56,6 +56,7 @@
 - `maxCount` and field names are enforced. Extra or unexpected files return `400`.
 - A file type that isn't allowed returns `415`. It used to return `200` with the file dropped.
 - `.html`, `.xml` and `.xhtml` need listing in `extensions`.
+- A timed-out upload returns `408` instead of `500`, and its files are removed from disk. `useFileUploader` now honours `timeout`.
 
 #### Startup and middleware
 

@@ -1,7 +1,10 @@
 import { IncomingMessage } from 'http';
+import { Readable } from 'stream';
 import BBusboy, { Busboy } from 'busboy';
 import { FileInfo, UploadConfig } from '../../common/types/dolph_uploader.type';
 import { DRequest, DResponse } from '../../common';
+import { DefaultException } from '../../common/api/exceptions/default_exception.api';
+import { HttpStatus } from '../../common/api/HttpStatus.api';
 import { FileAppender } from './file_appender';
 import { Counter } from './counter';
 import { DolphFIleUploaderError } from './errors/error_messages';
@@ -57,6 +60,7 @@ export function makeMiddleware(getOptions: () => UploadConfig & { fields?: Array
         const appender = new FileAppender(options.fileStrategy, req);
         const pendingWrites = new Counter();
         const uploadedFiles: FileInfo[] = [];
+        const activeStreams = new Set<Readable>();
         const remainingByField = new Map(
             (options.fields ?? []).map(({ name, maxCount }) => [name, maxCount ?? Infinity]),
         );
@@ -90,7 +94,12 @@ export function makeMiddleware(getOptions: () => UploadConfig & { fields?: Array
         }
 
         const uploadTimeOut = setTimeout(() => {
-            done(new Error('Upload process timed out'));
+            const timeoutError = new DefaultException('Upload process timed out', HttpStatus.REQUEST_TIMEOUT);
+
+            // A stalled client never ends its stream, so the abort below would wait
+            // forever for those writes. Destroying them lets storage clean up.
+            abortWithError(timeoutError);
+            activeStreams.forEach((stream) => stream.destroy(timeoutError));
         }, options.timeout ?? 30_000);
 
         function indicateDone(): void {
@@ -269,6 +278,7 @@ export function makeMiddleware(getOptions: () => UploadConfig & { fields?: Array
 
                     let aborting = false;
                     pendingWrites.increment();
+                    activeStreams.add(fileStream as Readable);
 
                     Object.defineProperty(file, 'stream', {
                         configurable: true,
@@ -277,6 +287,7 @@ export function makeMiddleware(getOptions: () => UploadConfig & { fields?: Array
                     });
 
                     fileStream.on('error', (streamErr: Error) => {
+                        activeStreams.delete(fileStream as Readable);
                         pendingWrites.decrement();
                         abortWithError(streamErr);
                     });
@@ -287,6 +298,8 @@ export function makeMiddleware(getOptions: () => UploadConfig & { fields?: Array
                     });
 
                     options.storage.handleFile(req, file, (storageErr: Error | null, info?: Partial<FileInfo>) => {
+                        activeStreams.delete(fileStream as Readable);
+
                         if (aborting) {
                             appender.removePlaceholder(placeholder);
                             uploadedFiles.push({ ...file, ...info });
