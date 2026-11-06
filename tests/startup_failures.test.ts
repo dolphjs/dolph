@@ -11,8 +11,6 @@ class HealthyController extends DolphControllerHandler<Dolph> {
     }
 }
 
-class NotAController {}
-
 class ExplodingService extends DolphServiceHandler<Dolph> {
     constructor() {
         super('exploding');
@@ -40,8 +38,12 @@ const applyComponent = (params: Parameters<typeof Component>[0]) => {
 };
 
 describe('Startup failures', () => {
-    it('should throw when a controller does not extend DolphControllerHandler', () => {
-        expect(() => applyComponent({ controllers: [NotAController as never], services: [] })).toThrow(
+    it.each([
+        ['an arrow function', () => undefined],
+        ['a string', 'NotAController'],
+        ['undefined from a circular import', undefined],
+    ])('should throw when a controller is %s', (_name, controller) => {
+        expect(() => applyComponent({ controllers: [controller as never], services: [] })).toThrow(
             'Invalid `controllers` array',
         );
     });

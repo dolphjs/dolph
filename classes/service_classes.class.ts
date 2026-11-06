@@ -6,16 +6,16 @@
 import { Dolph } from '../common';
 
 /**
- * Dolph's service handler
- * - takes a string generic
+ * Optional base class for services. Any class can be a service, so new code can
+ * leave this out. Add `@DService()` when it has constructor dependencies.
  *
- * - `name`  accepts a unique name for the each service which is used behind the scenes by the controller handler
+ * - `name` is optional, and the framework doesn't read it
  *
- * @version 1.0.0
+ * @version 2.0.0
  */
-abstract class DolphServiceHandler<T extends Dolph> {
-    public name: string;
-    constructor(name: T) {
+abstract class DolphServiceHandler<T extends Dolph = Dolph> {
+    public name?: string;
+    constructor(name?: T) {
         this.name = name;
     }
 }

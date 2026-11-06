@@ -29,7 +29,6 @@ import helmet, { HelmetOptions } from 'helmet';
 import { errorConverter, errorHandler } from './error.core';
 import { createServer, IncomingMessage, Server, ServerResponse } from 'http';
 import { normalizePath } from '../utilities/normalize_path.utilities';
-import { DolphControllerHandler } from '../classes';
 import { getControllersFromMetadata } from '../utilities/get_controllers_from_component';
 import { getShieldMiddlewares, getUnShieldMiddlewares, resolveRouteShields } from '../utilities/spring_helpers.utilities';
 import { DSocketInit } from '../common/interfaces/socket.interfaces';
@@ -133,9 +132,9 @@ const InitialiseRoutes = (engine: import("express").Express, routes: Array<{ pat
 /**
  * Initialiser is responsible for registering all spring controllers as routers and detaching each method from the controller classes and registering them as handler functions.
  */
-const InitialiseControllersAsRouter = <T extends Dolph>(
+const InitialiseControllersAsRouter = (
     engine: import("express").Express,
-    controllers: Array<{ new (): DolphControllerHandler<T> }>,
+    controllers: Array<{ new (): object }>,
     basePath: string,
     factory?: any
 ) => {
@@ -640,7 +639,7 @@ class DolphFactoryClass {
      * Method responsible for reading the controllers from components and registering them in the controllers array
      */
     private extractControllersFromComponent() {
-        const newControllers: Array<{ new (): DolphControllerHandler<Dolph> }> = [];
+        const newControllers: Array<{ new (): object }> = [];
 
         this.controllers.forEach((componentClass) => {
             const extractedControllers = getControllersFromMetadata(componentClass);
