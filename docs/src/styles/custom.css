@@ -1,59 +1,60 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@500..900&family=Red+Hat+Text:wght@400..700&family=Red+Hat+Mono:wght@400..700&display=swap');
 
 :root {
-  /* Fonts - applied globally */
-  --sl-font: 'Inter', sans-serif;
-  --sl-font-heading: 'Outfit', sans-serif;
+  --sl-font: 'Red Hat Text', system-ui, sans-serif;
+  --sl-font-mono: 'Red Hat Mono', ui-monospace, monospace;
+  --sl-font-heading: 'Red Hat Display', system-ui, sans-serif;
 }
 
-/* Deep Dark Mode Colors (Vercel-style) */
+h1, h2, h3, h4, h5, h6,
+.sl-markdown-content h1, .sl-markdown-content h2, .sl-markdown-content h3 {
+  font-family: var(--sl-font-heading);
+}
+
+/* The brand's colours, from the homepage. */
 :root[data-theme='dark'], :root:not([data-theme='light']) {
-  --sl-color-bg: #0a0a0f;
-  --sl-color-bg-nav: rgba(10, 10, 15, 0.7);
-  --sl-color-bg-sidebar: #0a0a0f;
-  --sl-color-black: #000000;
-  --sl-color-white: #ffffff;
-  
-  /* Neon Accents */
-  --sl-color-accent-low: #0f172a;
-  --sl-color-accent: #00e1ff;
-  --sl-color-accent-high: #7eeaff;
-  
-  /* Text Colors */
-  --sl-color-text: #9ca3af;
-  --sl-color-text-accent: #00e1ff;
-  --sl-color-text-invert: #000000;
+  --sl-color-bg: #071a22;
+  --sl-color-bg-nav: rgba(7, 26, 34, 0.75);
+  --sl-color-bg-sidebar: #071a22;
+  --sl-color-black: #04121a;
+  --sl-color-white: #f2f8f9;
 
-  /* Theming Variables */
-  --hero-gradient: linear-gradient(135deg, #ffffff 0%, #00e1ff 100%);
-  --hero-glow: drop-shadow(0 0 40px rgba(0, 225, 255, 0.4));
-  --border-nav: rgba(255, 255, 255, 0.05);
-  
+  --sl-color-accent-low: #12394a;
+  --sl-color-accent: #5fb3c9;
+  --sl-color-accent-high: #c9dee3;
+
+  --sl-color-text: #b5cfd6;
+  --sl-color-text-accent: #9cc7d1;
+  --sl-color-text-invert: #071a22;
+
+  --sl-color-gray-1: #e4eef0;
+  --sl-color-gray-2: #b5cfd6;
+  --sl-color-gray-3: #8fb3bd;
+  --sl-color-gray-4: #3e6878;
+  --sl-color-gray-5: #1b3f4e;
+  --sl-color-gray-6: #0c2733;
+
+  --border-nav: rgba(255, 255, 255, 0.06);
+
   --scrollbar-track: var(--sl-color-bg);
-  --scrollbar-thumb: #333333;
-  --scrollbar-thumb-hover: #555555;
+  --scrollbar-thumb: #1b3f4e;
+  --scrollbar-thumb-hover: #3e6878;
 }
 
-/* Light Mode Overrides */
 :root[data-theme='light'] {
-  --sl-color-bg-nav: rgba(255, 255, 255, 0.7);
-  
-  /* Elegant Blue Accents for light mode */
-  --sl-color-accent-low: #e0f2fe;
-  --sl-color-accent: #0284c7;
-  --sl-color-accent-high: #0369a1;
-  
-  /* Text Colors */
-  --sl-color-text-accent: #0284c7;
+  --sl-color-bg-nav: rgba(228, 238, 240, 0.8);
 
-  /* Theming Variables */
-  --hero-gradient: linear-gradient(135deg, #0f172a 0%, #0284c7 100%);
-  --hero-glow: drop-shadow(0 0 40px rgba(2, 132, 199, 0.2));
-  --border-nav: rgba(0, 0, 0, 0.05);
+  --sl-color-accent-low: #c9dee3;
+  --sl-color-accent: #1e5b70;
+  --sl-color-accent-high: #12394a;
 
-  --scrollbar-track: #f1f5f9;
-  --scrollbar-thumb: #cbd5e1;
-  --scrollbar-thumb-hover: #94a3b8;
+  --sl-color-text-accent: #1e5b70;
+
+  --border-nav: rgba(7, 26, 34, 0.08);
+
+  --scrollbar-track: #e4eef0;
+  --scrollbar-thumb: #a7c9d2;
+  --scrollbar-thumb-hover: #5fb3c9;
 }
 
 /* Glassmorphism for Header */
@@ -86,17 +87,6 @@ header.header {
 }
 .sl-link-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 20px rgba(0, 225, 255, 0.15) !important;
+  box-shadow: 0 4px 20px rgba(95, 179, 201, 0.15) !important;
   border-color: var(--sl-color-accent) !important;
-}
-
-/* Hero Section Animated Gradient */
-.hero > img {
-  filter: var(--hero-glow);
-}
-.hero h1 {
-  background: var(--hero-gradient);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
 }

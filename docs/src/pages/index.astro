@@ -1,0 +1,602 @@
+---
+import DolphMark from '../components/DolphMark.astro';
+import numbers from '../data/site-numbers.json';
+import '../styles/landing.css';
+
+const { tokens, requests } = numbers;
+
+const percent = (value: number, base: number) => Math.round((value / base) * 100);
+const format = (value: number) => value.toLocaleString('en-US');
+
+const getShare = percent(requests['Dolph on Express: GET'], requests['Express: GET']);
+const overhead = 100 - getShare;
+const fastifyGain = (requests['Dolph on Fastify: GET'] / requests['Dolph on Express: GET']).toFixed(1);
+const tokenSaving = 100 - percent(tokens.dolph, tokens.nest);
+const llmsTokens = format(Math.round(tokens.llms / 100) * 100);
+
+const bars = [
+	['Express GET', 'Express: GET', false],
+	['Dolph GET', 'Dolph on Express: GET', true],
+	['Dolph GET with @DReq', 'Dolph on Express: GET with @DReq', true],
+	['Express POST', 'Express: POST', false],
+	['Dolph POST', 'Dolph on Express: POST', true],
+	['Dolph POST with valid DTO', 'Dolph on Express: POST with a valid DTO', true],
+	['Dolph on Fastify GET', 'Dolph on Fastify: GET', true],
+	['Dolph on Fastify POST with valid DTO', 'Dolph on Fastify: POST with a valid DTO', true],
+] as const;
+
+const fastestBar = Math.max(...bars.map(([, key]) => requests[key]));
+
+const tokenRows = [
+	['NestJS', tokens.nest, false],
+	['DolphJS', tokens.dolph, true],
+] as const;
+
+const verdicts = {
+	express: {
+		title: 'Freedom, and every decision',
+		body: 'Validation, error handling, wiring and folder layout are yours to invent again on every project.',
+		structure: 'None',
+		middleware: 'Native',
+		ceremony: 'Low, until it grows',
+		file: 'app.js',
+	},
+	nest: {
+		title: 'Structure, plus a lot of framework',
+		body: 'Modules, provider arrays and imports to register before anything runs. Powerful, and heavy for most services.',
+		structure: 'Strong',
+		middleware: 'On its Express platform',
+		ceremony: 'High',
+		file: 'orders.module.ts and orders.controller.ts',
+	},
+	dolph: {
+		title: 'The shape, without the weight',
+		body: 'Decorators for routes, DI and validation. A component lists its controllers and services, and there is no module graph to wire together.',
+		structure: 'Strong',
+		middleware: 'On Express and Fastify',
+		ceremony: 'Low',
+		file: 'orders.controller.ts and server.ts',
+	},
+};
+
+const decoratorLines = [
+	["@Route('orders')", 0],
+	['export class OrdersController {', -1],
+	['  constructor(private orders: OrdersService) {}', 1],
+	['  @Post()', 0],
+	['  create(@DBody(CreateOrderDto) dto: CreateOrderDto) {', 2],
+	['    return this.orders.create(dto);', 3],
+	['  }', -1],
+	['}', -1],
+] as const;
+
+const decoratorTargets = [
+	['Router', 'Mounts the controller and its routes on the engine.'],
+	['DI container', 'Builds OrdersService once and injects it.'],
+	['Validator', 'Checks the body against the DTO before your code runs.'],
+	['Response', 'Sends what you return as JSON, and turns anything you throw into an error response.'],
+];
+
+const terminal = [
+	['$ pnpm install -g @dolphjs/cli', 'cmd'],
+	['$ dolph new my-dolph-app', 'cmd'],
+	['  dolph configurations have been initialized successfully.', 'ok'],
+	['$ cd my-dolph-app && pnpm install', 'cmd'],
+	['$ dolph generate --all orders', 'cmd'],
+	['  Generated service: orders', 'ok'],
+	['  Generated controller: orders', 'ok'],
+	['  Generated component: orders', 'ok'],
+	['$ pnpm dev:start', 'cmd'],
+	['  Dolph app running on port 3300 in DEVELOPMENT mode', 'live'],
+];
+
+const engines = {
+	express: 'Available now, and the default. Every Express middleware works as it is.',
+	fastify: `Available now. About ${fastifyGain}x the requests of Express in our benchmark, with the same controllers.`,
+	dolph: 'Coming soon. Our own engine, built for Dolph.',
+};
+
+const title = 'DolphJS: structure without the bloat';
+const description =
+	'A TypeScript framework for Node.js, cheap for you and your coding agent to write. Decorators, dependency injection and validation on Express or Fastify.';
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>{title}</title>
+		<meta name="description" content={description} />
+		<meta name="theme-color" content="#071A22" />
+		<meta property="og:title" content={title} />
+		<meta property="og:description" content={description} />
+		<meta property="og:image" content="/dolphjs-tile-1024.png" />
+		<meta name="twitter:card" content="summary" />
+		<link rel="icon" href="/favicon.ico" sizes="48x48" />
+		<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+		<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+		<link rel="manifest" href="/site.webmanifest" />
+		<link
+			rel="stylesheet"
+			href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@500..900&family=Red+Hat+Text:wght@400..700&family=Red+Hat+Mono:wght@400..700&display=swap"
+		/>
+	</head>
+	<body class="landing">
+		<div class="surface">
+			<header class="site-header">
+				<a href="#top" class="brand">
+					<DolphMark size={36} />
+					<span>dolphjs</span>
+				</a>
+				<nav aria-label="Main">
+					<a href="#compare">Compare</a>
+					<a href="#agents">For agents</a>
+					<a href="#costs">Benchmarks</a>
+					<a href="/getting-started/">Docs</a>
+					<a href="https://github.com/dolphjs/dolph">GitHub</a>
+					<a href="#start" class="nav-cta">Get started</a>
+				</nav>
+			</header>
+
+			<section id="top" class="gauge hero">
+				<div class="depth">
+					<span class="depth-value">0 m</span>
+					<span class="depth-label">Surface</span>
+				</div>
+				<div class="hero-body">
+					<div class="hero-copy">
+						<h1>Structure without the bloat.</h1>
+						<p>
+							A TypeScript framework for Node.js, cheap for you and your coding agent to write. Decorators,
+							dependency injection and validation on Express or Fastify, with no module graph to maintain.
+						</p>
+						<div class="hero-actions">
+							<button type="button" class="copy" data-copy="pnpm install -g @dolphjs/cli" aria-label="Copy install command">
+								pnpm install -g @dolphjs/cli<span data-copy-label>Copy</span>
+							</button>
+							<a href="/getting-started/">Read the guide</a>
+							<a href="/llms.txt">Give your agent llms.txt</a>
+						</div>
+					</div>
+					<div class="hero-art">
+						<div class="hero-mark-frame">
+							<svg viewBox="0 0 400 400" aria-hidden="true">
+								<path d="M330,250 A140,140 0 1,0 285,315" stroke-opacity="0.45" stroke-width="1.5" stroke-dasharray="2 7"></path>
+								<path d="M360,270 A170,170 0 1,0 300,350" stroke-opacity="0.25" stroke-width="1.5" stroke-dasharray="1 10"></path>
+								<path d="M277,286 Q294,300 306,320" stroke-opacity="0.8" stroke-width="2.5"></path>
+								<path d="M292,296 Q312,314 324,340" stroke-opacity="0.5" stroke-width="2.5"></path>
+								<path d="M306,304 Q330,328 342,360" stroke-opacity="0.25" stroke-width="2.5"></path>
+								<circle cx="200" cy="60" r="3.5" fill-opacity="0.7"></circle>
+								<circle cx="62" cy="200" r="3" fill-opacity="0.45"></circle>
+							</svg>
+							<DolphMark size={280} class="hero-mark" />
+						</div>
+					</div>
+				</div>
+			</section>
+		</div>
+
+		<section id="compare" class="band band-compare">
+			<div class="gauge">
+				<div class="depth">
+					<span class="depth-value">10 m</span>
+					<span class="depth-label">What you write</span>
+				</div>
+				<div class="stack-36">
+					<h2 style="max-width: 18em">Express hands you nothing. Nest hands you everything. Dolph hands you the shape.</h2>
+					<div class="split">
+						<div class="panel code-panel">
+							<div role="tablist" aria-label="Framework" class="tabs">
+								<button type="button" role="tab" id="tab-express" aria-controls="code-express" aria-selected="false" data-tab="express">Express</button>
+								<button type="button" role="tab" id="tab-nest" aria-controls="code-nest" aria-selected="false" data-tab="nest">NestJS</button>
+								<button type="button" role="tab" id="tab-dolph" aria-controls="code-dolph" aria-selected="true" data-tab="dolph">DolphJS</button>
+								<span class="tab-file" data-verdict="file">{verdicts.dolph.file}</span>
+							</div>
+							<div role="tabpanel" id="code-express" aria-labelledby="tab-express" tabindex="0" hidden>
+								<pre>{`const app = express();
+app.use(express.json());
+
+app.post('/orders', async (req, res, next) => {
+  try {
+    const { error } = orderSchema.validate(req.body);
+    if (error) return res.status(400).json(error);
+    const order = await ordersService.create(req.body);
+    res.status(201).json(order);
+  } catch (err) {
+    next(err);
+  }
+});`}</pre>
+							</div>
+							<div role="tabpanel" id="code-nest" aria-labelledby="tab-nest" tabindex="0" hidden>
+								<pre>{`@Module({
+  imports: [DatabaseModule],
+  controllers: [OrdersController],
+  providers: [OrdersService],
+})
+export class OrdersModule {}
+
+@Controller('orders')
+export class OrdersController {
+  constructor(private readonly orders: OrdersService) {}
+
+  @Post()
+  create(@Body() dto: CreateOrderDto) {
+    return this.orders.create(dto);
+  }
+}`}</pre>
+							</div>
+							<div role="tabpanel" id="code-dolph" aria-labelledby="tab-dolph" tabindex="0">
+								<pre><b>@Route</b>{`('orders')
+export class OrdersController {
+  constructor(private orders: OrdersService) {}
+
+  `}<b>@Post</b>{`()
+  create(`}<b>@DBody</b>{`(CreateOrderDto) dto: CreateOrderDto) {
+    return this.orders.create(dto);
+  }
+}
+
+`}<b>@Component</b>{`({ controllers: [OrdersController], services: [OrdersService] })
+export class OrdersComponent {}
+
+// server.ts
+new DolphFactory([OrdersComponent]).start();`}</pre>
+							</div>
+						</div>
+						<div class="verdict">
+							<h3 data-verdict="title">{verdicts.dolph.title}</h3>
+							<p data-verdict="body">{verdicts.dolph.body}</p>
+							<dl>
+								<dt>Structure</dt><dd data-verdict="structure">{verdicts.dolph.structure}</dd>
+								<dt>Express middleware</dt><dd data-verdict="middleware">{verdicts.dolph.middleware}</dd>
+								<dt>Setup ceremony</dt><dd data-verdict="ceremony">{verdicts.dolph.ceremony}</dd>
+							</dl>
+						</div>
+					</div>
+				</div>
+			</div>
+		</section>
+
+		<section id="agents" class="band band-agents">
+			<div class="gauge">
+				<div class="depth">
+					<span class="depth-value">15 m</span>
+					<span class="depth-label">Who else writes it</span>
+				</div>
+				<div class="stack-40">
+					<div class="stack-16">
+						<h2 style="max-width: 16em">Written by you, or by your agent. Either way, fewer tokens.</h2>
+						<p class="lede" style="max-width: 36em">
+							A lot of backend code is now written by a model. Every line it reads and writes is a token you pay
+							for and a place it can go wrong. Dolph gives an agent the same kind of structure as NestJS, with
+							less of it to read, write and keep in sync.
+						</p>
+					</div>
+					<div class="split split-40">
+						<dl class="reasons">
+							<div>
+								<dt>Less to write</dt>
+								<dd>No module imports and exports to keep in step. A component lists its controller and service, and the CLI wires it into your app.</dd>
+							</div>
+							<div>
+								<dt>Less to read</dt>
+								<dd>llms.txt is the whole framework on one page, about {llmsTokens} tokens. Your agent learns it in one read instead of crawling docs.</dd>
+							</div>
+							<div>
+								<dt>One way to do each thing</dt>
+								<dd>Routing, validation, auth and errors each have one pattern, so the model spends less reasoning on choices.</dd>
+							</div>
+						</dl>
+						<div class="panel token-card">
+							<div class="stack-4">
+								<p class="card-title">Tokens in one orders feature</p>
+								<p class="card-sub">Create and fetch an order, with validation and a 404. The same working feature in each.</p>
+							</div>
+							{
+								tokenRows.map(([name, value, isDolph]) => (
+									<div class="bar-row">
+										<div class="bar-head">
+											<span class:list={{ strong: isDolph }}>{name}</span>
+											<span class="strong">{format(value)} tokens</span>
+										</div>
+										<div class="bar-track">
+											<div class:list={['bar', isDolph ? 'bar-amber' : 'bar-muted']} style={`width: ${((value / tokens.nest) * 100).toFixed(1)}%`}></div>
+										</div>
+									</div>
+								))
+							}
+							<p class="card-note">
+								{tokenSaving}% fewer than NestJS on this feature. Express comes in at {tokens.express}, with no types or
+								structure. This counts the code, not a whole agent session, and we'll publish an agent benchmark once it's
+								built. <a href="https://github.com/dolphjs/dolph/tree/dev/benchmark/tokens">See the code</a>
+							</p>
+							<a href="/llms.txt" class="pill-amber">Open llms.txt</a>
+						</div>
+					</div>
+				</div>
+			</div>
+		</section>
+
+		<section class="band band-decorators">
+			<div class="gauge">
+				<div class="depth">
+					<span class="depth-value amber">25 m</span>
+					<span class="depth-label">What each @ does</span>
+				</div>
+				<div class="stack-36">
+					<div class="stack-14">
+						<h2>One decorator, one job.</h2>
+						<p class="lede">Point at a line to see what it wires up.</p>
+					</div>
+					<div class="split">
+						<div class="panel decorator-code">
+							{
+								decoratorLines.map(([code, target]) => (
+									<button type="button" data-dec={target} disabled={target < 0}>{code}</button>
+								))
+							}
+						</div>
+						<div class="decorator-targets">
+							{
+								decoratorTargets.map(([name, desc], index) => (
+									<div data-target={index}>
+										<p class="target-name">{name}</p>
+										<p>{desc}</p>
+									</div>
+								))
+							}
+						</div>
+					</div>
+				</div>
+			</div>
+		</section>
+
+		<section id="start" class="band band-start">
+			<div class="gauge">
+				<div class="depth">
+					<span class="depth-value">40 m</span>
+					<span class="depth-label">Tooling</span>
+				</div>
+				<div class="split split-center">
+					<div class="stack-16 narrow">
+						<h2>From an empty folder to a running server.</h2>
+						<p class="lede">The CLI scaffolds the app, generates controllers and services, and wires them in. It is written in Rust, so it finishes before you look up.</p>
+					</div>
+					<div class="panel terminal" data-terminal>
+						{terminal.map(([text, kind]) => <div class={`term-${kind}`}>{text}</div>)}
+					</div>
+				</div>
+			</div>
+		</section>
+
+		<section id="costs" class="band band-costs">
+			<div class="gauge">
+				<div class="depth">
+					<span class="depth-value">80 m</span>
+					<span class="depth-label">What it costs</span>
+				</div>
+				<div class="split">
+					<div class="stack-16 narrow">
+						<h2>The structure costs about {overhead}%.</h2>
+						<p class="lede">
+							A plain Dolph route serves about {getShare}% of what raw Express does, on GET and POST. Validating a DTO costs what
+							validation costs, and the chart shows it. Switch to Fastify for about {fastifyGain}x the requests.
+						</p>
+						<p class="fine">
+							Measured locally with the load generator on the same machine, so compare paths rather than absolute speeds.{' '}
+							<a href="/benchmarks/">See the method</a>
+						</p>
+					</div>
+					<div class="bars">
+						<p class="fine">Median requests per second, higher is better</p>
+						{
+							bars.map(([label, key, isDolph]) => (
+								<div class="bar-row">
+									<div class="bar-head">
+										<span class:list={{ strong: isDolph }}>{label}</span>
+										<span class="strong">{format(requests[key])}</span>
+									</div>
+									<div class="bar-track">
+										<div class:list={['bar', isDolph ? 'bar-light' : 'bar-muted']} style={`width: ${((requests[key] / fastestBar) * 100).toFixed(1)}%`}></div>
+									</div>
+								</div>
+							))
+						}
+					</div>
+				</div>
+			</div>
+		</section>
+
+		<section id="engines" class="band band-engines">
+			<div class="gauge">
+				<div class="depth">
+					<span class="depth-value">150 m</span>
+					<span class="depth-label">What runs underneath</span>
+				</div>
+				<div class="split split-center">
+					<div class="stack-16 narrow">
+						<h2>Your code stays on top. The engine is one line.</h2>
+						<p class="lede">Controllers, services and components describe your app. Pick the HTTP engine underneath in config; nothing above it changes.</p>
+						<div role="radiogroup" aria-label="Engine" class="engines">
+							<button type="button" role="radio" aria-checked="true" data-engine="express">Express</button>
+							<button type="button" role="radio" aria-checked="false" data-engine="fastify">Fastify</button>
+							<button type="button" role="radio" aria-checked="false" data-engine="dolph">Dolph engine, soon</button>
+						</div>
+						<p class="engine-note" data-engine-note>{engines.express}</p>
+					</div>
+					<div class="engine-stack">
+						<div class="engine-code">
+							<p>orders.controller.ts, unchanged</p>
+							<div>@Route('orders')</div>
+							<div>{'export class OrdersController { ... }'}</div>
+						</div>
+						<div class="engine-config">
+							<p>dolph_config.yaml</p>
+							<div>port: 3300</div>
+							<div class="amber strong">adapter: <span data-engine-key>express</span></div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</section>
+
+		<section class="band band-engines">
+			<div class="gauge gauge-tail">
+				<div class="depth-spacer"></div>
+				<div class="closing">
+					<div class="included">
+						<h2>Included</h2>
+						<dl>
+							<div><dt>GraphQL</dt><dd>Apollo, wrapped natively.</dd></div>
+							<div><dt>WebSockets</dt><dd>Socket.io, as decorators, with JWT auth.</dd></div>
+							<div><dt>MongoDB and SQL</dt><dd>Mongoose and TypeORM, connected from one config file.</dd></div>
+							<div><dt>Image uploads</dt><dd>Checked by their real contents, with GPS data removed.</dd></div>
+							<div><dt>Your Express middleware</dt><dd>helmet, cookie-parser and the rest, on either engine.</dd></div>
+						</dl>
+					</div>
+					<div class="questions">
+						<h2>Questions</h2>
+						<details>
+							<summary>Why not just use NestJS?</summary>
+							<p>If you want everything Nest ships, use Nest. Dolph is for teams that want decorators and DI without a module graph or a framework between them and the request.</p>
+						</details>
+						<details>
+							<summary>Will my Express middleware work?</summary>
+							<p>Yes, on both engines. On Fastify it runs through <code>@fastify/middie</code>. The <a href="/techniques/fastify/">Fastify guide</a> covers the differences.</p>
+						</details>
+						<details>
+							<summary>How fast is it?</summary>
+							<p>On Express, a plain route is within about {overhead}% of raw Express. On Fastify, it handles about {fastifyGain}x the requests. Every number and the method are on the <a href="/benchmarks/">benchmarks page</a>.</p>
+						</details>
+						<details>
+							<summary>Is it production ready?</summary>
+							<p>Version 3 is a new major release. Its test suite runs on Node 20, 22 and 24 on both engines, and <a href="/examples/">DolphStore</a> is a full reference app built on it. It has a smaller community than Express or Nest, so check it covers what you need.</p>
+						</details>
+					</div>
+				</div>
+			</div>
+		</section>
+
+		<section class="band band-seabed">
+			<div class="gauge gauge-seabed">
+				<div class="depth">
+					<span class="depth-value amber">Seabed</span>
+					<span class="depth-label">You made it</span>
+				</div>
+				<div class="dive">
+					<h2>Dive in.</h2>
+					<div class="dive-actions">
+						<a href="/getting-started/" class="pill-amber">Get started</a>
+						<a href="https://github.com/dolphjs/dolph" class="pill-outline">Star on GitHub</a>
+					</div>
+				</div>
+			</div>
+			<footer>
+				<span>Built in the open by Dolph Tech Limited. MIT license.</span>
+				<div>
+					<a href="/getting-started/">Docs</a>
+					<a href="https://github.com/dolphjs/dolph">GitHub</a>
+					<a href="https://dolphlabs.com">Dolphlabs</a>
+				</div>
+			</footer>
+		</section>
+
+		<script is:inline type="application/json" id="landing-data" set:html={JSON.stringify({ verdicts, engines })} />
+		<script>
+			const data = JSON.parse(document.getElementById('landing-data')?.textContent ?? '{}');
+			const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+			const all = <T extends Element>(selector: string) => [...document.querySelectorAll<T>(selector)];
+
+			const copyButton = document.querySelector<HTMLButtonElement>('[data-copy]');
+			const copyLabel = document.querySelector('[data-copy-label]');
+			let copyTimer: ReturnType<typeof setTimeout>;
+
+			copyButton?.addEventListener('click', async () => {
+				await navigator.clipboard?.writeText(copyButton.dataset.copy ?? '');
+
+				if (!copyLabel) return;
+
+				copyLabel.textContent = 'Copied';
+				copyLabel.classList.add('copied');
+				clearTimeout(copyTimer);
+				copyTimer = setTimeout(() => {
+					copyLabel.textContent = 'Copy';
+					copyLabel.classList.remove('copied');
+				}, 1600);
+			});
+
+			const tabs = all<HTMLButtonElement>('[data-tab]');
+
+			const showTab = (name: string) => {
+				tabs.forEach((tab) => {
+					const selected = tab.dataset.tab === name;
+
+					tab.setAttribute('aria-selected', String(selected));
+					tab.tabIndex = selected ? 0 : -1;
+					document.getElementById(`code-${tab.dataset.tab}`)?.toggleAttribute('hidden', !selected);
+				});
+
+				all<HTMLElement>('[data-verdict]').forEach((field) => {
+					field.textContent = data.verdicts[name][field.dataset.verdict ?? ''];
+				});
+			};
+
+			tabs.forEach((tab, index) => {
+				tab.addEventListener('click', () => showTab(tab.dataset.tab ?? 'dolph'));
+				tab.addEventListener('keydown', (event) => {
+					if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') return;
+
+					const next = tabs[(index + (event.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length];
+
+					next.focus();
+					showTab(next.dataset.tab ?? 'dolph');
+				});
+			});
+
+			const showDecorator = (target: string) => {
+				all<HTMLButtonElement>('[data-dec]').forEach((line) => line.classList.toggle('active', line.dataset.dec === target));
+				all<HTMLElement>('[data-target]').forEach((item) => item.classList.toggle('active', item.dataset.target === target));
+			};
+
+			all<HTMLButtonElement>('[data-dec]:not([disabled])').forEach((line) => {
+				['mouseenter', 'focus', 'click'].forEach((event) => {
+					line.addEventListener(event, () => showDecorator(line.dataset.dec ?? '0'));
+				});
+			});
+
+			showDecorator('0');
+
+			const engineButtons = all<HTMLButtonElement>('[data-engine]');
+			const engineNote = document.querySelector('[data-engine-note]');
+			const engineKey = document.querySelector('[data-engine-key]');
+
+			engineButtons.forEach((button) => {
+				button.addEventListener('click', () => {
+					const name = button.dataset.engine ?? 'express';
+
+					engineButtons.forEach((other) => other.setAttribute('aria-checked', String(other === button)));
+					if (engineNote) engineNote.textContent = data.engines[name];
+					if (engineKey) engineKey.textContent = name;
+				});
+			});
+
+			const terminalLines = all<HTMLElement>('[data-terminal] > div');
+
+			if (!reduceMotion) {
+				document.documentElement.classList.add('motion');
+				requestAnimationFrame(() => document.documentElement.classList.add('settled'));
+
+				let step = 0;
+
+				const reveal = () => {
+					terminalLines.forEach((line, index) => line.classList.toggle('shown', index < step));
+					step = step > terminalLines.length + 4 ? 0 : step + 1;
+				};
+
+				reveal();
+				setInterval(reveal, 700);
+			}
+		</script>
+	</body>
+</html>

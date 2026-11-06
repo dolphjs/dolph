@@ -1,0 +1,50 @@
+---
+title: Benchmarks
+description: How DolphJS performs, and how the numbers were measured
+editUrl: https://github.com/dolphjs/dolph/edit/main/docs/src/content/docs/benchmarks.mdx
+---
+
+import numbers from '../../data/site-numbers.json';
+
+export const r = numbers.requests;
+export const n = (key) => r[key].toLocaleString('en-US');
+
+These are the numbers on the homepage. Each one is median requests per second, and higher is better.
+
+| Path | Express | Dolph on Express | Dolph on Fastify |
+|---|---|---|---|
+| `GET` returning JSON | {n('Express: GET')} | {n('Dolph on Express: GET')} | {n('Dolph on Fastify: GET')} |
+| `GET` using `@DReq()` | | {n('Dolph on Express: GET with @DReq')} | {n('Dolph on Fastify: GET with @DReq')} |
+| `POST` echoing JSON | {n('Express: POST')} | {n('Dolph on Express: POST')} | {n('Dolph on Fastify: POST')} |
+| `POST` with a valid DTO | | {n('Dolph on Express: POST with a valid DTO')} | {n('Dolph on Fastify: POST with a valid DTO')} |
+
+## Method
+
+- 100 connections with `autocannon`, keep-alive on and no pipelining.
+- Every path gets a warm-up, then 7 rounds of 5 seconds each.
+- Each round runs every path once, and every other round runs them in reverse, so a slow moment on the machine or a run order doesn't favour one path.
+- The result is the median round.
+- Node 22 in production mode, on one laptop, with the load generator on the same machine.
+
+Because of that last point, compare the paths with each other and don't read these as absolute speeds. In this run, the gap between Dolph and Express moved by about 5% either way from round to round. A difference of a percent or two is too close to call, so read it as being about level.
+
+Express and Dolph don't send identical responses. Dolph wraps what you return in its standard envelope, so its responses are slightly larger.
+
+## Run it yourself
+
+```bash
+git clone https://github.com/dolphjs/dolph
+cd dolph
+npm install
+npm run bench:site
+```
+
+## Tokens
+
+The homepage also counts the tokens in the same small feature, written in [Express, NestJS and Dolph](https://github.com/dolphjs/dolph/tree/dev/benchmark/tokens). It counts the code a developer or an agent has to read and write, using the `cl100k` tokenizer.
+
+| Express | NestJS | Dolph |
+|---|---|---|
+| {numbers.tokens.express} | {numbers.tokens.nest} | {numbers.tokens.dolph} |
+
+Other tokenizers give slightly different counts. No end-to-end agent benchmark exists yet.

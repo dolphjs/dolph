@@ -1,0 +1,235 @@
+# DolphJS
+
+> A TypeScript framework for Node.js. Decorators, dependency injection and validation, on Express or Fastify. This page describes version 3.
+
+Import everything from `@dolphjs/dolph`. Node `^20.19.0 || ^22.13.0 || >=24.11.0`. Each job below has one way to do it, so use that way.
+
+Full docs: https://dolphjs.com/getting-started/
+
+## Project setup
+
+```bash
+pnpm install -g @dolphjs/cli
+dolph new my-app
+dolph generate --all orders   # service, dto, controller, model, specs, component, wired into server.ts
+pnpm dev:start
+```
+
+`dolph generate` skips files that already exist. `--force` replaces them.
+
+## Where settings go
+
+- Plain values that vary by environment: `dolph_config.yaml`
+- Functions and objects: the `DolphFactory` options
+- Anything for one route: decorators
+
+## A feature
+
+```ts
+// orders.dto.ts
+import { IsInt, IsString, Min } from 'class-validator';
+
+export class CreateOrderDto {
+    @IsString()
+    item: string;
+
+    @IsInt()
+    @Min(1)
+    quantity: number;
+}
+
+// orders.service.ts
+import { DService, NotFoundException } from '@dolphjs/dolph';
+
+@DService()
+export class OrdersService {
+    find(id: string) {
+        throw new NotFoundException('order not found');
+    }
+}
+
+// orders.controller.ts
+import { DBody, DParam, Get, Post, Route } from '@dolphjs/dolph';
+
+@Route('orders')
+export class OrdersController {
+    constructor(private orders: OrdersService) {}
+
+    @Post()
+    create(@DBody(CreateOrderDto) dto: CreateOrderDto) {
+        return this.orders.create(dto);
+    }
+
+    @Get(':id')
+    find(@DParam() params: { id: string }) {
+        return this.orders.find(params.id);
+    }
+}
+
+// orders.component.ts
+import { Component } from '@dolphjs/dolph';
+
+@Component({ controllers: [OrdersController], services: [OrdersService] })
+export class OrdersComponent {}
+
+// server.ts
+import { DolphFactory } from '@dolphjs/dolph';
+
+new DolphFactory([OrdersComponent]).start();
+```
+
+Routes are prefixed by `routing.base` in `dolph_config.yaml`.
+
+## Responses
+
+- `return` data to send it. It's wrapped as `{ success, status, message, data }`. Strings become `message`.
+- `null` sends 204. `undefined` sends nothing, so you can respond yourself.
+- `throw` to send an error: `BadRequestException`, `UnauthorizedException`, `ForbiddenException`, `NotFoundException` and so on.
+- For another status, take `@DRes() res: DResponse`, call `res.status(201)`, and return as usual.
+- HTML only goes out through `res.send()` or `@Render('template')`.
+
+## Parameters
+
+`@DBody(Dto?)`, `@DParam(Dto?)` and `@DQuery(Dto?)` return the whole body, params or query. They take a DTO class, never a field name. With a DTO, invalid input returns 400. Unknown fields are rejected on bodies and params, and dropped on queries.
+
+Also: `@DReq()`, `@DRes()`, `@DNext()`, `@DPayload()`, `@DHeaders()`, `@DCookies()`, `@DAuth()`, `@DFile()`, `@DFiles()`.
+
+## Auth
+
+```ts
+const auth = jwtAuth(process.env.JWT_SECRET);
+
+@Shield(auth)                  // every route in the controller
+@Route('account')
+export class AccountController {
+    @Get()
+    me(@DPayload() payload: IPayload) {
+        return payload;
+    }
+
+    @Post('login')
+    @UnShield(auth)            // pass the same reference
+    login() {}
+}
+```
+
+- `jwtAuth(secret)` reads `authorization`.
+- `jwtAuth(publicKeyPath, { algorithm: 'RS256' })` reads `x-auth-token`.
+- `jwtAuth(secret, { cookie: true })` reads the cookie from `newAuthCookie()`.
+- `jwtAuth(secret, { authorize: (payload) => boolean })` answers 403 when false.
+
+## Middleware
+
+- Every request: `new DolphFactory([App], { middlewares: [cookieParser()] })`
+- One route: `@UseMiddleware(a, b)`, left to right
+- `(req: DRequest, res: DResponse, next: DNextFunc)`, and Express middleware works on both adapters
+- Async functions on an Express router: wrap in `DolphAsyncMiddleware`
+
+## DolphFactory
+
+```ts
+const dolph = new DolphFactory([OrdersComponent], {
+    middlewares: [cookieParser()],
+    sockets: { component: new ChatComponent(), auth: socketJwtAuth(secret) },
+    graphql: { schema, context },   // served at /graphql
+    onError: myErrorHandler,        // (err, req, res, next)
+    onResponse: myInterceptor,      // (data, req, res) => body
+});
+
+await dolph.start();
+```
+
+The constructor only stores options. `engine()` wires the server, `ready()` also connects databases, GraphQL and sockets, `start()` also listens, and `stop()` shuts down. `SIGTERM` runs `stop()`. In tests, use `engine()` so nothing connects.
+
+## dolph_config.yaml
+
+```yaml
+port: 3300               # PORT in the environment wins
+adapter: fastify         # express is the default. fastify needs fastify and @fastify/middie
+env: development         # production is the default
+jsonLimit: 2mb
+routing:
+  base: /v1
+middlewares:
+  helmet: true
+  cors:
+    activate: true
+    origin: https://app.example.com
+views:                   # needs all three
+  engine: ejs
+  dir: views
+  assets: public
+database:
+  mongo:
+    url: sensitive       # reads MONGO_URL
+    required: false      # start anyway if it can't connect
+  typeorm:
+    options:
+      type: postgres     # any TypeORM driver. Reads SQL_HOST, SQL_USER, SQL_PASSWORD, SQL_URL
+      host: sensitive
+      username: sensitive
+      password: sensitive
+      database: my_app
+      entities:
+        - app/**/*.entity.js
+```
+
+A required database that can't connect stops the app at startup.
+
+## Databases
+
+- Mongoose: `@InjectMongo('userModel', UserModel)` on the service, then `userModel!: Model<IUser>`.
+- TypeORM: use a getter, because services are built before the DataSource exists:
+
+```ts
+private get users() {
+    return getDataSource().getRepository(User);
+}
+```
+
+## Uploads
+
+```ts
+@Post('avatar')
+@UseMiddleware(auth, imageUpload({ field: 'avatar', maxSize: '2mb' }))
+setAvatar(@DFile() image: UploadedImage) {}
+```
+
+`imageUpload()` checks real file contents and pixel limits. With `sharp` installed it removes metadata such as GPS, and takes `resize`, `format` and `quality`. For other files use `useFileUploader({ type: 'single', fieldname, extensions, storage })`. Storage is `memoryStorage()`, `diskStorage({ destination })` or `cloudStorage({ put, remove })`.
+
+## Sockets
+
+```ts
+@DService()
+export class ChatService extends DolphSocketServiceHandler {
+    constructor() {
+        super();
+        this.socket.on('connection', (socket) => {});
+    }
+}
+
+@Socket({ services: [], socketServices: [ChatService] })
+export class ChatComponent extends SocketComponent {}
+```
+
+Pass `auth: socketJwtAuth(secret)` in the `sockets` option, or `auth: false` for public sockets. Other origins need `options.cors`.
+
+## Testing
+
+```ts
+import { createTestingApp } from '@dolphjs/testing';
+
+const app = await createTestingApp({
+    components: [() => import('./orders.component').then((m) => m.OrdersComponent)],
+    overrides: [{ service: OrdersService, useValue: mock }],
+});
+
+await request(app.engine).get('/v1/orders/1');
+await app.close();
+```
+
+Pass components as lazy imports, so overrides apply. Add `connect: true` to connect databases.
+
+## Removed in version 3
+
+Don't use these: `SuccessResponse`, `ErrorResponse`, `@JWTAuthVerifyDec`, `@JWTAuthorizeDec`, `@CookieAuthVerifyDec`, `cookieAuthVerify`, `JwtBasicAuth`, `JwtAuthMiddleware`, `validateBodyMiddleware`, `@ValidateReq`, `reqValidatorMiddleware`, `TryCatchAsyncDec`, `TryCatchFn`, `middlewareRegistry`, `dolph.middlewares()`, `enableHelmet()`, `enableCors()`, `setGlobalExceptionHandler()`, `setResponseInterceptor()`, `MVCAdapter`, `autoInitMongo`, `@InjectMySQL`, Sequelize. Base classes such as `DolphServiceHandler` still work, but plain classes are preferred.

@@ -1,0 +1,20 @@
+{
+	"tokens": {
+		"express": 375,
+		"nest": 441,
+		"dolph": 392,
+		"llms": 1946
+	},
+	"requests": {
+		"Express: GET": 6832,
+		"Express: POST": 5332,
+		"Dolph on Express: GET": 6780,
+		"Dolph on Express: GET with @DReq": 6417,
+		"Dolph on Express: POST": 5308,
+		"Dolph on Express: POST with a valid DTO": 4808,
+		"Dolph on Fastify: GET": 16525,
+		"Dolph on Fastify: GET with @DReq": 15948,
+		"Dolph on Fastify: POST": 13993,
+		"Dolph on Fastify: POST with a valid DTO": 12346
+	}
+}
