@@ -6,11 +6,10 @@
 import { Dolph } from '../common';
 
 /**
- * `DolphControllerHandler` takes a string generic.
- *
+ * Optional base class for controllers. Any class can be a controller, so new code
+ * can leave this out.
  */
-// Note: string generic would be useful in the future
-abstract class DolphControllerHandler<T extends Dolph> {
+abstract class DolphControllerHandler<T extends Dolph = Dolph> {
     protected readonly _dolphType?: T;
 }
 

@@ -31,7 +31,7 @@ Write specs at the cheapest tier that can prove the behavior. In a healthy Dolph
 
 ### Tier 1 — Service unit tests
 
-A service is a plain class. `DolphServiceHandler` adds nothing but a `name` field, and no decoration is required to construct one directly — `@Component` only matters once a service needs to be *resolved through the registry*, which a unit test never needs to do. Just `new` it with mocked collaborators.
+A service is a plain class, and no decoration is required to construct one directly — `@Component` only matters once a service needs to be *resolved through the registry*, which a unit test never needs to do. Just `new` it with mocked collaborators.
 
 ```typescript
 // cats.service.spec.ts
@@ -64,7 +64,7 @@ No `@dolphjs/testing` import, no Express, no registry. This is the fastest tier 
 
 ```typescript
 // works at runtime via @Component, but awkward to unit test directly
-export class CatsController extends DolphControllerHandler<Dolph> {
+export class CatsController {
   private CatsService!: CatsService; // property name must match the class name exactly
 }
 ```
@@ -74,10 +74,8 @@ Constructor injection sidesteps this entirely:
 ```typescript
 // cats.controller.ts
 @Route('cats')
-export class CatsController extends DolphControllerHandler<Dolph> {
-  constructor(private readonly catsService: CatsService) {
-    super();
-  }
+export class CatsController {
+  constructor(private readonly catsService: CatsService) {}
 
   @Get()
   async findAll() {

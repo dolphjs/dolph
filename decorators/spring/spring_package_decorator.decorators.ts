@@ -1,7 +1,6 @@
 import 'reflect-metadata';
 import { normalizePath } from '../../utilities/normalize_path.utilities';
 import { ComponentParams, Dolph, Middleware } from '../../common';
-import { DolphControllerHandler } from '../../classes';
 import clc from 'cli-color';
 import { logger } from '../../utilities';
 import { SHIELD_METADATA_KEY, UN_SHIELD_METADATA_KEY } from './meta_data_keys.decorators';
@@ -78,11 +77,12 @@ export const Component = <T extends Dolph>({ controllers, services }: ComponentP
     if (
         !(
             Array.isArray(controllers) &&
-            controllers.every((item) => typeof item === 'function' && item.prototype instanceof DolphControllerHandler)
+            // Arrow functions have no prototype, so they're refused along with non-functions.
+            controllers.every((item) => typeof item === 'function' && Boolean(item.prototype))
         )
     ) {
         throw new Error(
-            'Component decorator: Invalid `controllers` array. Each item must be a class extending DolphControllerHandler.',
+            'Component decorator: Invalid `controllers` array. Each item must be a class.',
         );
     }
     const resolvedServices = services || [];

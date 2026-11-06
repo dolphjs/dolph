@@ -11,16 +11,13 @@ Controllers are responsible for handling incoming HTTP requests and returning re
 
 ## Basic Controller
 
-To create a controller, you must extend the `DolphControllerHandler` class and use the `@Route` decorator to define the base path.
+To create a controller, write a class and use the `@Route` decorator to define the base path.
 
 ```typescript
-import { DolphControllerHandler } from '@dolphjs/dolph/classes';
-import { Dolph } from '@dolphjs/dolph/common';
-import { Route, Get, DRes, DRequest } from '@dolphjs/dolph/decorators';
-import { SuccessResponse } from '@dolphjs/dolph/common';
+import { Route, Get, DRes, DRequest, SuccessResponse } from '@dolphjs/dolph';
 
 @Route('cats')
-export class CatsController extends DolphControllerHandler<Dolph> {
+export class CatsController {
     @Get()
     async findAll(@DRes() res: DRequest) {
         SuccessResponse({ res, body: 'This action returns all cats' });
@@ -95,7 +92,7 @@ DolphJS provides decorators to extract payloads from the incoming request cleanl
 If you integrate a validation library like `class-validator`, you can type your `@DBody()` to automatically enforce payload structures (handled in conjunction with middlewares).
 
 ```typescript
-import { Post, DBody, DRes, DRequest } from '@dolphjs/dolph/decorators';
+import { Post, DBody, DRes, DRequest } from '@dolphjs/dolph';
 
 class CreateCatDto {
   name: string;
@@ -120,10 +117,8 @@ Declare the service as a constructor parameter, and `@Component` resolves and pa
 
 ```typescript
 @Route('cats')
-export class CatsController extends DolphControllerHandler<Dolph> {
-    constructor(private readonly catsService: CatsService) {
-        super();
-    }
+export class CatsController {
+    constructor(private readonly catsService: CatsService) {}
 
     @Get()
     async findAll(@DRes() res: DRequest) {
@@ -141,7 +136,7 @@ If the controller has no constructor parameters, `@Component` instead defines a 
 
 ```typescript
 @Route('cats')
-export class CatsController extends DolphControllerHandler<Dolph> {
+export class CatsController {
     // The property name must match the class name exactly — DolphJS assigns
     // it as `instance.CatsService`, not `instance.catsService`.
     private CatsService!: CatsService;
