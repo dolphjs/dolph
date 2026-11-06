@@ -43,18 +43,19 @@ database:
         max: 5
         min: 0
 
-server:
-  port: 3300
-  host: localhost
-  env: development
+port: 3300
+env: development
+jsonLimit: 5mb
+
+routing:
+  base: /v1
 
 middlewares:
   cors:
+    activate: true
     origin: "*"
     credentials: true
   helmet: true
-  jsonParser: true
-  urlEncoded: true
 ```
 
 ## Environment Variables
@@ -65,11 +66,11 @@ DolphJS automatically merges your `.env` files with your configuration. You can 
 
 ### Server
 
-Controls the core HTTP server bindings.
+These keys sit at the top level of the file.
 
-- **port**: The port your application will listen on. Defaults to `3000`.
-- **host**: The host to bind to.
-- **env**: The running environment (e.g., `development`, `production`). In `production`, DolphJS disables certain verbose logging mechanisms to boost performance.
+- **port**: The port your application will listen on. Overrides the `PORT` environment variable. Defaults to `3030`.
+- **env**: The running environment (e.g., `development`, `production`). Overrides `NODE_ENV`.
+- **jsonLimit**: The maximum JSON body size. Defaults to `5mb`.
 
 ### Database
 
@@ -105,12 +106,18 @@ const sequelize = getSequelize();
 
 ### Middlewares
 
-DolphJS bundles commonly used Express middlewares. You can toggle them in your config:
+DolphJS bundles commonly used Express middlewares. You can turn them on in your config:
 
-- **cors**: Configures Cross-Origin Resource Sharing.
-- **helmet**: Secures your Express apps by setting various HTTP headers.
-- **jsonParser**: Automatically parses incoming requests with JSON payloads (uses `express.json()`).
-- **urlEncoded**: Parses URL-encoded bodies (uses `express.urlencoded()`).
+- **cors**: Configures Cross-Origin Resource Sharing. Set `activate: true` to turn it on.
+- **helmet**: Secures your Express apps by setting various HTTP headers. Set it to `true` for the defaults, or to an object of [helmet options](https://helmetjs.github.io/):
+
+```yaml
+middlewares:
+  helmet:
+    contentSecurityPolicy: false
+```
+
+JSON and URL-encoded body parsing are always on.
 
 ### Routing
 

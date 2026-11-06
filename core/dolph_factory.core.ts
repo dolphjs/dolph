@@ -770,6 +770,11 @@ class DolphFactoryClass {
                         preflightContinue,
                     });
                 }
+
+                const helmetConfig = config.middlewares.helmet;
+                if (helmetConfig) {
+                    enableHelmetFunc(this.securityMiddlewares, helmetConfig === true ? undefined : helmetConfig);
+                }
             }
 
             if (config.globalExceptionFilter) {
