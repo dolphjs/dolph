@@ -9,7 +9,7 @@
         "tools/**/*",
         "index.ts"
     ],
-    "exclude": ["node_modules"],
+    "exclude": ["node_modules", "benchmark/tokens"],
     "compilerOptions": {
         "allowJs": false,
         "declaration": true,

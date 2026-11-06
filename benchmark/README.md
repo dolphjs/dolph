@@ -53,6 +53,15 @@ npm run bench
 npm run bench:quick
 ```
 
+## Website numbers
+
+The numbers on the DolphJS website come from two scripts:
+
+```bash
+npm run bench:site              # requests per second, on Express and Fastify
+node benchmark/token-count.js   # tokens in the same feature across frameworks
+```
+
 ## Benchmark settings
 
 | Setting | Value |

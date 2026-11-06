@@ -2,9 +2,18 @@ import 'reflect-metadata';
 import { DolphFactory } from '../../core';
 import { DolphControllerHandler } from '../../classes';
 import { DRequest, DResponse, Dolph } from '../../common';
-import { Component, Get, Post, Route } from '../../decorators';
+import { Component, DBody, DReq, Get, Post, Route } from '../../decorators';
+import { IsInt, IsString } from 'class-validator';
 
 const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+class EchoDto {
+    @IsString()
+    hello: string;
+
+    @IsInt()
+    num: number;
+}
 
 @Route('')
 class BenchController extends DolphControllerHandler<Dolph> {
@@ -25,6 +34,16 @@ class BenchController extends DolphControllerHandler<Dolph> {
     @Post('echo')
     echo(req: DRequest) {
         return req.body;
+    }
+
+    @Get('ping-req')
+    pingWithDecorator(@DReq() req: DRequest) {
+        return { message: 'pong', method: req.method };
+    }
+
+    @Post('echo-dto')
+    echoWithDto(@DBody(EchoDto) body: EchoDto) {
+        return body;
     }
 
     // ── Async workload endpoints ──────────────────────────────────────────
