@@ -1,11 +1,11 @@
 import { logger } from '../../utilities';
 import clc from 'cli-color';
+import { loadOptionalDriver } from '../../utilities/load_optional_driver.utilities';
 import type { Sequelize } from 'sequelize';
 import { SqlConfig } from '../../common';
 
-// Loaded on first use so apps that don't use this driver never pay to import it.
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const loadSequelize = (): typeof import('sequelize') => require('sequelize');
+// Apps install this themselves, and only load it if they use it.
+const loadSequelize = () => loadOptionalDriver<typeof import('sequelize')>('sequelize', () => require('sequelize'));
 
 let DolphSequelize: Sequelize | null = null;
 

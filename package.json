@@ -35,8 +35,9 @@
         "copy:license": "gulp copy:license",
         "copy:npm-ignore": "gulp copy:npm-ignore",
         "copy:all": "npm run copy:package-json && npm run copy:readme && npm run copy:license && npm run copy:npm-ignore",
-        "pre:release": "npm run test && npm run build && npm run copy:all",
-        "before:release": "npm run build && npm run copy:all",
+        "build:types": "node tools/mark_optional_type_imports.js dist",
+        "pre:release": "npm run test && npm run build && npm run build:types && npm run copy:all",
+        "before:release": "npm run build && npm run build:types && npm run copy:all",
         "bench": "node benchmark/runner.js",
         "bench:quick": "node benchmark/runner.js --quick",
         "bench:dolph": "node benchmark/runner.js --only dolph",
@@ -117,15 +118,18 @@
         "gulp-clean": "^0.4.0",
         "gulp-typescript": "^6.0.0-alpha.1",
         "jest": "^29.7.0",
+        "mongoose": "^8.24.8",
         "nodemon": "^3.0.1",
         "pug": "^3.0.3",
         "rimraf": "^6.0.1",
+        "sequelize": "^6.37.8",
         "socket.io-client": "^4.7.5",
         "sqlite3": "^6.0.1",
         "supertest": "^7.0.0",
         "ts-jest": "^29.2.3",
         "ts-node": "^10.9.1",
         "type-graphql": "^2.0.0-rc.2",
+        "typeorm": "^1.1.0",
         "typescript": "^5.1.5"
     },
     "overrides": {
@@ -150,15 +154,28 @@
         "js-yaml": "^4.3.2",
         "jsonwebtoken": "^9.0.1",
         "mime-types": "^2.1.35",
-        "mongoose": "^8.24.8",
         "morgan": "^1.12.1",
         "reflect-metadata": "^0.2.1",
-        "sequelize": "^6.37.8",
         "socket.io": "^4.8.4",
         "typedi": "^0.10.0",
-        "typeorm": "^1.1.0",
         "winston": "^3.9.0",
         "xss": "^1.0.14",
         "xtend": "^4.0.2"
+    },
+    "peerDependencies": {
+        "mongoose": "^8.24.8",
+        "sequelize": "^6.37.8",
+        "typeorm": "^1.1.0"
+    },
+    "peerDependenciesMeta": {
+        "mongoose": {
+            "optional": true
+        },
+        "sequelize": {
+            "optional": true
+        },
+        "typeorm": {
+            "optional": true
+        }
     }
 }

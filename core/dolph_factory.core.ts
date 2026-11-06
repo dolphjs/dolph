@@ -536,7 +536,7 @@ class DolphFactoryClass {
     private isGraphQL = false;
     private graphqlReady?: Promise<void>;
 
-    // Routes are mounted in the constructor, but enableHemet(), enableCors() and
+    // Routes are mounted in the constructor, but enableHelmet(), enableCors() and
     // middlewares() can only be called after it. These routers are mounted ahead
     // of the routes so whatever those methods add later still runs before them.
     private readonly securityMiddlewares = Router();
@@ -728,23 +728,22 @@ class DolphFactoryClass {
 
             if (config.middlewares) {
                 if (config.middlewares.cors?.activate) {
-                    const {
-                        optionsSuccessStatus,
-                        allowedHeaders,
-                        credentials,
-                        exposedHeaders,
-                        maxAge,
-                        origin,
-                        preflightContinue,
-                    } = config.middlewares.cors;
+                    const { activate: _activate, origin, ...corsOptions } = config.middlewares.cors;
+
+                    if (!origin) {
+                        inAppLogger.warn(
+                            clc.yellow(
+                                "CORS is on but `origin` is empty, so no cross-origin requests are allowed. Set `origin` in dolph_config.yaml, or use '*' to allow every site.",
+                            ),
+                        );
+                    }
+
+                    // Unset keys are left out: the cors package would treat an
+                    // explicit undefined as a value and lose its own defaults.
                     enableCorsFunc(this.dolph, {
-                        optionsSuccessStatus,
-                        allowedHeaders: allowedHeaders ?? undefined,
-                        exposedHeaders: exposedHeaders ?? undefined,
-                        credentials,
-                        maxAge,
-                        origin: origin || '*',
-                        preflightContinue,
+                        ...Object.fromEntries(Object.entries(corsOptions).filter(([, value]) => value != null)),
+                        // An empty origin used to mean every site. Allowing everyone has to be asked for.
+                        origin: origin || false,
                     });
                 }
 
@@ -758,7 +757,9 @@ class DolphFactoryClass {
                 this.globalFilter = true;
             }
         } catch (e) {
-            logger.error(clc.red(DolphErrors.noDolphConfigFile));
+            if (e?.code === 'ENOENT') {
+                logger.error(clc.red(DolphErrors.noDolphConfigFile));
+            }
             throw e;
         }
     }
@@ -821,8 +822,16 @@ class DolphFactoryClass {
         enableCorsFunc(this.securityMiddlewares, options || { origin: '*' });
     }
 
-    public enableHemet(options?: HelmetOptions) {
+    public enableHelmet(options?: HelmetOptions) {
         enableHelmetFunc(this.securityMiddlewares, options);
+    }
+
+    /**
+     * @deprecated Misspelled. Use `enableHelmet()` instead.
+     */
+    public enableHemet(options?: HelmetOptions) {
+        inAppLogger.warn(clc.yellow('`enableHemet()` is deprecated. Use `enableHelmet()` instead.'));
+        this.enableHelmet(options);
     }
 
     private initSockets(server: Server<typeof IncomingMessage, typeof ServerResponse>) {

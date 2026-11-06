@@ -22,7 +22,7 @@ import { diskStorage, fileUploader, memoryStorage } from './file_uploader';
  *
  */
 export const useFileUploader =
-    ({ storage, fileFilter, extensions, type, fieldname, fields, limit, maxCount }: UploadOptions) =>
+    ({ storage, fileFilter, extensions, type, fieldname, fields, limit, maxCount, timeout }: UploadOptions) =>
     (req, res: DResponse, next) => {
         let _filter = fileFilter;
 
@@ -56,6 +56,7 @@ export const useFileUploader =
             type,
             maxCount,
             fields,
+            timeout,
         });
 
         uploadMiddleware(req, res, next);

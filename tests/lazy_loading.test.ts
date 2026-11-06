@@ -6,6 +6,7 @@ import { DolphFactory, MVCAdapter } from '../core';
 import { errorConverter, errorHandler } from '../core/error.core';
 import { DNextFunc, DRequest, DResponse, MongooseConfig } from '../common';
 import { initMongo } from '../packages';
+import { loadOptionalDriver } from '../utilities/load_optional_driver.utilities';
 
 const OPTIONAL_PACKAGES = ['mongoose', 'typeorm', 'sequelize', 'socket.io', 'express-handlebars'];
 
@@ -57,6 +58,30 @@ describe('Lazy loading optional packages', () => {
         const engine = new DolphFactory([]).engine();
 
         expect((engine as unknown as { engines: Record<string, unknown> }).engines['.handlebars']).toBeDefined();
+    });
+});
+
+describe('Missing database drivers', () => {
+    it('should say which package to install', () => {
+        const load = () => require('a-driver-that-is-not-installed');
+
+        expect(() => loadOptionalDriver('a-driver-that-is-not-installed', load)).toThrow(
+            'Run `npm install a-driver-that-is-not-installed`',
+        );
+    });
+
+    it('should not hide errors from inside an installed driver', () => {
+        const failure = Object.assign(new Error("Cannot find module 'its-own-dependency'"), { code: 'MODULE_NOT_FOUND' });
+
+        expect(() =>
+            loadOptionalDriver('mongoose', () => {
+                throw failure;
+            }),
+        ).toThrow(failure);
+    });
+
+    it('should return the driver when it is installed', () => {
+        expect(loadOptionalDriver('mongoose', () => mongoose)).toBe(mongoose);
     });
 });
 

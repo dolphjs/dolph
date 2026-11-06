@@ -2,10 +2,10 @@ import { MongooseConfig } from '../../common';
 import type { Mongoose } from 'mongoose';
 import { logger } from '../../utilities';
 import clc from 'cli-color';
+import { loadOptionalDriver } from '../../utilities/load_optional_driver.utilities';
 
-// Loaded on first use so apps that don't use this driver never pay to import it.
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const loadMongoose = (): Mongoose => require('mongoose');
+// Apps install this themselves, and only load it if they use it.
+const loadMongoose = () => loadOptionalDriver<Mongoose>('mongoose', () => require('mongoose'));
 
 /**
  *

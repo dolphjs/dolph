@@ -46,6 +46,7 @@ Requests are rejected rather than silently trimmed:
 - A file on an unexpected field, or beyond `maxCount`, returns `400`.
 - `.html`, `.xml` and `.xhtml` aren't allowed by default, because serving them back could run scripts in a visitor's browser. Add them to `extensions` if you need them.
 - Files sent as a browser `Blob` arrive named `blob`, so they're checked by their declared type.
+- An upload that takes longer than `timeout` (30 seconds by default) returns `408`, and anything already written to disk for that request is removed.
 
 ## Applying to Controllers
 
