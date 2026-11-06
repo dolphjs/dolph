@@ -113,12 +113,15 @@ const sendControllerResult = (req: DRequest, res: DResponse, result: unknown, in
 };
 
 
+// Anything middleware can be mounted on: the Express app or one of its routers
+type MiddlewareHost = Pick<Router, 'use'>;
+
 // function add cors middleware to express
-const enableCorsFunc = (engine: import("express").Express, corsOptions: CorsOptions) => {
+const enableCorsFunc = (engine: MiddlewareHost, corsOptions: CorsOptions) => {
     engine.use(cors(corsOptions));
 };
 
-const enableHelmetFunc = (engine: import("express").Express, helmetOptions?: HelmetOptions) => {
+const enableHelmetFunc = (engine: MiddlewareHost, helmetOptions?: HelmetOptions) => {
     engine.use(helmet(helmetOptions));
 };
 
@@ -433,7 +436,7 @@ const InitialiseMiddlewares = (engine: import("express").Express, { jsonLimit }:
 };
 
 // registers middlewares defined by user
-const initExternalMiddlewares = (engine: import("express").Express, middlewares: DRequestHandler[]) => {
+const initExternalMiddlewares = (engine: MiddlewareHost, middlewares: DRequestHandler[]) => {
     if (middlewares?.length) {
         middlewares.forEach((middleware) => {
             engine.use(middleware);
@@ -546,6 +549,12 @@ class DolphFactoryClass {
     private routingBase = '';
     private isGraphQL = false;
     private graphqlReady?: Promise<void>;
+
+    // Routes are mounted in the constructor, but enableHemet(), enableCors() and
+    // middlewares() can only be called after it. These routers are mounted ahead
+    // of the routes so whatever those methods add later still runs before them.
+    private readonly securityMiddlewares = Router();
+    private readonly lateMiddlewares = Router();
 
     port: dolphPort = process.env.PORT || 3030;
     env = process.env.NODE_ENV || 'development';
@@ -772,15 +781,18 @@ class DolphFactoryClass {
     }
 
     public middlewares(middlewares?: RequestHandler[]) {
-        initExternalMiddlewares(this.dolph, middlewares ?? []);
+        initExternalMiddlewares(this.lateMiddlewares, middlewares ?? []);
     }
 
     private intiDolphEngine(startTime: [number, number]) {
-        
+
         InitialiseConfigLoader();
         incrementHandlers();
+        // Ahead of the body parsers so a malformed-body 400 still gets security headers
+        this.dolph.use(this.securityMiddlewares);
         InitialiseMiddlewares(this.dolph, { jsonLimit: this.jsonLimit });
         initExternalMiddlewares(this.dolph, this.externalMiddlewares || []);
+        this.dolph.use(this.lateMiddlewares);
         initGlobalMiddlewares(this.dolph);
         initMvcAdapter(this.dolph);
         InitialiseRoutes(this.dolph, this.routes, this.routingBase);
@@ -818,15 +830,11 @@ class DolphFactoryClass {
                 '`enableCors()` is deprecated and will be removed in the next major version. Use the `middlewares.cors` section in `dolph_config.yaml` instead.',
             ),
         );
-        enableCorsFunc(this.dolph, options || { origin: '*' });
+        enableCorsFunc(this.securityMiddlewares, options || { origin: '*' });
     }
 
     public enableHemet(options?: HelmetOptions) {
-        if (options) {
-            enableHelmetFunc(this.dolph, options);
-        } else {
-            enableHelmetFunc(this.dolph);
-        }
+        enableHelmetFunc(this.securityMiddlewares, options);
     }
 
     private initSockets(server: Server<typeof IncomingMessage, typeof ServerResponse>) {
