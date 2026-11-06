@@ -4,7 +4,7 @@ const { join } = require('path');
 // Database drivers are optional peers, but the published types import them. Without
 // this, apps get TS2307 from inside DolphJS for every driver they didn't install.
 // `// @ts-ignore` can't go in the source because tsc drops it from .d.ts output.
-const OPTIONAL_DRIVERS = ['mongoose', 'sequelize', 'typeorm', 'fastify'];
+const OPTIONAL_DRIVERS = ['mongoose', 'typeorm', 'fastify'];
 const MARKER = '// @ts-ignore optional peer dependency, resolves to any when not installed';
 const DRIVER_IMPORT = new RegExp(`^import .* from ['"](${OPTIONAL_DRIVERS.join('|')})['"];?\\r?$`, 'gm');
 

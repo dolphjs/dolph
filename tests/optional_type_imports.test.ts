@@ -24,7 +24,7 @@ describe('markOptionalTypeImports', () => {
 
     it.each([
         ["import { Model } from 'mongoose';"],
-        ['import { Options as SequelizeOptions } from "sequelize";'],
+        ['import { DataSourceOptions } from "typeorm";'],
         ["import type { DataSource } from 'typeorm';"],
         ["import mongoose from 'mongoose';"],
     ])('should mark %s', (line) => {

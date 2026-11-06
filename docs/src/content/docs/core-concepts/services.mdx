@@ -87,26 +87,6 @@ export class CatsService {
 }
 ```
 
-#### MySQL Example
-
-Similarly, if you are using MySQL (via Sequelize or similar), you can use `@InjectMySQL`.
-
-```typescript
-import { InjectMySQL, DService } from '@dolphjs/dolph';
-import { ModelStatic, Model as SqlModel } from 'sequelize';
-import { catModel, ICatModel } from './cat.model';
-
-@InjectMySQL('catModel', catModel)
-@DService()
-export class CatsService {
-  catModel!: ModelStatic<SqlModel<any, any>>;
-
-  async create(data: any) {
-    return await this.catModel.create(data);
-  }
-}
-```
-
 :::tip
 By injecting models this way, you decouple your business logic from hardcoded database imports, making it significantly easier to mock databases during unit testing.
 :::

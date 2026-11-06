@@ -1,8 +1,6 @@
 import { DolphFactory } from '../core';
 import { getDataSource } from '../packages/typeorm';
-import { getSequelize } from '../packages/sequelize';
 import { Entity, PrimaryGeneratedColumn, Column, DataSource } from 'typeorm';
-import { DataTypes, Model, Sequelize } from 'sequelize';
 
 @Entity()
 class UserTypeOrm {
@@ -13,19 +11,14 @@ class UserTypeOrm {
     name: string;
 }
 
-class UserSequelize extends Model {
-    declare id: number;
-    declare name: string;
-}
-
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import * as yaml from 'js-yaml';
 
-// autoInitTypeOrm/autoInitSql (triggered from the DolphFactory constructor,
-// via readConfigFile) kick off DataSource#initialize()/Sequelize#sync()
-// fire-and-forget — the constructor returns before either promise settles.
+// autoInitTypeOrm (triggered from the DolphFactory constructor,
+// via readConfigFile) kicks off DataSource#initialize()
+// fire-and-forget — the constructor returns before the promise settles.
 // Poll instead of assuming it's done by the time the assertions run.
 async function waitUntil(predicate: () => boolean, timeoutMs = 5000): Promise<void> {
     const start = Date.now();
@@ -107,70 +100,6 @@ describe('SQL Database Auto Initialization', () => {
         it('should have initialized the TypeORM DataSource', () => {
             expect(dataSource).toBeDefined();
             expect(dataSource.isInitialized).toBe(true);
-        });
-    });
-
-    describe('Sequelize', () => {
-        let sequelize: Sequelize;
-        let cwd: { originalCwd: string; restore: () => void };
-
-        beforeAll(async () => {
-            cwd = withIsolatedCwd();
-
-            const mockConfig = {
-                port: 3334,
-                database: {
-                    sequelize: {
-                        dialect: 'sqlite',
-                        database: ':memory:',
-                        options: {
-                            logging: false,
-                        },
-                    },
-                },
-            };
-
-            fs.writeFileSync('dolph_config.yaml', yaml.dump(mockConfig));
-
-            new DolphFactory([]);
-            sequelize = getSequelize();
-
-            UserSequelize.init(
-                {
-                    id: {
-                        type: DataTypes.INTEGER,
-                        autoIncrement: true,
-                        primaryKey: true,
-                    },
-                    name: {
-                        type: new DataTypes.STRING(128),
-                        allowNull: false,
-                    },
-                },
-                {
-                    tableName: 'users',
-                    sequelize,
-                }
-            );
-            await sequelize.sync({ force: true });
-        });
-
-        afterAll(() => {
-            cwd.restore();
-        });
-
-        it('should have initialized the Sequelize instance', () => {
-            expect(sequelize).toBeDefined();
-        });
-
-        it('should be able to perform operations', async () => {
-            const user = await UserSequelize.create({ name: 'Test Sequelize' });
-            expect(user.id).toBeDefined();
-            expect(user.name).toBe('Test Sequelize');
-
-            const fetchedUser = await UserSequelize.findOne({ where: { name: 'Test Sequelize' } });
-            expect(fetchedUser).toBeDefined();
-            expect(fetchedUser?.name).toBe('Test Sequelize');
         });
     });
 });

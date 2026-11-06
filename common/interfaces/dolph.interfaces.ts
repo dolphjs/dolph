@@ -4,7 +4,6 @@ import { IPayload, MongooseConfig } from '.';
 import type { Router } from 'express';
 import { IncomingHttpHeaders, IncomingMessage, ServerResponse } from 'http';
 import { FileInfo, UploadConfig } from '../types/dolph_uploader.type';
-import { Options as SequelizeOptions } from 'sequelize';
 import { DataSourceOptions } from 'typeorm';
 
 export interface DolphConfig {
@@ -22,16 +21,6 @@ export interface DolphConfig {
 export interface DolphConfigDbOption {
     mongo?: MongooseConfig;
     typeorm?: TypeOrmConfig;
-    sequelize?: SqlConfig;
-}
-
-export interface SqlConfig {
-    dialect: 'mysql' | 'postgres' | 'sqlite' | 'mariadb' | 'mssql';
-    database: string;
-    host?: string;
-    user?: string;
-    pass?: string | null;
-    options?: SequelizeOptions;
 }
 
 export interface TypeOrmConfig {

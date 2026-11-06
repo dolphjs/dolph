@@ -178,10 +178,9 @@ Use middleware alternatives (`JwtAuthMiddleware`, `cookieAuthVerify`) when you n
 
 - `@Socket({ services, socketServices })` on socket component class
 
-### Mongoose/MySQL injection decorators
+### Mongoose injection decorator
 
 - `InjectMongo(propertyName, model)`
-- `InjectMySQL(propertyName, model)`
 
 ## Controller and service base classes
 
@@ -368,7 +367,6 @@ Supported keys include:
 - `middlewares.cors`
 - `database.mongo`
 - `database.typeorm` (auto-initializes a TypeORM DataSource)
-- `database.sequelize` (auto-initializes a Sequelize instance)
 - `globalExceptionFilter`
 
 Example:

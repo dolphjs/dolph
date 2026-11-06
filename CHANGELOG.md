@@ -15,13 +15,30 @@ DolphJS now runs on Fastify 5 as well as Express. Install `fastify` and `@fastif
 - **Node:** `^20.19.0 || ^22.13.0 || >=24.11.0`. Node 18 is no longer supported.
 - **Local development:** set `NODE_ENV=development`, or `env: development` in `dolph_config.yaml`. Production mode is now the default, which hides stack traces and marks the auth cookie `secure`.
 
-- **Install your database driver.** `mongoose`, `typeorm` and `sequelize` are now optional peer dependencies, so a fresh install doesn't include them. Add the one you use:
+- **Install your database driver.** `mongoose` and `typeorm` are now optional peer dependencies, so a fresh install doesn't include them. Add the one you use:
 
   ```bash
   npm install mongoose
   ```
 
-  TypeORM is `^1.1.0`, Sequelize `^6.37.8` and Mongoose `^8.24.8`. Apps using a driver without installing it stop at startup with a message saying which package to add.
+  TypeORM is `^1.1.0` and Mongoose `^8.24.8`. Apps using a driver without installing it stop at startup with a message saying which package to add.
+
+#### Databases
+
+- **Sequelize support is gone.** Dolph's SQL path is now TypeORM. `database.sequelize`, `getSequelize()`, `initSql()`, `autoInitSql()` and `@InjectMySQL` are removed. Move your models to TypeORM entities and configure MySQL under `database.typeorm`:
+
+  ```yaml
+  database:
+    typeorm:
+      options:
+        type: mysql
+        host: sensitive
+        username: sensitive
+        password: sensitive
+        database: my_app
+        entities:
+          - src/**/*.entity.ts
+  ```
 
 #### Authentication
 
@@ -104,7 +121,7 @@ DolphJS now runs on Fastify 5 as well as Express. Install `fastify` and `@fastif
 ### Changed
 
 - Installs are smaller, because database drivers are no longer installed with the framework.
-- Mongoose, TypeORM, Sequelize, socket.io and express-handlebars load on first use, which halves framework load time.
+- Mongoose, TypeORM, socket.io and express-handlebars load on first use, which halves framework load time.
 - Dependency minimums are raised to clear known vulnerabilities.
 - Failed DTO validation no longer writes a log line. The `400` response still names the fields.
 - In production, unexpected client errors keep their status with a generic message, instead of becoming `500`.

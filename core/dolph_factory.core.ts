@@ -14,12 +14,11 @@ import {
     Middleware,
     MongooseConfig,
     TypeOrmConfig,
-    SqlConfig,
     dolphPort,
     ResponseInterceptor,
 } from '../common';
 import { inAppLogger, logger } from '../utilities';
-import { autoInitMongo, autoInitSql, autoInitTypeOrm, SocketService } from '../packages';
+import { autoInitMongo, autoInitTypeOrm, SocketService } from '../packages';
 import { DolphErrors, dolphMessages } from '../common/constants';
 import cors from 'cors';
 import { configLoader, configs } from './config.core';
@@ -633,21 +632,6 @@ class DolphFactoryClass {
                 if ((typeOrmConfig.options as any).password === 'sensitive') (typeOrmConfig.options as any).password = configs.SQL_PASSWORD;
                 if ((typeOrmConfig.options as any).host === 'sensitive') (typeOrmConfig.options as any).host = configs.SQL_HOST;
                 autoInitTypeOrm(typeOrmConfig);
-            }
-
-            const sequelizeConfig: SqlConfig | undefined = this.configs?.database?.sequelize;
-            if (sequelizeConfig?.database) {
-                if (sequelizeConfig.user === 'sensitive') sequelizeConfig.user = configs.SQL_USER;
-                if (sequelizeConfig.pass === 'sensitive') sequelizeConfig.pass = configs.SQL_PASSWORD;
-                if (sequelizeConfig.host === 'sensitive') sequelizeConfig.host = configs.SQL_HOST;
-                
-                if (sequelizeConfig.options) {
-                    if ((sequelizeConfig.options as any).username === 'sensitive') (sequelizeConfig.options as any).username = configs.SQL_USER;
-                    if ((sequelizeConfig.options as any).password === 'sensitive') (sequelizeConfig.options as any).password = configs.SQL_PASSWORD;
-                    if (sequelizeConfig.options.host === 'sensitive') sequelizeConfig.options.host = configs.SQL_HOST;
-                }
-
-                autoInitSql(sequelizeConfig);
             }
 
             if (config.middlewares) {

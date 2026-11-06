@@ -16,7 +16,7 @@
 - `decorators/`: metadata-based API (`@Route`, HTTP decorators, parameter decorators, component/socket decorators).
 - `classes/`: base controller/service/router/auth/socket abstractions.
 - `common/`: request/response interfaces, exceptions, middleware utilities, framework types.
-- `packages/`: integration modules (uploader, sockets, mongoose, sequelize, events).
+- `packages/`: integration modules (uploader, sockets, mongoose, typeorm, events).
 - `utilities/`: auth/token helpers, logger, validators, normalizers.
 
 ## TypeScript environment

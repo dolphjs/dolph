@@ -8,7 +8,7 @@ import { DNextFunc, DRequest, DResponse, MongooseConfig } from '../common';
 import { initMongo } from '../packages';
 import { loadOptionalDriver } from '../utilities/load_optional_driver.utilities';
 
-const OPTIONAL_PACKAGES = ['mongoose', 'typeorm', 'sequelize', 'socket.io', 'express-handlebars', 'fastify'];
+const OPTIONAL_PACKAGES = ['mongoose', 'typeorm', 'socket.io', 'express-handlebars', 'fastify'];
 
 // Runs in a fresh process: inside jest the registry is shared with this file's
 // own imports, so it can't show what the framework alone pulls in.
