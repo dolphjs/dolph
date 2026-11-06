@@ -233,7 +233,7 @@ logs(req: DRequest, res: DResponse) {
 Current auth code checks:
 
 - `authorization` (HMAC path)
-- `x-auth-token` (RSA path)
+- `x-auth-token` (RSA, with `{ algorithm: 'RS256' }`)
 
 The existing sample sends raw JWT in `Authorization` without the `Bearer` prefix.
 

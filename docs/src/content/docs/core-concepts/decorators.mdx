@@ -59,7 +59,8 @@ Extract specific data from the Express request object securely.
 
 DolphJS provides specialized decorators for validating JWTs out of the box.
 
-- **`@JWTAuthVerifyDec(secret)`**: Method decorator that extracts a JWT from headers, verifies it using HMAC/RSA, and injects the payload.
+- **`@JWTAuthVerifyDec(secret)`**: Method decorator that verifies a JWT from the `authorization` header using HMAC (`HS256`), and injects the payload.
+- **`@JWTAuthVerifyDec(publicKeyPath, { algorithm: 'RS256' })`**: Verifies a JWT from the `x-auth-token` header using RSA.
 - **`@CookieAuthVerifyDec(secret)`**: Extracts and verifies JWT from cookies.
 
 :::tip
