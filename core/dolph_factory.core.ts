@@ -408,8 +408,8 @@ const InitialiseControllersAsRouter = <T extends Dolph>(
             // register the router object in the express engine
             engine.use('/', router);
         } catch (e) {
-            console.error(e);
-            logger.error(clc.red(`Error initialising controller ${Controller.name}: ${e.message}`));
+            // Fail at boot: continuing would silently drop every route on this controller.
+            throw new Error(`Error initialising controller ${Controller.name}: ${e.message}`, { cause: e });
         }
     });
 };

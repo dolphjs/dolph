@@ -79,17 +79,13 @@ export const Component = <T extends Dolph>({ controllers, services }: ComponentP
             controllers.every((item) => typeof item === 'function' && item.prototype instanceof DolphControllerHandler)
         )
     ) {
-        logger.error(
-            clc.red(
-                'Component decorator: Invalid `controllers` array. Each item must be a class extending DolphControllerHandler.',
-            ),
+        throw new Error(
+            'Component decorator: Invalid `controllers` array. Each item must be a class extending DolphControllerHandler.',
         );
-        return (target: any) => target; // No-op decorator
     }
     const resolvedServices = services || [];
     if (!(Array.isArray(resolvedServices) && resolvedServices.every((item) => typeof item === 'function'))) {
-        logger.error(clc.red('Component decorator: Invalid `services` array. Each item must be a class.'));
-        return (target: any) => target; // No-op decorator
+        throw new Error('Component decorator: Invalid `services` array. Each item must be a class.');
     }
 
     return (target: any) => {
@@ -208,7 +204,9 @@ export const Component = <T extends Dolph>({ controllers, services }: ComponentP
                 }
             });
         } catch (error: any) {
-            logger.error(clc.red(`[${target.name}] Failed to Initialise services: ${error.message}`));
+            // Fail at boot: continuing would hand controllers undefined services
+            // that only surface later as a 500 on the first request to use them.
+            throw new Error(`[${target.name}] Failed to Initialise services: ${error.message}`, { cause: error });
         }
 
         // Modify controllers to inject resolved service instances
