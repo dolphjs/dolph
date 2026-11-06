@@ -20,23 +20,14 @@ export const newAuthCookie = (sub: sub, exp: Date, secret: string, info?: string
     };
     const token = generateJWTwithHMAC({ payload, secret });
 
-    const options = {
-        expires: new Date(exp.getTime()),
-        httpOnly: false,
-        secure: false,
-    };
-
-    if (configs.NODE_ENV !== 'development') {
-        options.httpOnly = true;
-        options.secure = true;
-    }
-
     return {
         name: 'xAuthToken',
         value: token,
-        expires: options.expires,
-        httpOnly: options.httpOnly,
-        secure: options.secure,
+        expires: new Date(exp.getTime()),
+        httpOnly: true,
+        // Only relaxed in development, where the app is usually on plain http.
+        secure: configs.NODE_ENV !== 'development',
+        sameSite: 'lax',
     };
 };
 
