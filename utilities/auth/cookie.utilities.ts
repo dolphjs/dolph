@@ -1,6 +1,6 @@
 import { configs } from '../../core/config.core';
 import { DNextFunc, DRequest, DResponse, ErrorException, HttpStatus, IPayload, cookieContent, sub } from '../../common';
-import { generateJWTwithHMAC, verifyJWTwithHMAC } from './JWT_generator.utilities';
+import { generateJWTwithHMAC, rejectInvalidToken, verifyJWTwithHMAC } from './JWT_generator.utilities';
 
 /**
  *
@@ -54,9 +54,13 @@ export const cookieAuthVerify = (tokenSecret: string) => (req: DRequest, _res: D
 
     if (!xAuthToken) return next(new ErrorException('user not authorized, login and try again', HttpStatus.UNAUTHORIZED));
 
-    // @ts-expect-error legacy typing compatibility
-    const payload: IPayload = verifyJWTwithHMAC({ token: xAuthToken, secret: tokenSecret });
+    try {
+        req.payload = rejectInvalidToken(() =>
+            verifyJWTwithHMAC({ token: xAuthToken, secret: tokenSecret }),
+        ) as IPayload;
+    } catch (error) {
+        return next(error);
+    }
 
-    req.payload = payload;
     next();
 };
