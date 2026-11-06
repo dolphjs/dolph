@@ -84,8 +84,7 @@ describe('JWT verification', () => {
     let server: Server;
 
     beforeAll(() => {
-        const dolph = new DolphFactory([JwtComponent]);
-        dolph.middlewares([cookieParser()]);
+        const dolph = new DolphFactory([JwtComponent], { middlewares: [cookieParser()] });
         server = createServer(dolph.engine()).listen(0);
     });
 

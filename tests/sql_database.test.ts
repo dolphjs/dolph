@@ -16,20 +16,6 @@ import * as os from 'os';
 import * as path from 'path';
 import * as yaml from 'js-yaml';
 
-// autoInitTypeOrm (triggered from the DolphFactory constructor,
-// via readConfigFile) kicks off DataSource#initialize()
-// fire-and-forget — the constructor returns before the promise settles.
-// Poll instead of assuming it's done by the time the assertions run.
-async function waitUntil(predicate: () => boolean, timeoutMs = 5000): Promise<void> {
-    const start = Date.now();
-    while (!predicate()) {
-        if (Date.now() - start > timeoutMs) {
-            throw new Error('timed out waiting for condition');
-        }
-        await new Promise((resolve) => setTimeout(resolve, 10));
-    }
-}
-
 // readConfigFile() always reads `dolph_config.yaml` relative to process.cwd()
 // — there's no way to point a DolphFactory at a different path. Writing a
 // mock config to the repo-root file (as this test used to) mutates state
@@ -56,6 +42,7 @@ function withIsolatedCwd(): { originalCwd: string; restore: () => void } {
 
 describe('SQL Database Auto Initialization', () => {
     describe('TypeORM', () => {
+        let dolph: DolphFactory;
         let dataSource: DataSource;
         let cwd: { originalCwd: string; restore: () => void };
 
@@ -86,14 +73,13 @@ describe('SQL Database Auto Initialization', () => {
 
             fs.writeFileSync('dolph_config.yaml', yaml.dump(mockConfig));
 
-            // Constructing the factory is enough to trigger auto-init — no
-            // server needs to be started to observe or use the DataSource.
-            new DolphFactory([]);
+            dolph = new DolphFactory([]);
+            await dolph.ready();
             dataSource = getDataSource();
-            await waitUntil(() => dataSource.isInitialized);
         });
 
-        afterAll(() => {
+        afterAll(async () => {
+            await dolph.stop();
             cwd.restore();
         });
 

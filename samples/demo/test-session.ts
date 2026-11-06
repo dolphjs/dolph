@@ -1,17 +1,18 @@
 import { DolphFactory } from '../../core';
 import session from 'express-session';
-import { AppController } from './app.controller';
 
-const dolph = new DolphFactory([]); // empty routes for test
+const dolph = new DolphFactory([], {
+    middlewares: [
+        session({
+            secret: 'my-super-secret-key',
+            resave: false,
+            saveUninitialized: false,
+        }),
+    ],
+});
 
-dolph.middlewares([
-  session({
-    secret: 'my-super-secret-key',
-    resave: false,
-    saveUninitialized: false,
-  }),
-]);
-console.log("dolph.middlewares() works");
+dolph.engine();
+console.log('the middlewares option works');
 
 // Exit immediately
 process.exit(0);

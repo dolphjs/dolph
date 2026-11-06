@@ -3,6 +3,7 @@ import { Component, Get, Route } from '../decorators';
 import { DolphControllerHandler } from '../classes';
 import { Dolph } from '../common';
 import cookieParser from 'cookie-parser';
+import request from 'supertest';
 
 @Route('/dummy')
 class DummyController extends DolphControllerHandler<Dolph> {
@@ -16,16 +17,23 @@ class DummyController extends DolphControllerHandler<Dolph> {
 class DummyComponent {}
 
 describe('DolphFactory Constructor', () => {
-    it('should parse external middlewares array and sockets object correctly', () => {
-        const middlewares = [cookieParser()];
-        const sockets = { socketService: { on: () => {} } } as any;
+    it('should use the middlewares option', async () => {
+        const seen = jest.fn();
+        const dolph = new DolphFactory([DummyComponent], {
+            middlewares: [cookieParser(), (req, _res, next) => (seen(req.cookies), next())],
+        });
 
-        const dolph = new DolphFactory([DummyComponent], middlewares, sockets);
-        
-        // Expose internals via typing override for the sake of the test
-        const dolphAny = dolph as any;
+        const res = await request(dolph.engine()).get('/v1/dummy/test').set('Cookie', 'name=dolph');
 
-        expect(dolphAny.externalMiddlewares).toBe(middlewares);
-        expect(dolphAny.sockets).toBe(sockets);
+        expect(res.status).toBe(200);
+        expect(seen).toHaveBeenCalledWith({ name: 'dolph' });
+    });
+
+    it('should reject the positional middleware array from 2.x', () => {
+        expect(() => new DolphFactory([DummyComponent], [cookieParser()] as never)).toThrow('(components, options)');
+    });
+
+    it('should reject the GraphQL constructor shape from 2.x', () => {
+        expect(() => new DolphFactory({ graphql: true, schema: {} } as never)).toThrow('(components, options)');
     });
 });

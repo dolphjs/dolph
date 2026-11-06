@@ -139,12 +139,13 @@ describe('Response Interceptor overrides', () => {
     let server: any;
 
     beforeAll(() => {
-        const factory = new DolphFactory([AutoSendComponent]);
-        factory.setResponseInterceptor((data, _req, _res) => {
-            return {
-                myCustomSuccess: true,
-                payload: data
-            };
+        const factory = new DolphFactory([AutoSendComponent], {
+            onResponse: (data, _req, _res) => {
+                return {
+                    myCustomSuccess: true,
+                    payload: data
+                };
+            },
         });
         server = createServer(factory.engine()).listen(0);
     });

@@ -42,5 +42,8 @@ export interface HttpAdapter {
 
     /** A request listener for `createServer()` or supertest. */
     requestListener(): unknown;
-    listen(port: number, host: string, onListening: () => void): void;
+    /** Resolves once listening, and rejects if the port can't be bound. */
+    listen(port: number, host: string): Promise<void>;
+    /** Stops taking connections and resolves once open requests finish. */
+    close(): Promise<void>;
 }

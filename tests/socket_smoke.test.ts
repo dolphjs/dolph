@@ -4,7 +4,7 @@ import { DolphFactory } from '../core';
 import { DolphSocketServiceHandler } from '../classes';
 import { Dolph } from '../common';
 import { Socket } from '../decorators';
-import { SocketComponent, SocketService } from '../packages';
+import { SocketComponent } from '../packages';
 
 class SmokePingSocketService extends DolphSocketServiceHandler<Dolph> {
     constructor() {
@@ -30,19 +30,16 @@ class SmokePingSocketService extends DolphSocketServiceHandler<Dolph> {
 class SmokeSocketComponent extends SocketComponent {}
 
 describe('Socket.IO bootstrap smoke', () => {
+    let app: DolphFactory;
     let server: any;
     let client: ClientSocket;
     let baseUrl: string;
 
     beforeAll(async () => {
-        const app = new DolphFactory([], {
-            socketService: SocketService,
-            component: new SmokeSocketComponent(),
-        });
-        server = app.start();
-        await new Promise<void>((resolve) => {
-            server.once('listening', resolve);
-        });
+        process.env.PORT = '0';
+        app = new DolphFactory([], { sockets: { component: new SmokeSocketComponent() } });
+        server = await app.start();
+        delete process.env.PORT;
         const addr = server.address() as AddressInfo;
         baseUrl = `http://127.0.0.1:${addr.port}`;
         client = ioClient(baseUrl, { transports: ['websocket'], reconnection: false });
@@ -54,7 +51,7 @@ describe('Socket.IO bootstrap smoke', () => {
 
     afterAll(async () => {
         client?.close();
-        await new Promise<void>((resolve) => server.close(() => resolve()));
+        await app.stop();
     });
 
     it('emits handshake event from server on connect', async () => {

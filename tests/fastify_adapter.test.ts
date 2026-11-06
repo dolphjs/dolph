@@ -102,8 +102,7 @@ describe('Fastify adapter', () => {
 
     beforeAll(() => {
         process.env.DOLPH_ADAPTER = 'fastify';
-        const dolph = new DolphFactory([FastComponent]);
-        dolph.middlewares([cookieParser(), globalAuth]);
+        const dolph = new DolphFactory([FastComponent], { middlewares: [cookieParser(), globalAuth] });
         app = dolph.engine();
     });
 
@@ -274,13 +273,13 @@ describe('Fastify adapter', () => {
             }
         }
 
-        expect(() => new DolphFactory([new LegacyRouter() as never])).toThrow('adapter: express');
+        expect(() => new DolphFactory([new LegacyRouter() as never]).engine()).toThrow('adapter: express');
     });
 
     it('should refuse an unknown adapter', () => {
         process.env.DOLPH_ADAPTER = 'koa';
 
-        expect(() => new DolphFactory([])).toThrow("Unknown adapter 'koa'");
+        expect(() => new DolphFactory([]).engine()).toThrow("Unknown adapter 'koa'");
 
         process.env.DOLPH_ADAPTER = 'fastify';
     });

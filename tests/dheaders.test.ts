@@ -30,8 +30,7 @@ class TestComponent {}
 describe('DHeaders, DCookies, and DAuth', () => {
     let server: any;
     beforeAll(() => {
-        const dolph = new DolphFactory([TestComponent]);
-        dolph.middlewares([cookieParser()]);
+        const dolph = new DolphFactory([TestComponent], { middlewares: [cookieParser()] });
         // One real ephemeral listener per file — see auto_send.test.ts for why.
         server = createServer(dolph.engine()).listen(0);
     });
@@ -42,7 +41,7 @@ describe('DHeaders, DCookies, and DAuth', () => {
         expect(res.body.message).toBe('dolph');
     });
 
-    it('should inject cookies parsed by middleware added through middlewares()', async () => {
+    it('should inject cookies parsed by middleware added through the middlewares option', async () => {
         const res = await request(server).get('/v1/test/cookies').set('Cookie', 'custom_cookie=cookie-value');
         expect(res.body.data).toEqual({ custom_cookie: 'cookie-value' });
     });

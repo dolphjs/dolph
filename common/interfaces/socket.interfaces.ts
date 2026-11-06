@@ -1,6 +1,6 @@
 import { IncomingMessage, Server, ServerResponse } from 'http';
 import { ServerOptions, Socket } from 'socket.io';
-import { SocketComponent, SocketService } from '../../packages';
+import { SocketComponent } from '../../packages';
 
 export type SocketMiddleware = (socket: Socket, next: (error?: Error) => void) => unknown;
 
@@ -17,6 +17,5 @@ export interface DSocket {
 export interface DSocketInit {
     options?: Partial<ServerOptions>;
     component: SocketComponent;
-    socketService?: typeof SocketService;
     auth?: DSocket['auth'];
 }

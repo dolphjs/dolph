@@ -4,7 +4,7 @@ import { DolphFactory } from '../core';
 import { Component, Get, Post, Route } from '../decorators';
 import { DolphControllerHandler } from '../classes';
 import { Dolph, DNextFunc, DRequest, DResponse } from '../common';
-import { logger } from '../utilities';
+import { useConfig } from './utils/isolated_config';
 
 @Route('/late')
 class LateController extends DolphControllerHandler<Dolph> {
@@ -32,15 +32,17 @@ const markRequest = (_req: DRequest, res: DResponse, next: DNextFunc) => {
     next();
 };
 
-describe('Middleware added after DolphFactory construction', () => {
+describe('Security and global middleware', () => {
     let server: Server;
 
     beforeAll(() => {
-        const dolph = new DolphFactory([LateComponent]);
-        dolph.enableHelmet();
-        dolph.enableCors({ origin: 'https://example.com' });
-        dolph.middlewares([markRequest]);
+        const restoreConfig = useConfig({
+            middlewares: { helmet: true, cors: { activate: true, origin: 'https://example.com' } },
+        });
+
+        const dolph = new DolphFactory([LateComponent], { middlewares: [markRequest] });
         server = createServer(dolph.engine()).listen(0);
+        restoreConfig();
     });
 
     afterAll((done) => {
@@ -60,13 +62,13 @@ describe('Middleware added after DolphFactory construction', () => {
         expect(res.headers['access-control-allow-origin']).toBe('https://example.com');
     });
 
-    it('should run middlewares() before the route handler', async () => {
+    it('should run the middlewares option before the route handler', async () => {
         const res = await request(server).get('/v1/late/locals');
 
         expect(res.body.data).toEqual({ seenBy: 'late-middleware' });
     });
 
-    it('should give middlewares() access to the parsed body', async () => {
+    it('should give the middlewares option access to the parsed body', async () => {
         const res = await request(server).post('/v1/late/echo').send({ name: 'dolph' });
 
         expect(res.body.data).toEqual({ name: 'dolph' });
@@ -80,19 +82,6 @@ describe('Middleware added after DolphFactory construction', () => {
 
         expect(res.status).toBe(400);
         expect(res.headers['content-security-policy']).toBeDefined();
-    });
-
-    it('should keep enableHemet working as a deprecated alias', async () => {
-        const warn = jest.spyOn(logger, 'warn').mockImplementation(() => logger);
-        const dolph = new DolphFactory([LateComponent]);
-
-        dolph.enableHemet();
-
-        const res = await request(dolph.engine()).get('/v1/late/ping');
-
-        expect(res.headers['content-security-policy']).toBeDefined();
-        expect(warn).toHaveBeenCalledWith(expect.stringContaining('enableHelmet()'));
-        warn.mockRestore();
     });
 
     it('should apply helmet headers to the 404 fallback', async () => {

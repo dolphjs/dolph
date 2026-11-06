@@ -63,7 +63,7 @@ describe('Startup failures', () => {
     it('should throw and name the controller when a controller cannot be created', () => {
         const component = applyComponent({ controllers: [ExplodingController], services: [] });
 
-        expect(() => new DolphFactory([component])).toThrow(
+        expect(() => new DolphFactory([component]).engine()).toThrow(
             'Error initialising controller ExplodingController: bad controller setup',
         );
     });
@@ -71,6 +71,6 @@ describe('Startup failures', () => {
     it('should keep booting when every component is valid', () => {
         const component = applyComponent({ controllers: [HealthyController], services: [] });
 
-        expect(() => new DolphFactory([component])).not.toThrow();
+        expect(() => new DolphFactory([component]).engine()).not.toThrow();
     });
 });
