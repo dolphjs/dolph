@@ -3,6 +3,7 @@ import { resolve } from 'path';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { serialize } from 'cookie';
 import { contentType as resolveContentType } from 'mime-types';
+import { parseSize } from '../../utilities/parse_size.utilities';
 import { parse as parseQuery } from 'qs';
 import { DRequest, DResponse } from '../../common/interfaces';
 import { loadOptionalDriver } from '../../utilities/load_optional_driver.utilities';
@@ -12,16 +13,6 @@ type Next = (error?: unknown) => void;
 
 const JSON_CONTENT_TYPE = 'application/json; charset=utf-8';
 const URLENCODED_BODY_LIMIT = 100 * 1024;
-const SIZE_UNITS: Record<string, number> = { b: 1, kb: 1024, mb: 1024 ** 2, gb: 1024 ** 3 };
-
-const toBytes = (limit: string) => {
-    const match = /^(\d+(?:\.\d+)?)\s*(b|kb|mb|gb)?$/i.exec(limit.trim());
-
-    if (!match) throw new Error(`Invalid jsonLimit '${limit}'. Use a size like '5mb'.`);
-
-    return Math.floor(Number(match[1]) * SIZE_UNITS[(match[2] ?? 'b').toLowerCase()]);
-};
-
 /** Runs `(req, res, next)` handlers in order, the way Express does. */
 const runChain = (handlers: AdapterHandler[], req: unknown, res: unknown, done: Next) => {
     let index = 0;
@@ -338,7 +329,7 @@ export class FastifyAdapter implements HttpAdapter {
 
         this.app.addContentTypeParser(
             'application/json',
-            { parseAs: 'buffer', bodyLimit: toBytes(jsonLimit) },
+            { parseAs: 'buffer', bodyLimit: parseSize(jsonLimit) },
             (request, body, done) => {
                 (request as unknown as DRequest).rawBody = body as Buffer;
 

@@ -3,6 +3,7 @@ import { DefaultException } from '../../../common/api/exceptions/default_excepti
 const errorMessages = {
     LIMIT_PART_COUNT: 'Too many parts',
     LIMIT_FILE_SIZE: 'File too large',
+    LIMIT_IMAGE_PIXELS: 'Image dimensions too large',
     LIMIT_FILE_COUNT: 'Too many files',
     LIMIT_FIELD_KEY: 'Field name too long',
     LIMIT_FIELD_VALUE: 'Field value too long',

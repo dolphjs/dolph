@@ -1,0 +1,109 @@
+---
+title: Image Upload
+description: Accepting images safely with imageUpload
+editUrl: https://github.com/dolphjs/dolph/edit/main/docs/content/docs/techniques/image-upload.mdx
+sidebar:
+  label: Image Upload
+  order: 4
+---
+
+`imageUpload()` is middleware for accepting images. It recognises files from their contents, so a renamed file doesn't get through, and it checks an image's dimensions before anything decodes it.
+
+```typescript
+import { Route, Post, UseMiddleware, DFile, UploadedImage, imageUpload } from '@dolphjs/dolph';
+
+const uploadAvatar = imageUpload({ field: 'avatar', maxSize: '2mb' });
+
+@Route('users')
+export class UserController {
+  @Post('avatar')
+  @UseMiddleware(requireAuth, uploadAvatar)
+  async setAvatar(@DFile() image: UploadedImage) {
+    return { width: image.width, height: image.height, type: image.mimetype };
+  }
+}
+```
+
+Authenticate before uploading, as above, so strangers can't make your server read files.
+
+## Options
+
+| Option | Default | What it does |
+|---|---|---|
+| `field` | `image` | The form field holding the image |
+| `maxSize` | `5mb` | The largest file, as a size like `'2mb'` or a number of bytes |
+| `maxPixels` | 40 million | The most pixels in one image |
+| `maxCount` | `1` | Above 1, use `@DFiles()` to read an array |
+| `maxFields` | `100` | The most text fields in the request |
+| `types` | `jpeg`, `png`, `webp`, `gif` | Allowed types. `bmp`, `avif` and `heic` can be added |
+| `storage` | Memory | `diskStorage()`, `memoryStorage()` or `cloudStorage()` |
+| `timeout` | 30 seconds | How long an upload can take |
+| `keepMetadata` | `false` | Keeps EXIF data, which can include GPS location |
+| `resize` | | `{ width, height, fit }`. Keeps proportions and never enlarges by default |
+| `format` | | Converts every image to `jpeg`, `png`, `webp`, `avif` or `gif` |
+| `quality` | | Output quality from 1 to 100 |
+
+| Failure | Response |
+|---|---|
+| Not an allowed image, or its dimensions can't be read | `415` |
+| Corrupt image | `415` |
+| Over `maxSize`, `maxPixels` or `maxFields` | `400` |
+| Took longer than `timeout` | `408` |
+
+## Processing with sharp
+
+Photos from phones often carry the GPS location where they were taken. Install [`sharp`](https://sharp.pixelplumbing.com) to remove it:
+
+```bash
+npm install sharp
+```
+
+With `sharp` installed, every image has its metadata removed and rotated photos are turned upright. Without it, images are stored as they arrive and a warning is logged at startup. Set `keepMetadata: true` if you want the metadata and to skip this step.
+
+`resize`, `format` and `quality` need `sharp`, and the app won't start if they're used without it.
+
+```typescript
+const uploadPhoto = imageUpload({
+  resize: { width: 1600 },
+  format: 'webp',
+  quality: 80,
+});
+```
+
+:::note
+Removing metadata re-encodes the image, so a JPEG can lose a little quality. Set `quality` to control this. The prebuilt `sharp` can't decode HEIC, so to accept `heic`, set `keepMetadata: true` or build `sharp` with HEVC support. Otherwise those uploads return `415`.
+:::
+
+## Cloud storage
+
+`cloudStorage()` connects uploads to any provider. You give it a `put` and a `remove`, and files stream straight there instead of filling your server's memory.
+
+```typescript
+import { cloudStorage, imageUpload } from '@dolphjs/dolph';
+import { Upload } from '@aws-sdk/lib-storage';
+import { DeleteObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { randomUUID } from 'crypto';
+
+const s3 = new S3Client({});
+const Bucket = process.env.UPLOAD_BUCKET;
+
+const storage = cloudStorage({
+  put: async (file, stream) => {
+    const key = randomUUID();
+
+    await new Upload({
+      client: s3,
+      params: { Bucket, Key: key, Body: stream, ContentType: file.mimetype },
+    }).done();
+
+    return { key, url: `https://${Bucket}.s3.amazonaws.com/${key}` };
+  },
+  remove: (file) => s3.send(new DeleteObjectCommand({ Bucket, Key: file.key })),
+});
+
+const uploadPhoto = imageUpload({ storage });
+```
+
+Whatever `put` returns ends up on the file, along with its `size`. If one file in a request fails, Dolph calls `remove` for the others, so a failed upload doesn't leave anything behind.
+
+`put` receives the file after it's been checked and processed, so a rejected file never reaches your provider.

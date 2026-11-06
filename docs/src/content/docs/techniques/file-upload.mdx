@@ -9,6 +9,8 @@ sidebar:
 
 Handling file uploads in DolphJS is extremely straightforward because the framework ships with its own robust, internal file uploading utility `useFileUploader` provided by `@dolphjs/packages`. You don't need to manually install `multer` or any external dependencies!
 
+For images, use [`imageUpload()`](/techniques/image-upload) instead. It adds dimension limits and removes metadata such as GPS location.
+
 ## Creating the Middleware
 
 You can configure `useFileUploader` with storage destinations, file filters, and extension restrictions. DolphJS provides both `diskStorage` and `memoryStorage` helpers to manage where your files go.
@@ -43,6 +45,8 @@ export const uploadMedia = useFileUploader({
 Requests are rejected rather than silently trimmed:
 
 - A file type that isn't allowed returns `415`.
+- A file whose contents don't match its extension returns `415`. A `.png` has to really be a PNG. Types with no signature, like `.txt`, are checked by name only. Set `verifyContent: false` to turn this off.
+- More than `maxFields` text fields, 100 by default, returns `400`.
 - A file on an unexpected field, or beyond `maxCount`, returns `400`.
 - `.html`, `.xml` and `.xhtml` aren't allowed by default, because serving them back could run scripts in a visitor's browser. Add them to `extensions` if you need them.
 - Files sent as a browser `Blob` arrive named `blob`, so they're checked by their declared type.

@@ -9,3 +9,4 @@ export * from './dolph.types';
 export * from './auth.type';
 export * from './spring.types';
 export * from './events.type';
+export * from './dolph_uploader.type';

@@ -3,7 +3,7 @@ import request from 'supertest';
 import { DNextFunc, DRequest, DResponse } from '../../common';
 import { useFileUploader, fileUploader, memoryStorage } from '../../packages';
 
-const png = Buffer.from('fake image');
+const png = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 13]);
 
 const appWith = (middleware: ReturnType<typeof useFileUploader>): Express => {
     const app = express();

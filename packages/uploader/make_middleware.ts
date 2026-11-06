@@ -3,6 +3,7 @@ import { Readable } from 'stream';
 import BBusboy, { Busboy } from 'busboy';
 import { FileInfo, UploadConfig } from '../../common/types/dolph_uploader.type';
 import { DRequest, DResponse } from '../../common';
+import { inAppLogger } from '../../utilities';
 import { DefaultException } from '../../common/api/exceptions/default_exception.api';
 import { HttpStatus } from '../../common/api/HttpStatus.api';
 import { FileAppender } from './file_appender';
@@ -281,16 +282,22 @@ export function makeMiddleware(getOptions: () => UploadConfig & { fields?: Array
 
                     let aborting = false;
                     pendingWrites.increment();
-                    activeStreams.add(fileStream as Readable);
+
+                    const source = fileStream as Readable;
+                    const output = options.transformFile?.(file, source) ?? source;
+
+                    activeStreams.add(output);
 
                     Object.defineProperty(file, 'stream', {
                         configurable: true,
                         enumerable: false,
-                        value: fileStream,
+                        value: output,
                     });
 
-                    fileStream.on('error', (streamErr: Error) => {
-                        activeStreams.delete(fileStream as Readable);
+                    output.on('error', (streamErr: Error) => {
+                        activeStreams.delete(output);
+                        // Busboy waits for each file to be read before moving to the next.
+                        source.resume();
                         pendingWrites.decrement();
                         abortWithError(streamErr);
                     });
@@ -301,7 +308,18 @@ export function makeMiddleware(getOptions: () => UploadConfig & { fields?: Array
                     });
 
                     options.storage.handleFile(req, file, (storageErr: Error | null, info?: Partial<FileInfo>) => {
-                        activeStreams.delete(fileStream as Readable);
+                        activeStreams.delete(output);
+
+                        // A slow provider can finish after the request failed and its files were
+                        // cleaned up, so nothing else will ever remove this one.
+                        if (isDone) {
+                            if (!storageErr) {
+                                options.storage.removeFile(req, { ...file, ...info }, (removeErr) => {
+                                    if (removeErr) inAppLogger.warn(`Could not remove upload: ${removeErr.message}`);
+                                });
+                            }
+                            return;
+                        }
 
                         if (aborting) {
                             appender.removePlaceholder(placeholder);

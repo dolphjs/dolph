@@ -5,7 +5,7 @@ import { tmpdir } from 'os';
 import { join } from 'path';
 import express from 'express';
 import { DNextFunc, DRequest, DResponse } from '../../common';
-import { diskStorage, memoryStorage, useFileUploader } from '../../packages';
+import { cloudStorage, diskStorage, memoryStorage, useFileUploader } from '../../packages';
 
 const boundary = '----dolphTimeoutBoundary';
 
@@ -50,7 +50,7 @@ describe('Upload timeout', () => {
     const serve = (options: Partial<Parameters<typeof useFileUploader>[0]>) => {
         const app = express();
 
-        app.post('/', useFileUploader({ type: 'array', fieldname: 'photos', maxCount: 3, ...options }), (_req, res) => {
+        app.post('/', useFileUploader({ type: 'array', fieldname: 'photos', maxCount: 3, verifyContent: false, ...options }), (_req, res) => {
             res.json({ ok: true });
         });
         app.use((err: { statusCode?: number; message: string }, _req: DRequest, res: DResponse, _next: DNextFunc) => {
@@ -92,6 +92,64 @@ describe('Upload timeout', () => {
         expect(res.status).toBe(408);
         await waitUntil(() => readdirSync(directory).length === 0);
         expect(readdirSync(directory)).toEqual([]);
+    });
+
+    it('should return 408 when a stall leaves a file too short to check', async () => {
+        const server = serve({ storage: memoryStorage(), timeout: 150, verifyContent: true });
+
+        const res = await stalledUpload(server, filePart('photos', 'short.pdf', '%PDF-'));
+
+        expect(res.status).toBe(408);
+    });
+
+    describe('with a provider that finishes after the request failed', () => {
+        const slowProvider = () => {
+            let finish!: () => void;
+            let fail!: (error: Error) => void;
+
+            const provider = {
+                put: jest.fn(
+                    () =>
+                        new Promise<{ key: string }>((resolve, reject) => {
+                            finish = () => resolve({ key: 'late-file' });
+                            fail = reject;
+                        }),
+                ),
+                remove: jest.fn(async () => undefined),
+            };
+
+            return { provider, finish: () => finish(), fail: (error: Error) => fail(error) };
+        };
+
+        it('should remove the file once the provider finishes', async () => {
+            const { provider, finish } = slowProvider();
+            const server = serve({ storage: cloudStorage(provider), timeout: 150 });
+
+            const res = await stalledUpload(server, filePart('photos', 'late.png', 'x'.repeat(2048)));
+
+            expect(res.status).toBe(408);
+            expect(provider.remove).not.toHaveBeenCalled();
+
+            finish();
+            await waitUntil(() => provider.remove.mock.calls.length > 0);
+
+            expect(provider.remove).toHaveBeenCalledTimes(1);
+            expect(provider.remove).toHaveBeenCalledWith(expect.objectContaining({ key: 'late-file' }), expect.anything());
+        });
+
+        it('should have nothing to remove when the provider fails', async () => {
+            const { provider, fail } = slowProvider();
+            const server = serve({ storage: cloudStorage(provider), timeout: 150 });
+
+            const res = await stalledUpload(server, filePart('photos', 'late.png', 'x'.repeat(2048)));
+
+            expect(res.status).toBe(408);
+
+            fail(new Error('provider is down'));
+            await new Promise((resolve) => setTimeout(resolve, 20));
+
+            expect(provider.remove).not.toHaveBeenCalled();
+        });
     });
 
     it('should return 408 with memory storage', async () => {
