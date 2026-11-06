@@ -244,6 +244,8 @@ module.exports = {
 
 `createTestingApp` calls `DolphFactory#engine()` instead, which returns the app with routing, middleware, the 404 fallback, and any `onError` handler fully wired, with no database connection or process-level handlers, then binds one ephemeral port itself via `http.createServer(engine).listen(0)`, closed by `app.close()`. A suite built entirely on Tier 1–3 as described above should exit on its own, with neither Jest flag.
 
+`createTestingApp` doesn't connect the databases in `dolph_config.yaml`. To use them in a test, pass `connect: true`, and `app.close()` closes them again.
+
 ## Generating tests with the CLI
 
 `dolph generate` can scaffold both the controller and service spec for a component in one step, matching whatever the generators for those files already produced:
