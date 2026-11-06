@@ -129,7 +129,7 @@
         "type-graphql": "^2.0.0-rc.2",
         "typescript": "^5.1.5"
     },
-    "resolutions": {
+    "overrides": {
         "diff": ">=3.5.1",
         "postcss": ">=8.4.31"
     },
