@@ -76,7 +76,7 @@
         ]
     },
     "engines": {
-        "node": ">= 18"
+        "node": "^20.19.0 || ^22.13.0 || >=24.11.0"
     },
     "devDependencies": {
         "@dolphjs/graphql": "^0.2.1",
