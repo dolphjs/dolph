@@ -1,4 +1,5 @@
 import type { Namespace, Server, Socket } from 'socket.io';
+import { SocketMiddleware } from '../../common/interfaces/socket.interfaces';
 import { logger } from '../../utilities';
 
 type Listener = (...args: unknown[]) => unknown;
@@ -60,6 +61,27 @@ const guardSocket = (socket: Socket) => {
 };
 
 /**
+ * Refuses the connection if a middleware throws or rejects, so a failing auth check
+ * can neither let a client in nor crash the server.
+ */
+const guardMiddleware = (middleware: SocketMiddleware): SocketMiddleware => (socket, next) => {
+    const refuse = (error: Error) => {
+        logger.error(`Socket middleware failed: ${error?.message ?? error}`);
+        next(new Error('unauthorized'));
+    };
+
+    try {
+        const result = middleware(socket, next);
+
+        if (typeof (result as PromiseLike<unknown>)?.then === 'function') {
+            Promise.resolve(result).catch(refuse);
+        }
+    } catch (error) {
+        refuse(error);
+    }
+};
+
+/**
  * Runs `protect` once for every namespace on the server, however it gets created.
  * `new_namespace` alone misses `io.of(/regex/)` and `io.of(fn)`, which never emit it.
  */
@@ -93,5 +115,8 @@ export const guardSocketHandlers = (io: Server) => {
         // Added first so sockets are wrapped before any user handler sees them.
         namespace.on('connection', guardSocket);
         guardListeners(namespace as unknown as EventTarget);
+
+        const originalUse = namespace.use.bind(namespace);
+        namespace.use = (middleware) => originalUse(guardMiddleware(middleware as SocketMiddleware));
     });
 };

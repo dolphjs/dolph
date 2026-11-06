@@ -1,7 +1,24 @@
 import { Service } from 'typedi';
 import type { Server as SocketServer } from 'socket.io';
 import { DSocket } from '../../common/interfaces/socket.interfaces';
-import { guardSocketHandlers } from './socket_guard';
+import { inAppLogger } from '../../utilities';
+import clc from 'cli-color';
+import { forEachNamespace, guardSocketHandlers } from './socket_guard';
+
+const applySocketAuth = (io: SocketServer, auth: DSocket['auth']) => {
+    if (auth === undefined) {
+        inAppLogger.warn(
+            clc.yellow(
+                'Socket connections have no authentication, so anyone can connect. Set `auth` in the socket config, for example `socketJwtAuth(secret)`, or `auth: false` if they are public on purpose.',
+            ),
+        );
+    }
+
+    if (!auth) return;
+
+    // io.use() only covers one namespace, which would leave io.of('/admin') open.
+    forEachNamespace(io, (namespace) => [auth].flat().forEach((middleware) => namespace.use(middleware)));
+};
 
 @Service()
 export class SocketService {
@@ -13,6 +30,7 @@ export class SocketService {
         const { Server } = require('socket.io') as typeof import('socket.io');
         this.socketIo = new Server(params.server, params.options);
         guardSocketHandlers(this.socketIo);
+        applySocketAuth(this.socketIo, params.auth);
     }
 
     public getSocket(): SocketServer {
