@@ -57,6 +57,9 @@ export function makeMiddleware(getOptions: () => UploadConfig & { fields?: Array
         const appender = new FileAppender(options.fileStrategy, req);
         const pendingWrites = new Counter();
         const uploadedFiles: FileInfo[] = [];
+        const remainingByField = new Map(
+            (options.fields ?? []).map(({ name, maxCount }) => [name, maxCount ?? Infinity]),
+        );
 
         let isDone = false;
         let readFinished = false;
@@ -137,6 +140,14 @@ export function makeMiddleware(getOptions: () => UploadConfig & { fields?: Array
                 if (options.limits?.fieldNameSize && fieldname.length > options.limits.fieldNameSize) {
                     return abortWithCode('LIMIT_FIELD_KEY');
                 }
+
+                // Checked before any bytes are stored, so an extra file costs nothing.
+                const remaining = remainingByField.get(fieldname) ?? 0;
+                if (remaining < 1) {
+                    fileStream.resume();
+                    return abortWithCode('LIMIT_UNEXPECTED_FILE', fieldname);
+                }
+                remainingByField.set(fieldname, remaining - 1);
 
                 const file: FileInfo = {
                     fieldname,
@@ -245,7 +256,13 @@ export function makeMiddleware(getOptions: () => UploadConfig & { fields?: Array
                 // }
 
                 options.fileFilter(req, file, (err: Error | null, includeFile: boolean) => {
-                    if (err || !includeFile) {
+                    if (err) {
+                        appender.removePlaceholder(placeholder);
+                        fileStream.resume();
+                        return abortWithError(err);
+                    }
+
+                    if (!includeFile) {
                         appender.removePlaceholder(placeholder);
                         return fileStream.resume();
                     }
