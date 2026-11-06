@@ -4,6 +4,7 @@ import { DolphFactory } from '../core';
 import { Component, Get, Post, Route } from '../decorators';
 import { DolphControllerHandler } from '../classes';
 import { Dolph, DNextFunc, DRequest, DResponse } from '../common';
+import { logger } from '../utilities';
 
 @Route('/late')
 class LateController extends DolphControllerHandler<Dolph> {
@@ -36,7 +37,7 @@ describe('Middleware added after DolphFactory construction', () => {
 
     beforeAll(() => {
         const dolph = new DolphFactory([LateComponent]);
-        dolph.enableHemet();
+        dolph.enableHelmet();
         dolph.enableCors({ origin: 'https://example.com' });
         dolph.middlewares([markRequest]);
         server = createServer(dolph.engine()).listen(0);
@@ -79,6 +80,19 @@ describe('Middleware added after DolphFactory construction', () => {
 
         expect(res.status).toBe(400);
         expect(res.headers['content-security-policy']).toBeDefined();
+    });
+
+    it('should keep enableHemet working as a deprecated alias', async () => {
+        const warn = jest.spyOn(logger, 'warn').mockImplementation(() => logger);
+        const dolph = new DolphFactory([LateComponent]);
+
+        dolph.enableHemet();
+
+        const res = await request(dolph.engine()).get('/v1/late/ping');
+
+        expect(res.headers['content-security-policy']).toBeDefined();
+        expect(warn).toHaveBeenCalledWith(expect.stringContaining('enableHelmet()'));
+        warn.mockRestore();
     });
 
     it('should apply helmet headers to the 404 fallback', async () => {

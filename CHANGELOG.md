@@ -58,11 +58,12 @@
 #### Startup and middleware
 
 - **Wiring errors stop the app.** Invalid `@Component` params and service or controller setup errors used to be logged, leaving the app running without those services or routes.
-- **`.middlewares()`, `enableHemet()` and `enableCors()`** now run before your routes. Error handlers passed to `.middlewares()` no longer catch route errors, so use `setGlobalExceptionHandler()`.
+- **`.middlewares()`, `enableHelmet()` and `enableCors()`** now run before your routes. Error handlers passed to `.middlewares()` no longer catch route errors, so use `setGlobalExceptionHandler()`.
 - **`middlewares.helmet` in `dolph_config.yaml` now works.** Apps that already set it get real headers, including a Content Security Policy that may block inline scripts.
 
 ### Added
 
+- `enableHelmet()`, the correctly spelled `enableHemet()`, which still works but logs a deprecation warning.
 - `compareHashedStringAsync`, a non-blocking password check. Prefer it on login routes.
 - `generateVerificationCode(digits)`.
 - `helmet` in `dolph_config.yaml`, as `true` or an options object.

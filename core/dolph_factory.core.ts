@@ -536,7 +536,7 @@ class DolphFactoryClass {
     private isGraphQL = false;
     private graphqlReady?: Promise<void>;
 
-    // Routes are mounted in the constructor, but enableHemet(), enableCors() and
+    // Routes are mounted in the constructor, but enableHelmet(), enableCors() and
     // middlewares() can only be called after it. These routers are mounted ahead
     // of the routes so whatever those methods add later still runs before them.
     private readonly securityMiddlewares = Router();
@@ -821,8 +821,16 @@ class DolphFactoryClass {
         enableCorsFunc(this.securityMiddlewares, options || { origin: '*' });
     }
 
-    public enableHemet(options?: HelmetOptions) {
+    public enableHelmet(options?: HelmetOptions) {
         enableHelmetFunc(this.securityMiddlewares, options);
+    }
+
+    /**
+     * @deprecated Misspelled. Use `enableHelmet()` instead.
+     */
+    public enableHemet(options?: HelmetOptions) {
+        inAppLogger.warn(clc.yellow('`enableHemet()` is deprecated. Use `enableHelmet()` instead.'));
+        this.enableHelmet(options);
     }
 
     private initSockets(server: Server<typeof IncomingMessage, typeof ServerResponse>) {
