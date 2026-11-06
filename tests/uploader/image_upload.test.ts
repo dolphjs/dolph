@@ -379,6 +379,27 @@ describe('cloudStorage', () => {
         expect(cloud.objects.size).toBe(0);
     });
 
+    it('should keep every byte for a provider that does async work before reading', async () => {
+        const cloud = provider();
+        const original = await solid().png({ compressionLevel: 0 }).toBuffer();
+        const storage = cloudStorage({
+            ...cloud,
+            put: async (file, stream, req) => {
+                // Like fetching a signed URL.
+                await new Promise((resolve) => setTimeout(resolve, 30));
+
+                return cloud.put(file, stream);
+            },
+        });
+
+        const res = await request(appWith(imageUpload({ storage, keepMetadata: true })))
+            .post('/')
+            .attach('image', original, 'photo.png');
+
+        expect(res.status).toBe(200);
+        expect(cloud.objects.get('image-1')?.equals(original)).toBe(true);
+    });
+
     it('should report a provider failure', async () => {
         const storage = cloudStorage({
             put: async (_file, stream) => {

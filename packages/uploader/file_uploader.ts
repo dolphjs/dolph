@@ -3,7 +3,7 @@ import { randomBytes } from 'crypto';
 import { createWriteStream, mkdirSync, unlink } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
-import { PassThrough, Readable } from 'stream';
+import { Readable, Transform } from 'stream';
 import {
     CloudStorageOptions,
     DiskStorageOptions,
@@ -124,9 +124,19 @@ class CloudStorage implements Storage {
         if (!file.stream) return callback(new Error('file stream is missing'));
 
         // Providers don't report a size, and a file's final size is only known once it's sent.
+        // A Transform rather than a `data` listener, which would start the stream flowing
+        // and lose the start of the file for a provider that does async work first.
         let size = 0;
-        const counted = new PassThrough();
-        counted.on('data', (chunk: Buffer) => (size += chunk.length));
+        const counted = new Transform({
+            transform(chunk: Buffer, _encoding, callback) {
+                size += chunk.length;
+                callback(null, chunk);
+            },
+        });
+
+        // A provider may not be listening yet, and an unheard stream error crashes the
+        // process. The failure still reaches the request through `file.stream`.
+        counted.on('error', () => undefined);
 
         const stream = pipeInto(file.stream as Readable, counted);
 
