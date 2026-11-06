@@ -3,7 +3,7 @@ import { createServer } from 'http';
 import { DolphFactory } from '../core';
 import { DBody, Component, Get, Post, Route } from '../decorators';
 import { DolphControllerHandler } from '../classes';
-import { Dolph } from '../common';
+import { Dolph, DRequest, DResponse } from '../common';
 
 @Route('/auto-send')
 class AutoSendController extends DolphControllerHandler<Dolph> {
@@ -19,7 +19,12 @@ class AutoSendController extends DolphControllerHandler<Dolph> {
 
     @Get('/html')
     getHtml() {
-        return '<h1>DolphJS</h1>';
+        return '<script>alert(1)</script>';
+    }
+
+    @Get('/explicit-html')
+    getExplicitHtml(_req: DRequest, res: DResponse) {
+        res.send('<h1>DolphJS</h1>');
     }
 
     @Get('/null')
@@ -81,8 +86,15 @@ describe('Auto-send controller return values', () => {
         expect(res.body).toEqual({ success: true, status: 200, message: 'hello from dolph', data: {} });
     });
 
-    it('GET returning HTML string → 200 text/html', async () => {
+    it('GET returning an HTML string → 200 JSON, never text/html', async () => {
         const res = await request(server).get('/v1/auto-send/html');
+        expect(res.status).toBe(200);
+        expect(res.headers['content-type']).toMatch(/application\/json/);
+        expect(res.body.message).toBe('<script>alert(1)</script>');
+    });
+
+    it('GET sending HTML through res.send → 200 text/html', async () => {
+        const res = await request(server).get('/v1/auto-send/explicit-html');
         expect(res.status).toBe(200);
         expect(res.headers['content-type']).toMatch(/text\/html/);
         expect(res.text).toBe('<h1>DolphJS</h1>');
