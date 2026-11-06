@@ -35,18 +35,9 @@ While the built-in error handler is sufficient for many applications, you may wa
 
 DolphJS allows you to override the default error handler with a **Global Exception Filter**.
 
-### 1. Enable Global Filter in Config
+### Set the Global Exception Handler
 
-First, ensure the `globalFilter` is enabled in your `dolph_config.yaml`:
-
-```yaml
-routing:
-  globalFilter: true
-```
-
-### 2. Set the Global Exception Handler
-
-Before calling `dolph.start()`, use the `setGlobalExceptionHandler` method to attach an Express-compatible error handler. This handler will receive all unhandled exceptions thrown during the HTTP request lifecycle.
+No config is needed. Before calling `dolph.start()`, use the `setGlobalExceptionHandler` method to attach an Express-compatible error handler. This handler will receive all unhandled exceptions thrown during the HTTP request lifecycle.
 
 ```typescript
 import { DolphFactory } from '@dolphjs/dolph/core';

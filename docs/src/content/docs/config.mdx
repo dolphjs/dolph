@@ -121,9 +121,9 @@ JSON and URL-encoded body parsing are always on.
 
 ### Routing
 
-Controls route-level and application-level routing behaviors.
+Controls how routes are mounted.
 
-- **globalFilter**: A boolean flag (`true` or `false`). When enabled, you can provide a custom global exception handler for your entire application by calling `dolph.setGlobalExceptionHandler()` before starting the server. If set to `true` but no handler is provided, DolphJS falls back to its default error handler.
+- **base**: A path prefix added to every route, such as `/v1`.
 
 ## Accessing Configuration in Code
 
