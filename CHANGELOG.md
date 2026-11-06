@@ -2,7 +2,7 @@
 
 ## 3.0.0 (unreleased)
 
-3.0.0 adds Fastify support, gives every startup job one way to do it, closes several security holes and changes some defaults. Apps stay on 2.x until they upgrade. **If you use RSA JWTs, `@UnShield` or `validateBodyMiddleware`, read the upgrade steps first.**
+3.0.0 adds Fastify support and safe image uploads, gives every startup job one way to do it, closes several security holes and changes some defaults. Apps stay on 2.x until they upgrade. **If you use RSA JWTs, `@UnShield` or `validateBodyMiddleware`, read the upgrade steps first.**
 
 ### Fastify
 
@@ -107,6 +107,9 @@ There is now one way to do each job inside a request too:
 
 #### File uploads
 
+- **Contents must match the extension.** A `.png` that isn't really a PNG now returns `415`, for every type with a known signature. Set `verifyContent: false` to opt out.
+- **Requests are limited to 100 text fields.** Set `maxFields` to change it.
+- **`.gif`, `.webp`, `.heic`, `.avif` and `.bmp` are allowed by default.** The list had a typo, `.bmi`, in place of `.bmp`.
 - `maxCount` and field names are enforced. Extra or unexpected files return `400`.
 - A file type that isn't allowed returns `415`. It used to return `200` with the file dropped.
 - `.html`, `.xml` and `.xhtml` need listing in `extensions`.
@@ -154,6 +157,9 @@ await dolph.start();
 
 ### Added
 
+- `imageUpload()`, which recognises images from their contents and limits their dimensions before decoding. With `sharp` installed, it removes metadata such as GPS location, and can resize and convert.
+- `cloudStorage({ put, remove })`, which streams uploads to any provider and cleans up after a failed request.
+- `@DFile()` and `@DFiles()`, which read uploaded files in a handler.
 - A Fastify adapter, chosen with `adapter: fastify` or `DOLPH_ADAPTER`.
 - Everything can be imported from `@dolphjs/dolph`. Sub-paths like `@dolphjs/dolph/decorators` still work.
 - Controllers and services can be plain classes. `DolphControllerHandler` and `DolphServiceHandler` stay for existing code, but the base class, `super('name')` and `<Dolph>` are no longer needed. Add `@DService()` to a service with constructor dependencies.
