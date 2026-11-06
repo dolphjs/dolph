@@ -19,6 +19,8 @@ middlewareRegistry.registerMany([helmet(), cookieParser(), morgan('dev')]);
 const dolph = new DolphFactory(
     [HealthComponent, AuthComponent, UserComponent, FileComponent, AdminComponent, new PublicRoutes()],
     {
+        // Open on purpose so the sample runs without tokens. Use socketJwtAuth(secret) in a real app.
+        auth: false,
         options: { cors: { origin: '*' } },
         socketService: SocketService,
         component: new RealtimeComponent(),

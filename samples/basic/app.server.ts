@@ -23,6 +23,8 @@ MVCAdapter.setStaticAssets(path.join(__dirname, 'public'));
 MVCAdapter.setViewsDir(path.join(__dirname, 'views'));
 
 const dolph = new DolphFactory([AppComponent], {
+    // Open on purpose so the sample runs without tokens. Use socketJwtAuth(secret) in a real app.
+    auth: false,
     options: { cors: { origin: '*' } },
     socketService: SocketService,
     component: new EventsComponent(),

@@ -91,13 +91,15 @@ import { DolphFactory } from '@dolphjs/dolph';
 import { AppComponent } from './app.component';
 import { ChatSocketComponent } from './websockets/chat.socket.component';
 import { SocketService } from '@dolphjs/dolph/packages';
+import { socketJwtAuth } from '@dolphjs/dolph/classes';
 
 const dolph = new DolphFactory([AppComponent], {
   component: new ChatSocketComponent(),
   socketService: SocketService,
+  auth: socketJwtAuth(process.env.JWT_SECRET),
   options: {
     cors: {
-      origin: '*' // socket.io options
+      origin: 'https://app.example.com' // socket.io options
     }
   }
 });
@@ -106,3 +108,46 @@ dolph.start();
 ```
 
 With this architecture, DolphJS automatically spins up the `socket.io` instance, injects the necessary services into the prototypes of your handlers, and attaches everything to the underlying HTTP server, keeping your codebase extremely clean and scalable!
+
+## Securing Sockets
+
+`@Shield` and HTTP middleware don't apply to sockets, so set this up separately.
+
+### Authentication
+
+Pass `auth` in the socket config. It runs on every connection, in every namespace, including ones you create with `io.of()`. `socketJwtAuth` verifies tokens the same way as HTTP:
+
+```typescript
+auth: socketJwtAuth(process.env.JWT_SECRET),
+// For RSA:
+auth: socketJwtAuth('keys/public.pem', { algorithm: 'RS256' }),
+```
+
+Clients send the token when they connect:
+
+```typescript
+const socket = io(url, { auth: { token } });
+```
+
+The token's payload is then available as `socket.data.payload`. Every failed connection gets the same `unauthorized` error.
+
+You can also pass your own middleware, or a list of them. If one throws or rejects, the connection is refused:
+
+```typescript
+auth: async (socket, next) => {
+  socket.data.user = await findUser(socket.handshake.auth.token);
+  next();
+},
+```
+
+Without `auth`, anyone can connect and DolphJS logs a warning at startup. If your sockets are public on purpose, such as live scores, set `auth: false` to turn the warning off.
+
+### Allowed origins
+
+Browsers don't apply CORS to WebSockets, so DolphJS checks `cors.origin` on the connection itself. A browser page on another origin is refused unless it's listed. With no `cors.origin` set, only pages on the same origin can connect. `origin: '*'` allows every site.
+
+Non-browser clients send no `Origin` header, so this doesn't affect them, which is why you still need `auth`. Behind a proxy that rewrites the `Host` header, set `cors.origin` explicitly. To replace this check, pass your own `allowRequest` in `options`.
+
+### Handler errors
+
+If a socket handler throws or its promise rejects, DolphJS logs the error and keeps the server running. A handler with an acknowledgement callback replies with `{ error: 'Internal Server Error' }`.
