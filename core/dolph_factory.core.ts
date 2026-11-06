@@ -545,6 +545,7 @@ class DolphFactoryClass {
     private server: Server<typeof IncomingMessage, typeof ServerResponse>;
     private routingBase = '';
     private isGraphQL = false;
+    private graphqlReady?: Promise<void>;
 
     port: dolphPort = process.env.PORT || 3030;
     env = process.env.NODE_ENV || 'development';
@@ -574,24 +575,11 @@ class DolphFactoryClass {
          * Start dolphjs initialisation time
          */
         const startTime = process.hrtime();
+        let graphqlAdapter: { graphql: boolean; schema: any; context?: any } | undefined;
 
         if (this.isAdapter(adapterOrRoutes)) {
-            const adapter = adapterOrRoutes;
-
-            if (adapter.graphql) {
-                this.isGraphQL = adapter.graphql;
-
-                // eslint-disable-next-line @typescript-eslint/no-var-requires
-                const { GraphQLAdapter } = require('@dolphjs/graphql');
-
-                GraphQLAdapter.apolloServer(this.server, adapter.schema, adapter.context)
-                    .then((middleware: RequestHandler) => {
-                        this.dolph.use(middleware);
-                    })
-                    .catch((err: Error) => {
-                        logger.error(`${clc.red('DOLPH ERROR: ')}`, err);
-                    });
-            }
+            graphqlAdapter = adapterOrRoutes;
+            this.isGraphQL = graphqlAdapter.graphql;
         } else {
             const routes = adapterOrRoutes;
 
@@ -623,6 +611,28 @@ class DolphFactoryClass {
         this.extractControllersFromComponent();
         this.readConfigFile();
         this.intiDolphEngine(startTime);
+
+        // Runs after the engine exists: Apollo's drain plugin needs the real
+        // HTTP server, which isn't created until just above.
+        if (graphqlAdapter?.graphql) {
+            this.initGraphQL(graphqlAdapter);
+        }
+    }
+
+    private initGraphQL(adapter: { schema: any; context?: any }) {
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        const { GraphQLAdapter } = require('@dolphjs/graphql');
+
+        this.graphqlReady = GraphQLAdapter.apolloServer(this.server, adapter.schema, adapter.context).then(
+            (middleware: RequestHandler) => {
+                this.dolph.use(middleware);
+            },
+        );
+
+        // start() reports this failure too, but callers using engine() never reach it.
+        this.graphqlReady.catch((err: Error) => {
+            logger.error(`${clc.red('DOLPH ERROR: ')}`, err);
+        });
     }
 
     private isAdapter(arg: any): arg is { graphql: boolean; schema: any; context?: any } {
@@ -905,8 +915,15 @@ class DolphFactoryClass {
             });
         } else {
             const start = async () => {
-                //@ts-expect-error -- server.listen callback typing does not match Promise resolve
-                await new Promise((resolve) => this.server.listen({ port }, resolve));
+                // Wait for Apollo first so no request can arrive before /graphql is mounted.
+                await this.graphqlReady;
+                await new Promise<void>((resolve, reject) => {
+                    this.server.once('error', reject);
+                    this.server.listen({ port: +this.port }, () => {
+                        this.server.off('error', reject);
+                        resolve();
+                    });
+                });
             };
 
             start()
