@@ -1,4 +1,4 @@
-import { compare, compareSync, genSalt, hash, hashSync } from 'bcryptjs';
+import { compare, compareSync, genSalt, hash } from 'bcryptjs';
 import { bcryptCompareParam, bcryptHashParam } from '../../common';
 
 /**
