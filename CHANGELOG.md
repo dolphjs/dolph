@@ -49,6 +49,8 @@
 - **`UseDto` is removed.** Use `@DBody`, `@DQuery` or `@DParam`.
 - **Responses with only `msg`** are sent as `text/plain` instead of `application/json`.
 
+- **`validatePassword` is removed.** Its rules were too weak to rely on. Use a Joi or `class-validator` rule that matches your own password policy.
+
 #### File uploads
 
 - `maxCount` and field names are enforced. Extra or unexpected files return `400`.
