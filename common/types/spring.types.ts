@@ -1,8 +1,8 @@
 import { DolphSocketServiceHandler } from '../../classes';
-import { DNextFunc, DRequest, DResponse } from '../../common/interfaces';
+import { DRequestHandler } from '../../common/interfaces';
 import { Dolph } from './dolph.types';
 
-export type Middleware = (req: DRequest, res: DResponse, next: DNextFunc) => void;
+export type Middleware = DRequestHandler;
 
 // Constructor arguments can be anything, because the framework resolves them through DI.
 type ClassType<T = object> = new (...args: any[]) => T;

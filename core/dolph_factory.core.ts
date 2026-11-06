@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import { ErrorRequestHandler, RequestHandler, Router, urlencoded } from 'express';
+import { ErrorRequestHandler, RequestHandler, Router } from 'express';
 import { CorsOptions } from 'cors';
 import { readFileSync } from 'fs';
 import yaml from 'js-yaml';
@@ -21,12 +21,11 @@ import {
 import { inAppLogger, logger } from '../utilities';
 import { autoInitMongo, autoInitSql, autoInitTypeOrm, SocketService } from '../packages';
 import { DolphErrors, dolphMessages } from '../common/constants';
-import express from 'express';
 import cors from 'cors';
 import { configLoader, configs } from './config.core';
 import helmet, { HelmetOptions } from 'helmet';
 import { errorConverter, errorHandler } from './error.core';
-import { createServer, IncomingMessage, Server, ServerResponse } from 'http';
+import { IncomingMessage, Server, ServerResponse } from 'http';
 import { normalizePath } from '../utilities/normalize_path.utilities';
 import { getControllersFromMetadata } from '../utilities/get_controllers_from_component';
 import { getShieldMiddlewares, getUnShieldMiddlewares, resolveRouteShields } from '../utilities/spring_helpers.utilities';
@@ -35,6 +34,8 @@ import { GlobalInjection } from './initialisers';
 import { middlewareRegistry } from './initialisers/middleware_registrar';
 import { join } from 'path';
 import { MVCAdapter } from './adapters/mvc_registrar';
+import { createHttpAdapter } from './adapters/create_http_adapter';
+import { AdapterErrorHandler, AdapterHandler, HttpAdapter } from './adapters/http_adapter';
 import { ROUTE_ARGS_METADATA, RouteParamMetadata, routeParamsArr } from '../decorators';
 import httpStatus from 'http-status';
 import { ClassConstructor } from 'class-transformer';
@@ -105,26 +106,19 @@ const sendControllerResult = (req: DRequest, res: DResponse, result: unknown, in
 };
 
 
-// Anything middleware can be mounted on: the Express app or one of its routers
-type MiddlewareHost = Pick<Router, 'use'>;
-
 // function add cors middleware to express
-const enableCorsFunc = (engine: MiddlewareHost, corsOptions: CorsOptions) => {
-    engine.use(cors(corsOptions));
-};
+const corsMiddleware = (corsOptions: CorsOptions) => cors(corsOptions) as AdapterHandler;
 
-const enableHelmetFunc = (engine: MiddlewareHost, helmetOptions?: HelmetOptions) => {
-    engine.use(helmet(helmetOptions));
-};
+const helmetMiddleware = (helmetOptions?: HelmetOptions) => helmet(helmetOptions) as unknown as AdapterHandler;
 
 /**
  * Function is used to register express router handlers using the **express routing** architecture
  */
-const InitialiseRoutes = (engine: import("express").Express, routes: Array<{ path?: string; router: import("express").Router }>, basePath = "") => {
+const InitialiseRoutes = (adapter: HttpAdapter, routes: Array<{ path?: string; router: import("express").Router }>, basePath = "") => {
     routes.forEach((route) => {
         // const path = join(basePath, route.path || '');
         const path = normalizePath(join(basePath, route.path || '')).replace(/\\/g, '/');
-        engine.use(path, route.router);
+        adapter.mountRouter(path, route.router);
     });
 };
 
@@ -132,7 +126,7 @@ const InitialiseRoutes = (engine: import("express").Express, routes: Array<{ pat
  * Initialiser is responsible for registering all spring controllers as routers and detaching each method from the controller classes and registering them as handler functions.
  */
 const InitialiseControllersAsRouter = (
-    engine: import("express").Express,
+    adapter: HttpAdapter,
     controllers: Array<{ new (): object }>,
     basePath: string,
     factory?: any
@@ -144,7 +138,6 @@ const InitialiseControllersAsRouter = (
             const controllerInstance = new Controller();
             const classPath = Reflect.getMetadata('basePath', controllerInstance.constructor.prototype) || '';
             const controllerBasePath = classPath.startsWith('/') ? classPath : `/${classPath}`;
-            const router = Router();
 
             /**
              * Retrieve shield middleware if present
@@ -228,20 +221,20 @@ const InitialiseControllersAsRouter = (
                             if (finalMiddlewareList.length === 0 && !hasCoreParamDecorators && !renderTemplate) {
                                 if (isAsyncMethod) {
                                     // Async fast-path — awaits the handler so errors propagate and delays are observed
-                                    router[method](fullPath, async (req: DRequest, res: DResponse, next: DNextFunc) => {
+                                    adapter.route(method, fullPath, [async (req: DRequest, res: DResponse, next: DNextFunc) => {
                                         try {
                                             const result = await controllerInstance[methodName](req, res, next);
                                             if (!res.headersSent) sendControllerResult(req, res, result, factory?.responseInterceptor);
                                         } catch (error) {
                                             next(error);
                                         }
-                                    });
+                                    }]);
                                 } else {
                                     // Sync fast-path — plain handler, avoids Promise/async overhead on every request.
                                     // A non-`async` handler can still return a Promise (`return this.service.find()`,
                                     // or a decorator wrapping an async method), so the result has to be checked here:
                                     // `isAsyncMethod` only sees how the function was declared.
-                                    router[method](fullPath, (req: DRequest, res: DResponse, next: DNextFunc) => {
+                                    adapter.route(method, fullPath, [(req: DRequest, res: DResponse, next: DNextFunc) => {
                                         try {
                                             const result = controllerInstance[methodName](req, res, next);
 
@@ -260,7 +253,7 @@ const InitialiseControllersAsRouter = (
                                         } catch (error) {
                                             next(error);
                                         }
-                                    });
+                                    }]);
                                 }
                                 inAppLogger.info(dolphMessages.routeMessages(methodName, method, fullPath));
                                 return;
@@ -375,16 +368,12 @@ const InitialiseControllersAsRouter = (
                                 }
                             };
 
-                            // parse the handler function together with full path to the express router object
-                            router[method](fullPath, ...finalMiddlewareList, handler);
+                            adapter.route(method, fullPath, [...finalMiddlewareList, handler]);
                             inAppLogger.info(dolphMessages.routeMessages(methodName, method, fullPath));
                         }
                     }
                 });
             registeredShields.length = 0;
-
-            // register the router object in the express engine
-            engine.use('/', router);
         } catch (e) {
             // Fail at boot: continuing would silently drop every route on this controller.
             throw new Error(`Error initialising controller ${Controller.name}: ${e.message}`, { cause: e });
@@ -397,78 +386,28 @@ const incrementHandlers = () => {
     process.setMaxListeners(10);
 };
 
-// Initialises middlewares used by dolphjs
-const InitialiseMiddlewares = (engine: import("express").Express, { jsonLimit }: { jsonLimit: string }) => {
-    engine.use(
-        express.json({
-            limit: jsonLimit,
-            // Stashes the raw bytes on req.rawBody before they're parsed —
-            // needed for byte-exact HMAC webhook signature verification,
-            // which JSON.stringify(req.body) can't reliably reproduce.
-            verify: (req, _res, buf) => {
-                (req as DRequest).rawBody = buf;
-            },
-        }),
-    );
-    engine.use(express.urlencoded({ extended: true }));
-};
-
 // registers middlewares defined by user
-const initExternalMiddlewares = (engine: MiddlewareHost, middlewares: DRequestHandler[]) => {
-    if (middlewares?.length) {
-        middlewares.forEach((middleware) => {
-            engine.use(middleware);
-        });
-    }
+const initExternalMiddlewares = (adapter: HttpAdapter, middlewares: DRequestHandler[]) => {
+    middlewares?.forEach((middleware) => adapter.use(middleware));
 };
 
-const initGlobalMiddlewares = (engine: import("express").Express) => {
-    const middlewares = middlewareRegistry.getMiddlewares();
-    middlewares.forEach((middleware) => {
-        engine.use(middleware);
-    });
+const initGlobalMiddlewares = (adapter: HttpAdapter) => {
+    middlewareRegistry.getMiddlewares().forEach((middleware) => adapter.use(middleware));
 };
 
-const initMvcAdapter = (engine: import("express").Express) => {
-    const MVCEngine = MVCAdapter.getViewEngine();
-    const MVCAssetsPath = MVCAdapter.getAssetsPath();
-    const MVCViewsDir = MVCAdapter.getViewsDir();
+const initMvcAdapter = (adapter: HttpAdapter) => {
+    const engine = MVCAdapter.getViewEngine();
+    const assetsPath = MVCAdapter.getAssetsPath();
+    const viewsDir = MVCAdapter.getViewsDir();
 
-    if (MVCEngine && MVCAssetsPath?.length && MVCViewsDir?.length) {
-        engine.use(urlencoded({ extended: true }));
-        engine.use(express.static(MVCAssetsPath));
-        engine.set('view engine', MVCEngine);
-
-        switch (MVCEngine) {
-            case 'handlebars':
-                {
-                    // Loaded here so apps not using handlebars never pay to import it.
-                    // eslint-disable-next-line @typescript-eslint/no-var-requires
-                    const { engine: handlebars } = require('express-handlebars') as typeof import('express-handlebars');
-
-                    engine.engine(
-                        'handlebars',
-                        handlebars({
-                            defaultLayout: MVCViewsDir,
-                        }),
-                    );
-                }
-                break;
-            case 'ejs':
-                engine.use('views', express.static(MVCViewsDir));
-                break;
-            case 'pug':
-                engine.use('views', express.static(MVCViewsDir));
-                break;
-            default:
-                break;
-        }
+    if (engine && assetsPath?.length && viewsDir?.length) {
+        adapter.useViews({ engine, assetsPath, viewsDir });
     }
 };
 
 // default not found endpoint
-const initNotFoundError = (engine: import("express").Express) => {
-    engine.use('/', (req: DRequest, res: DResponse) => {
+const initNotFoundError = (adapter: HttpAdapter) => {
+    adapter.useNotFound((_req: DRequest, res: DResponse) => {
         ErrorResponse({ res, status: httpStatus.NOT_FOUND, body: { message: 'this endpoint does not exist' } });
     });
 };
@@ -476,12 +415,6 @@ const initNotFoundError = (engine: import("express").Express) => {
 // loads configs from env
 const InitialiseConfigLoader = (configEnv?: string) => {
     configLoader(configEnv);
-};
-
-// Initialises error handlers and converters
-const InitialiseErrorHandlers = (engine: import("express").Express) => {
-    engine.use(errorConverter);
-    engine.use(errorHandler);
 };
 
 // exist handler
@@ -534,12 +467,6 @@ class DolphFactoryClass {
     private isGraphQL = false;
     private graphqlReady?: Promise<void>;
 
-    // Routes are mounted in the constructor, but enableHelmet(), enableCors() and
-    // middlewares() can only be called after it. These routers are mounted ahead
-    // of the routes so whatever those methods add later still runs before them.
-    private readonly securityMiddlewares = Router();
-    private readonly lateMiddlewares = Router();
-
     port: dolphPort = process.env.PORT || 3030;
     env = configs.NODE_ENV;
     configs: DolphConfig = {};
@@ -547,7 +474,7 @@ class DolphFactoryClass {
     jsonLimit = '5mb';
     globalFilter = false;
     private globalExceptionFilterHandler?: ErrorRequestHandler;
-    private dolph: import("express").Express;
+    private adapter: HttpAdapter;
     private responseInterceptor?: ResponseInterceptor;
 
     constructor(adapter: { graphql: boolean; schema: any; context?: any });
@@ -598,9 +525,6 @@ class DolphFactoryClass {
             }
         }
 
-        this.dolph = express();
-        this.dolph.disable('x-powered-by');
-        this.server = createServer(this.dolph);
         this.extractControllersFromComponent();
         this.readConfigFile();
         this.intiDolphEngine(startTime);
@@ -618,7 +542,7 @@ class DolphFactoryClass {
 
         this.graphqlReady = GraphQLAdapter.apolloServer(this.server, adapter.schema, adapter.context).then(
             (middleware: RequestHandler) => {
-                this.dolph.use(middleware);
+                this.adapter.use(middleware as AdapterHandler);
             },
         );
 
@@ -660,6 +584,8 @@ class DolphFactoryClass {
             const config: DolphConfig = yaml.load(configContents) as unknown as DolphConfig;
 
             this.configs = config;
+            this.adapter = createHttpAdapter(config.adapter);
+            this.server = this.adapter.server;
 
             if (config.port) {
                 const parsedPort = typeof config.port === 'string' ? Number(config.port) : config.port;
@@ -738,16 +664,18 @@ class DolphFactoryClass {
 
                     // Unset keys are left out: the cors package would treat an
                     // explicit undefined as a value and lose its own defaults.
-                    enableCorsFunc(this.dolph, {
-                        ...Object.fromEntries(Object.entries(corsOptions).filter(([, value]) => value != null)),
-                        // An empty origin used to mean every site. Allowing everyone has to be asked for.
-                        origin: origin || false,
-                    });
+                    this.adapter.useSecurity(
+                        corsMiddleware({
+                            ...Object.fromEntries(Object.entries(corsOptions).filter(([, value]) => value != null)),
+                            // An empty origin used to mean every site. Allowing everyone has to be asked for.
+                            origin: origin || false,
+                        }),
+                    );
                 }
 
                 const helmetConfig = config.middlewares.helmet;
                 if (helmetConfig) {
-                    enableHelmetFunc(this.securityMiddlewares, helmetConfig === true ? undefined : helmetConfig);
+                    this.adapter.useSecurity(helmetMiddleware(helmetConfig === true ? undefined : helmetConfig));
                 }
             }
 
@@ -767,7 +695,7 @@ class DolphFactoryClass {
     }
 
     public middlewares(middlewares?: RequestHandler[]) {
-        initExternalMiddlewares(this.lateMiddlewares, middlewares ?? []);
+        initExternalMiddlewares(this.adapter, middlewares ?? []);
     }
 
     private intiDolphEngine(startTime: [number, number]) {
@@ -775,15 +703,12 @@ class DolphFactoryClass {
         InitialiseConfigLoader(this.configs?.env);
         this.env = configs.NODE_ENV;
         incrementHandlers();
-        // Ahead of the body parsers so a malformed-body 400 still gets security headers
-        this.dolph.use(this.securityMiddlewares);
-        InitialiseMiddlewares(this.dolph, { jsonLimit: this.jsonLimit });
-        initExternalMiddlewares(this.dolph, this.externalMiddlewares || []);
-        this.dolph.use(this.lateMiddlewares);
-        initGlobalMiddlewares(this.dolph);
-        initMvcAdapter(this.dolph);
-        InitialiseRoutes(this.dolph, this.routes, this.routingBase);
-        InitialiseControllersAsRouter(this.dolph, this.controllers, this.routingBase, this);
+        this.adapter.useBodyParsers({ jsonLimit: this.jsonLimit });
+        initExternalMiddlewares(this.adapter, this.externalMiddlewares || []);
+        initGlobalMiddlewares(this.adapter);
+        initMvcAdapter(this.adapter);
+        InitialiseRoutes(this.adapter, this.routes, this.routingBase);
+        InitialiseControllersAsRouter(this.adapter, this.controllers, this.routingBase, this);
 
 
         /**
@@ -817,11 +742,11 @@ class DolphFactoryClass {
                 '`enableCors()` is deprecated and will be removed in the next major version. Use the `middlewares.cors` section in `dolph_config.yaml` instead.',
             ),
         );
-        enableCorsFunc(this.securityMiddlewares, options || { origin: '*' });
+        this.adapter.useSecurity(corsMiddleware(options || { origin: '*' }));
     }
 
     public enableHelmet(options?: HelmetOptions) {
-        enableHelmetFunc(this.securityMiddlewares, options);
+        this.adapter.useSecurity(helmetMiddleware(options));
     }
 
     /**
@@ -875,9 +800,11 @@ class DolphFactoryClass {
         if (this.engineFinalized) return;
         this.engineFinalized = true;
 
+        const errorHandlers: AdapterErrorHandler[] = [errorConverter, errorHandler];
+
         if (this.globalFilter) {
             if (this.globalExceptionFilterHandler) {
-                this.dolph.use(this.globalExceptionFilterHandler);
+                errorHandlers.unshift(this.globalExceptionFilterHandler);
                 logger.info(clc.blueBright(`Dolph app using custom global exception filter`));
             } else {
                 inAppLogger.warn(
@@ -888,16 +815,16 @@ class DolphFactoryClass {
             }
         }
 
-        InitialiseErrorHandlers(this.dolph);
+        this.adapter.useErrorHandlers(errorHandlers);
 
         if (!this.isGraphQL) {
-            initNotFoundError(this.dolph);
+            initNotFoundError(this.adapter);
         }
     }
 
     public engine = () => {
         this.finalizeEngine();
-        return this.dolph;
+        return this.adapter.requestListener() as import('express').Express;
     };
     public socket = () => this.socketService;
 
@@ -908,7 +835,7 @@ class DolphFactoryClass {
         this.finalizeEngine();
 
         if (!this.isGraphQL) {
-            this.server = this.dolph.listen(+this.port, '0.0.0.0', () => {
+            this.adapter.listen(+this.port, '0.0.0.0', () => {
                 logger.info(
                     clc.blueBright(
                         `Dolph app running on port ${clc.white(`${this.port}`)} in ${this.env.toUpperCase()} mode`,
@@ -922,7 +849,7 @@ class DolphFactoryClass {
                 await this.graphqlReady;
                 await new Promise<void>((resolve, reject) => {
                     this.server.once('error', reject);
-                    this.server.listen({ port: +this.port }, () => {
+                    this.adapter.listen(+this.port, '0.0.0.0', () => {
                         this.server.off('error', reject);
                         resolve();
                     });
