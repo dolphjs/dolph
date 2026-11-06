@@ -1,3 +1,4 @@
+import type { HelmetOptions } from 'helmet';
 import { DolphMiddlewareOption, dolphEnv, dolphPort } from '..';
 import { IPayload, MongooseConfig } from '.';
 import { NextFunction, Request, RequestHandler, Response, Router } from 'express';
@@ -38,6 +39,7 @@ export interface TypeOrmConfig {
 export interface DolphConfigMiddlewares {
     cors?: DolphMiddlewareOption;
     xss?: DolphMiddlewareOption;
+    helmet?: boolean | HelmetOptions;
 }
 
 export interface DolphConfigRouting {

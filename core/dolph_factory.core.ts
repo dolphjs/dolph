@@ -31,7 +31,7 @@ import { createServer, IncomingMessage, Server, ServerResponse } from 'http';
 import { normalizePath } from '../utilities/normalize_path.utilities';
 import { DolphControllerHandler } from '../classes';
 import { getControllersFromMetadata } from '../utilities/get_controllers_from_component';
-import { getShieldMiddlewares, getUnShieldMiddlewares, stringifyFunction } from '../utilities/spring_helpers.utilities';
+import { getShieldMiddlewares, getUnShieldMiddlewares, resolveRouteShields } from '../utilities/spring_helpers.utilities';
 import { DSocketInit } from '../common/interfaces/socket.interfaces';
 import { GlobalInjection } from './initialisers';
 import { middlewareRegistry } from './initialisers/middleware_registrar';
@@ -183,34 +183,20 @@ const InitialiseControllersAsRouter = <T extends Dolph>(
                         const renderTemplate =
                             Reflect.getMetadata('render', controllerInstance.constructor.prototype[methodName]) || undefined;
 
-                        let finalMiddlewareList = [...shieldMiddlewares];
-                        /**
-                         * Append any present shield middleware into the middlewares list
-                         */
-
-                        /**
-                         * Todo: abstract to helper function
-                         */
-
-                        const unshieldedMiddlewares = getUnShieldMiddlewares(
-                            controllerInstance.constructor.prototype[methodName],
+                        const { active, unmatched } = resolveRouteShields(
+                            shieldMiddlewares,
+                            getUnShieldMiddlewares(controllerInstance.constructor.prototype[methodName]),
                         );
 
-                        if (unshieldedMiddlewares?.length) {
-                            const setOne = new Set(finalMiddlewareList.map(stringifyFunction));
-                            const setTwo = new Set(unshieldedMiddlewares.map(stringifyFunction));
-
-                            const uniqueToShield = finalMiddlewareList.filter(
-                                (func) => !setTwo.has(stringifyFunction(func)),
+                        unmatched.forEach((middleware) => {
+                            inAppLogger.warn(
+                                clc.yellow(
+                                    `@UnShield on ${Controller.name}.${methodName}: '${middleware?.name || 'anonymous'}' is not a shield on this controller, so nothing was removed. Pass the same function reference given to @Shield.`,
+                                ),
                             );
-                            const uniqueToUnShield = unshieldedMiddlewares.filter(
-                                (func) => !setOne.has(stringifyFunction(func)),
-                            );
+                        });
 
-                            finalMiddlewareList = [...uniqueToShield, ...uniqueToUnShield];
-                        } else {
-                            // middlewareList.unshift(...individualShieldMiddlewares);
-                        }
+                        const finalMiddlewareList = [...active];
 
                         finalMiddlewareList.push(...middlewareList);
 
@@ -769,6 +755,11 @@ class DolphFactoryClass {
                         origin: origin || '*',
                         preflightContinue,
                     });
+                }
+
+                const helmetConfig = config.middlewares.helmet;
+                if (helmetConfig) {
+                    enableHelmetFunc(this.securityMiddlewares, helmetConfig === true ? undefined : helmetConfig);
                 }
             }
 
