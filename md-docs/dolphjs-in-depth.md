@@ -322,7 +322,7 @@ Socket setup requires:
 Example service:
 
 ```ts
-export class ChatSocketService extends DolphSocketServiceHandler<Dolph> {
+export class ChatSocketService extends DolphSocketServiceHandler {
   constructor() {
     super();
     const io = this.socketService.getSocket();

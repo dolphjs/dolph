@@ -39,7 +39,7 @@ Let's create a Sequelize model for a `User`.
 ```typescript
 // src/user/user.model.ts
 import { DataTypes, Model } from 'sequelize';
-import { getSequelize } from '@dolphjs/dolph/packages/sequelize';
+import { getSequelize } from '@dolphjs/dolph';
 
 // Retrieve the auto-initialized Sequelize instance
 const sequelize = getSequelize();
@@ -80,21 +80,15 @@ To keep your business logic clean, use Dependency Injection to provide the model
 
 ```typescript
 // src/user/user.service.ts
-import { DolphServiceHandler } from '@dolphjs/dolph/classes';
-import { Dolph } from '@dolphjs/dolph/common';
-import { InjectMySQL, DService } from '@dolphjs/dolph/decorators';
+import { InjectMySQL, DService } from '@dolphjs/dolph';
 import { ModelStatic, Model as SqlModel } from 'sequelize';
 import { UserModel } from './user.model';
 
 @InjectMySQL('userModel', UserModel)
 @DService()
-export class UserService extends DolphServiceHandler<Dolph> {
+export class UserService {
   // TypeScript declaration matching the string in @InjectMySQL
   userModel!: ModelStatic<SqlModel<any, any>>;
-
-  constructor() {
-    super('userService');
-  }
 
   async createUser(data: { username: string; email: string }) {
     // We now have full access to Sequelize methods on this.userModel

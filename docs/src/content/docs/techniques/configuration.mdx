@@ -57,17 +57,11 @@ export const config = {
 You can now import this typed `config` object anywhere in your controllers or services.
 
 ```typescript
-import { DolphServiceHandler } from '@dolphjs/dolph/classes';
-import { Dolph } from '@dolphjs/dolph/common';
-import { DService } from '@dolphjs/dolph/decorators';
+import { DService } from '@dolphjs/dolph';
 import { config } from '../config/env.config';
 
 @DService()
-export class PaymentService extends DolphServiceHandler<Dolph> {
-  constructor() {
-    super('paymentService');
-  }
-
+export class PaymentService {
   async processPayment(amount: number) {
     const stripeKey = config.stripe.apiKey;
     
