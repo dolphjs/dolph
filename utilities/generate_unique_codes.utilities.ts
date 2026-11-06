@@ -1,33 +1,20 @@
-const strOne = Date.now().toString(36);
-const strTwo = Math.random().toString(36).substring(2);
+import { randomInt } from 'crypto';
 
-function generateRandomCode(digits: number, str: string) {
-    let code = '';
-    while (code.length < digits) {
-        code += str[Math.floor(Math.random() * str.length)];
+/**
+ * Generates a random numeric code, such as for email verification.
+ *
+ * Returns a new code on every call, from a cryptographically secure source.
+ *
+ * @param digits how long the code should be, defaults to 6
+ *
+ * @version 2.0.0
+ */
+const generateVerificationCode = (digits = 6): string => {
+    if (!Number.isInteger(digits) || digits < 1) {
+        throw new Error('`digits` must be a positive whole number');
     }
-    return code;
-}
 
-/**
- * generates a random 5 digits string
- *
- * can be used for email validation e.t.c
- */
-const uniqueFiveDigitsCode = generateRandomCode(5, strOne + strTwo);
+    return Array.from({ length: digits }, () => randomInt(10)).join('');
+};
 
-/**
- * generates a random 6 digits string
- *
- * can be used for email validation e.t.c
- */
-const uniqueSixDigitsCode = generateRandomCode(6, strOne + strTwo);
-
-/**
- * generates a random 7 digits string
- *
- * can be used for email validation e.t.c
- */
-const uniqueSevenDigitsCode = generateRandomCode(7, strOne + strTwo);
-
-export { uniqueFiveDigitsCode, uniqueSevenDigitsCode, uniqueSixDigitsCode };
+export { generateVerificationCode };

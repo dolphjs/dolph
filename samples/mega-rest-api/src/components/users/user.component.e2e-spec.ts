@@ -38,8 +38,8 @@ describe('UserComponent (e2e)', () => {
         const res = await request(app.engine).get('/api/v1/users');
 
         expect(res.status).toBe(200);
-        expect(res.body.total).toBe(1);
-        expect(res.body.users).toEqual([{ id: 'u-1', username: 'alpha', role: 'admin', age: 30 }]);
+        expect(res.body.data.total).toBe(1);
+        expect(res.body.data.users).toEqual([{ id: 'u-1', username: 'alpha', role: 'admin', age: 30 }]);
         expect(mockUserService.list).toHaveBeenCalledWith(undefined);
     });
 
@@ -47,7 +47,7 @@ describe('UserComponent (e2e)', () => {
         const res = await request(app.engine).get('/api/v1/users/u-1');
 
         expect(res.status).toBe(200);
-        expect(res.body).toEqual({ id: 'u-1', username: 'alpha', role: 'admin', age: 30 });
+        expect(res.body.data).toEqual({ id: 'u-1', username: 'alpha', role: 'admin', age: 30 });
         expect(mockUserService.getById).toHaveBeenCalledWith('u-1');
     });
 });

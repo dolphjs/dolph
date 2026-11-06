@@ -1,0 +1,102 @@
+---
+title: Handlebars Integration
+description: Building a non-REST Server-Side Rendered app with Handlebars
+editUrl: false
+sidebar:
+  label: Handlebars
+  order: 3
+pagefind: false
+banner:
+  content: |
+    You're reading the docs for DolphJS v2. <a href="/mvc/handlebars/">See the latest version</a>.
+---
+
+Handlebars (`hbs`) is a popular logic-less templating engine. DolphJS integrates smoothly with Handlebars for robust Server-Side Rendering.
+
+## Installation
+
+Install Handlebars for Express (`hbs`):
+
+```bash
+pnpm install hbs
+```
+
+## Configuring the MVC Adapter
+
+Configure the `MVCAdapter` in your server bootstrap file to use `hbs`.
+
+```typescript
+// src/server.ts
+import { DolphFactory } from '@dolphjs/dolph';
+import { MVCAdapter } from '@dolphjs/dolph/common';
+import { PageComponent } from './page/page.component';
+import * as path from 'path';
+
+async function bootstrap() {
+  const dolph = new DolphFactory([PageComponent]);
+  
+  MVCAdapter.setViewsDir(path.join(process.cwd(), 'views'));
+  MVCAdapter.setViewEngine('hbs');
+
+  dolph.start();
+}
+
+bootstrap();
+```
+
+## Creating the View
+
+Create a `views` directory in your project root, and add an `index.hbs` file.
+
+```html
+<!-- views/index.hbs -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{title}}</title>
+</head>
+<body>
+    <h1>{{heading}}</h1>
+    <ul>
+        {{#each users}}
+            <li>{{name}}</li>
+        {{/each}}
+    </ul>
+</body>
+</html>
+```
+
+## Rendering the View in a Controller
+
+The controller logic remains entirely agnostic of the view engine. The `@Render()` decorator handles the handover.
+
+```typescript
+// src/page/page.controller.ts
+import { DolphControllerHandler } from '@dolphjs/dolph/classes';
+import { Dolph } from '@dolphjs/dolph/common';
+import { Route, Get, Render } from '@dolphjs/dolph/decorators';
+
+@Route('pages')
+export class PageController extends DolphControllerHandler<Dolph> {
+
+
+  @Get('home')
+  @Render('index') // Corresponds to views/index.hbs
+  async getHomePage() {
+    // Data passed directly to Handlebars
+    return {
+      title: 'DolphJS Handlebars App',
+      heading: 'Welcome to SSR with Handlebars',
+      users: [
+        { name: 'Eve' },
+        { name: 'Frank' }
+      ]
+    };
+  }
+}
+```
+
+:::tip
+Because DolphJS normalizes the rendering pipeline with `@Render()`, you can switch between EJS, Pug, or Handlebars by merely updating the `MVCAdapter` and your view files, without ever touching your Controller logic!
+:::

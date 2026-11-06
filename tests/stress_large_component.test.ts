@@ -241,6 +241,11 @@ describe('Large component: 9 services + 3 controllers', () => {
 
     beforeAll(() => {
         GlobalServiceRegistry._reset();
+
+        // The first factory also imports the server package, which is a one-off
+        // cost. This budget is for DI and route registration.
+        new DolphFactory([]).engine();
+
         const t0 = process.hrtime.bigint();
         const engine = new DolphFactory([BigComponent]).engine();
         const t1 = process.hrtime.bigint();

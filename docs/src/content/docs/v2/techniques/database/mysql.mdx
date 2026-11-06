@@ -1,0 +1,117 @@
+---
+title: MySQL Integration
+description: Using MySQL with Sequelize in DolphJS
+editUrl: false
+sidebar:
+  label: MySQL
+  order: 1
+pagefind: false
+banner:
+  content: |
+    You're reading the docs for DolphJS v2. <a href="/techniques/database/mysql/">See the latest version</a>.
+---
+
+DolphJS provides first-class support for MySQL databases. While you can use any ORM you prefer, the framework is heavily optimized for seamless integration with **Sequelize** through the auto-initialization sequence and the `@InjectMySQL` decorator.
+
+## Configuration
+
+To connect to MySQL, you define the connection parameters in your `dolph_config.yaml`. The framework will read this file and attempt to establish a connection before starting the server.
+
+```yaml
+# dolph_config.yaml
+database:
+  sequelize:
+    dialect: mysql
+    host: localhost
+    user: root
+    pass: sensitive
+    database: dolph_db
+    options:
+      logging: false
+      pool:
+        max: 5
+```
+
+:::note
+**Sensitive Credentials:** Setting `pass: sensitive` tells DolphJS to pull the password directly from the `SQL_PASSWORD` variable in your `.env` file. You can also do this for `user`, `host`, and `options.url` (which map to `SQL_USER`, `SQL_HOST`, and `SQL_URL`).
+:::
+
+## Defining the Model (Sequelize)
+
+Let's create a Sequelize model for a `User`.
+
+```typescript
+// src/user/user.model.ts
+import { DataTypes, Model } from 'sequelize';
+import { getSequelize } from '@dolphjs/dolph/packages/sequelize';
+
+// Retrieve the auto-initialized Sequelize instance
+const sequelize = getSequelize();
+
+export class UserModel extends Model {
+  public id!: number;
+  public username!: string;
+  public email!: string;
+}
+
+UserModel.init(
+  {
+    id: {
+      type: DataTypes.INTEGER.UNSIGNED,
+      autoIncrement: true,
+      primaryKey: true,
+    },
+    username: {
+      type: new DataTypes.STRING(128),
+      allowNull: false,
+    },
+    email: {
+      type: new DataTypes.STRING(128),
+      allowNull: false,
+      unique: true,
+    },
+  },
+  {
+    tableName: 'users',
+    sequelize, // Pass the connection instance
+  }
+);
+```
+
+## Injecting the Model
+
+To keep your business logic clean, use Dependency Injection to provide the model to your Service.
+
+```typescript
+// src/user/user.service.ts
+import { DolphServiceHandler } from '@dolphjs/dolph/classes';
+import { Dolph } from '@dolphjs/dolph/common';
+import { InjectMySQL, DService } from '@dolphjs/dolph/decorators';
+import { ModelStatic, Model as SqlModel } from 'sequelize';
+import { UserModel } from './user.model';
+
+@InjectMySQL('userModel', UserModel)
+@DService()
+export class UserService extends DolphServiceHandler<Dolph> {
+  // TypeScript declaration matching the string in @InjectMySQL
+  userModel!: ModelStatic<SqlModel<any, any>>;
+
+  constructor() {
+    super('userService');
+  }
+
+  async createUser(data: { username: string; email: string }) {
+    // We now have full access to Sequelize methods on this.userModel
+    const user = await this.userModel.create(data);
+    return user;
+  }
+
+  async findByEmail(email: string) {
+    return await this.userModel.findOne({ where: { email } });
+  }
+}
+```
+
+:::tip
+Always use `@InjectMySQL` rather than importing the model directly into the service. This allows you to easily mock the `userModel` property during Unit Testing without firing up an actual MySQL database.
+:::

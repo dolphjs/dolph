@@ -1,4 +1,3 @@
-import { DolphControllerHandler } from '../classes';
 import { DolphComponent } from '../common';
 
 export function isComponentClass(obj: any): obj is DolphComponent<any> {
@@ -6,6 +5,6 @@ export function isComponentClass(obj: any): obj is DolphComponent<any> {
         typeof obj === 'object' &&
         'controllers' in obj &&
         Array.isArray(obj.controllers) &&
-        obj.controllers.every((item: any) => typeof item === 'function' && item.prototype instanceof DolphControllerHandler)
+        obj.controllers.every((item: any) => typeof item === 'function' && Boolean(item.prototype))
     );
 }

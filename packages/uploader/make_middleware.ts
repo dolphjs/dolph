@@ -1,13 +1,17 @@
 import { IncomingMessage } from 'http';
+import { Readable } from 'stream';
 import BBusboy, { Busboy } from 'busboy';
 import { FileInfo, UploadConfig } from '../../common/types/dolph_uploader.type';
 import { DRequest, DResponse } from '../../common';
+import { inAppLogger } from '../../utilities';
+import { DefaultException } from '../../common/api/exceptions/default_exception.api';
+import { HttpStatus } from '../../common/api/HttpStatus.api';
 import { FileAppender } from './file_appender';
 import { Counter } from './counter';
 import { DolphFIleUploaderError } from './errors/error_messages';
 import { removeUploadedFiles } from './remove_uploaded_files';
 
-export function isMultipart(req: IncomingMessage): boolean {
+export function isMultipart(req: { headers: IncomingMessage['headers'] }): boolean {
     const contentType = req.headers['content-type'] || '';
     return contentType.startsWith('multipart/');
 }
@@ -33,6 +37,9 @@ export function makeMiddleware(getOptions: () => UploadConfig & { fields?: Array
             return next();
         }
 
+        // Express requests are the Node stream. Fastify keeps it on req.raw.
+        const nodeRequest = (req.raw ?? req) as unknown as IncomingMessage;
+
         let options: ReturnType<typeof getOptions>;
 
         try {
@@ -57,6 +64,10 @@ export function makeMiddleware(getOptions: () => UploadConfig & { fields?: Array
         const appender = new FileAppender(options.fileStrategy, req);
         const pendingWrites = new Counter();
         const uploadedFiles: FileInfo[] = [];
+        const activeStreams = new Set<Readable>();
+        const remainingByField = new Map(
+            (options.fields ?? []).map(({ name, maxCount }) => [name, maxCount ?? Infinity]),
+        );
 
         let isDone = false;
         let readFinished = false;
@@ -69,7 +80,7 @@ export function makeMiddleware(getOptions: () => UploadConfig & { fields?: Array
             // clear all  pending timeout
             if (uploadTimeOut) clearTimeout(uploadTimeOut);
 
-            const reqStream = req as NodeJS.ReadableStream & { unpipe?: (dest: unknown) => void };
+            const reqStream = nodeRequest as NodeJS.ReadableStream & { unpipe?: (dest: unknown) => void };
             if (typeof reqStream.unpipe === 'function') {
                 reqStream.unpipe(busboy);
             }
@@ -87,7 +98,12 @@ export function makeMiddleware(getOptions: () => UploadConfig & { fields?: Array
         }
 
         const uploadTimeOut = setTimeout(() => {
-            done(new Error('Upload process timed out'));
+            const timeoutError = new DefaultException('Upload process timed out', HttpStatus.REQUEST_TIMEOUT);
+
+            // A stalled client never ends its stream, so the abort below would wait
+            // forever for those writes. Destroying them lets storage clean up.
+            abortWithError(timeoutError);
+            activeStreams.forEach((stream) => stream.destroy(timeoutError));
         }, options.timeout ?? 30_000);
 
         function indicateDone(): void {
@@ -137,6 +153,14 @@ export function makeMiddleware(getOptions: () => UploadConfig & { fields?: Array
                 if (options.limits?.fieldNameSize && fieldname.length > options.limits.fieldNameSize) {
                     return abortWithCode('LIMIT_FIELD_KEY');
                 }
+
+                // Checked before any bytes are stored, so an extra file costs nothing.
+                const remaining = remainingByField.get(fieldname) ?? 0;
+                if (remaining < 1) {
+                    fileStream.resume();
+                    return abortWithCode('LIMIT_UNEXPECTED_FILE', fieldname);
+                }
+                remainingByField.set(fieldname, remaining - 1);
 
                 const file: FileInfo = {
                     fieldname,
@@ -245,7 +269,13 @@ export function makeMiddleware(getOptions: () => UploadConfig & { fields?: Array
                 // }
 
                 options.fileFilter(req, file, (err: Error | null, includeFile: boolean) => {
-                    if (err || !includeFile) {
+                    if (err) {
+                        appender.removePlaceholder(placeholder);
+                        fileStream.resume();
+                        return abortWithError(err);
+                    }
+
+                    if (!includeFile) {
                         appender.removePlaceholder(placeholder);
                         return fileStream.resume();
                     }
@@ -253,13 +283,21 @@ export function makeMiddleware(getOptions: () => UploadConfig & { fields?: Array
                     let aborting = false;
                     pendingWrites.increment();
 
+                    const source = fileStream as Readable;
+                    const output = options.transformFile?.(file, source) ?? source;
+
+                    activeStreams.add(output);
+
                     Object.defineProperty(file, 'stream', {
                         configurable: true,
                         enumerable: false,
-                        value: fileStream,
+                        value: output,
                     });
 
-                    fileStream.on('error', (streamErr: Error) => {
+                    output.on('error', (streamErr: Error) => {
+                        activeStreams.delete(output);
+                        // Busboy waits for each file to be read before moving to the next.
+                        source.resume();
                         pendingWrites.decrement();
                         abortWithError(streamErr);
                     });
@@ -270,6 +308,19 @@ export function makeMiddleware(getOptions: () => UploadConfig & { fields?: Array
                     });
 
                     options.storage.handleFile(req, file, (storageErr: Error | null, info?: Partial<FileInfo>) => {
+                        activeStreams.delete(output);
+
+                        // A slow provider can finish after the request failed and its files were
+                        // cleaned up, so nothing else will ever remove this one.
+                        if (isDone) {
+                            if (!storageErr) {
+                                options.storage.removeFile(req, { ...file, ...info }, (removeErr) => {
+                                    if (removeErr) inAppLogger.warn(`Could not remove upload: ${removeErr.message}`);
+                                });
+                            }
+                            return;
+                        }
+
                         if (aborting) {
                             appender.removePlaceholder(placeholder);
                             uploadedFiles.push({ ...file, ...info });
@@ -303,6 +354,6 @@ export function makeMiddleware(getOptions: () => UploadConfig & { fields?: Array
             // indicateDone();
         });
 
-        req.pipe(busboy);
+        nodeRequest.pipe(busboy);
     };
 }

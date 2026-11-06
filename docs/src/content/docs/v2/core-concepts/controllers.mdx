@@ -1,0 +1,171 @@
+---
+title: Controllers
+description: Handling incoming HTTP requests and routing in DolphJS
+editUrl: false
+sidebar:
+    label: Controllers
+    order: 1
+pagefind: false
+banner:
+  content: |
+    You're reading the docs for DolphJS v2. <a href="/core-concepts/controllers/">See the latest version</a>.
+---
+
+Controllers are responsible for handling incoming HTTP requests and returning responses to the client. In DolphJS, a controller's purpose is to receive specific requests for the application, delegate the complex business logic to **multiple Services**, and return the computed result. The framework is intentionally designed such that a controller acts as an orchestrator for multiple services, rather than just routing to a single service.
+
+## Basic Controller
+
+To create a controller, you must extend the `DolphControllerHandler` class and use the `@Route` decorator to define the base path.
+
+```typescript
+import { DolphControllerHandler } from '@dolphjs/dolph/classes';
+import { Dolph } from '@dolphjs/dolph/common';
+import { Route, Get, DRes, DRequest } from '@dolphjs/dolph/decorators';
+import { SuccessResponse } from '@dolphjs/dolph/common';
+
+@Route('cats')
+export class CatsController extends DolphControllerHandler<Dolph> {
+    @Get()
+    async findAll(@DRes() res: DRequest) {
+        SuccessResponse({ res, body: 'This action returns all cats' });
+    }
+}
+```
+
+:::note
+The `@DRes()` decorator injects the underlying Express response object into your method signature, allowing you to use Dolph's legacy `SuccessResponse` utility.
+
+However, **using `SuccessResponse` is not necessary!** Just like in NestJS, you can simply `return` your data directly from the controller method, and the framework will automatically send it back to the client.
+
+By default, Dolph wraps all auto-returned controller values in a standardized JSON envelope:
+```json
+{
+  "success": true,
+  "status": 200,
+  "message": "Request successful", // "message" uses the return value if it's a string
+  "data": { ... } // "data" uses the return value if it's an object/array
+}
+```
+
+```typescript
+@Get('direct')
+async returnDirectly(req: DRequest, res: DResponse) {
+    // Returning data directly works exactly as it does in NestJS
+    return { name: 'Utee' };
+    // Automatically sent as: { success: true, status: 200, message: 'Request successful', data: { name: 'Utee' } }
+}
+```
+
+If you prefer a different response envelope, you can override this behavior globally via the `DolphFactory`:
+
+```typescript
+// server.ts
+const dolph = new DolphFactory([AppComponent]);
+
+dolph.setResponseInterceptor((data, req, res) => {
+    return {
+        myCustomSuccess: true,
+        payload: data
+    };
+});
+
+dolph.start();
+```
+:::
+
+## Routing
+
+The `@Get()`, `@Post()`, `@Put()`, `@Patch()`, and `@Delete()` decorators tell DolphJS to create an endpoint for this specific HTTP method.
+
+You can also pass path parameters to these decorators.
+
+```typescript
+@Get(':id')
+async findOne(@DParam('id') id: string, @DRes() res: DRequest) {
+  SuccessResponse({ res, body: `This action returns cat #${id}` });
+}
+```
+
+## Request Payloads
+
+DolphJS provides decorators to extract payloads from the incoming request cleanly.
+
+- `@DBody()`: Extracts the `req.body`.
+- `@DParam('name')`: Extracts a specific route parameter `req.params.name`.
+- `@DQuery('name')`: Extracts a query parameter `req.query.name`.
+
+### Example with DTOs
+
+If you integrate a validation library like `class-validator`, you can type your `@DBody()` to automatically enforce payload structures (handled in conjunction with middlewares).
+
+```typescript
+import { Post, DBody, DRes, DRequest } from '@dolphjs/dolph/decorators';
+
+class CreateCatDto {
+  name: string;
+  age: number;
+}
+
+@Post()
+async create(@DBody() createCatDto: CreateCatDto, @DRes() res: DRequest) {
+  // Pass the DTO to a service
+  const newCat = await this.catsService.create(createCatDto);
+  SuccessResponse({ res, body: newCat });
+}
+```
+
+## Dependency Injection
+
+Controllers rarely execute business logic themselves. Instead, they rely on Services declared alongside them in a `@Component`. DolphJS supports two ways for a controller to receive them.
+
+### Constructor Injection (recommended)
+
+Declare the service as a constructor parameter, and `@Component` resolves and passes it in automatically:
+
+```typescript
+@Route('cats')
+export class CatsController extends DolphControllerHandler<Dolph> {
+    constructor(private readonly catsService: CatsService) {
+        super();
+    }
+
+    @Get()
+    async findAll(@DRes() res: DRequest) {
+        const cats = await this.catsService.findAll();
+        SuccessResponse({ res, body: cats });
+    }
+}
+```
+
+This is the preferred style going forward — besides reading naturally, it's the form that lets you construct the controller directly in a unit test (`new CatsController(mockService)`) without reaching into the instance by hand. See [Testing](/v2/testing/#tier-2--controller-unit-tests).
+
+### Field Injection
+
+If the controller has no constructor parameters, `@Component` instead defines a property on the instance for every service declared in the same component — named **after the service's class itself**, not a lowerCamelCase alias:
+
+```typescript
+@Route('cats')
+export class CatsController extends DolphControllerHandler<Dolph> {
+    // The property name must match the class name exactly — DolphJS assigns
+    // it as `instance.CatsService`, not `instance.catsService`.
+    private CatsService!: CatsService;
+
+    @Get()
+    async findAll(@DRes() res: DRequest) {
+        const cats = await this.CatsService.findAll();
+        SuccessResponse({ res, body: cats });
+    }
+}
+```
+
+:::caution
+Do **not** instantiate the service manually (`new CatsService()`). Let the Dependency Injection container handle it to ensure singleton state and proper memory management. And regardless of which style you use, do not mix the two on the same class — a controller either takes its services as constructor parameters, or declares them as class-name-matched fields, not both.
+:::
+
+## Asynchronous Handlers
+
+By default, DolphJS wraps your controller methods in an asynchronous try-catch block. If an error is thrown within your method, it will be automatically passed to the next global error handler. You do not need to write verbose `try...catch` blocks inside every route!
+
+## Testing Controllers
+
+A controller built with constructor injection (`constructor(private readonly catsService: CatsService)`) can be unit tested the same way as a service — construct it directly with `new` and a mock, no Express involved. See [Testing → Tier 2](/v2/testing/#tier-2--controller-unit-tests) for the full pattern, including how to mock `DRes()` for handlers that write to the response directly.

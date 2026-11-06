@@ -80,24 +80,20 @@ app.start();
 2. HTTP app + sockets:
 
 ```ts
-const app = new DolphFactory(
-  [HealthComponent],
-  {
-    socketService: SocketService,
+const app = new DolphFactory([HealthComponent], {
+  sockets: {
     component: new RealtimeComponent(),
     options: { cors: { origin: "*" } }
   }
-);
+});
 app.start();
 ```
 
 3. GraphQL adapter mode:
 
 ```ts
-const app = new DolphFactory({
-  graphql: true,
-  schema,
-  context
+const app = new DolphFactory([], {
+  graphql: { schema, context }
 });
 app.start();
 ```
@@ -156,17 +152,9 @@ Current behavior keeps `whitelist: true` and disables `forbidNonWhitelisted` for
 - `@Component({ controllers, services })`: registers controllers/services and wires service instances
 - `InjectServiceHandler([{ serviceHandler, serviceName }])`: class wrapper for explicit property injection
 
-### Auth decorators
+### Auth
 
-- `@JWTAuthVerifyDec(secret)`
-- `@JWTAuthorizeDec(secret, authorizeFn?)`
-- `@CookieAuthVerifyDec(secret)`
-
-Use middleware alternatives (`JwtAuthMiddleware`, `cookieAuthVerify`) when you need strict control over call context and execution order.
-
-### Validation decorator
-
-- `@ValidateReq(schema)` for Joi-based validation of body/params/query
+Use `jwtAuth(secret, options?)` with `@Shield` or `@UseMiddleware`. See the auth section below.
 
 ### Event decorators (currently not released)
 
@@ -178,10 +166,9 @@ Use middleware alternatives (`JwtAuthMiddleware`, `cookieAuthVerify`) when you n
 
 - `@Socket({ services, socketServices })` on socket component class
 
-### Mongoose/MySQL injection decorators
+### Mongoose injection decorator
 
 - `InjectMongo(propertyName, model)`
-- `InjectMySQL(propertyName, model)`
 
 ## Controller and service base classes
 
@@ -208,23 +195,23 @@ Provides lazy socket server access via `socketService` and `socket`.
 
 ## Authentication and authorization
 
-### JWT flow with middleware (recommended in many route stacks)
+### JWT flow
 
 ```ts
 @Get("/me")
-@UseMiddleware(JwtAuthMiddleware(new JwtBasicAuth(APP_SECRET)))
-me(@DPayload() payload: any, @DRes() res: DResponse) {
-  SuccessResponse({ res, body: { payload } });
+@UseMiddleware(jwtAuth(APP_SECRET))
+me(@DPayload() payload: any) {
+  return { payload };
 }
 ```
 
-### JWT flow with decorators
+Pass `{ authorize }` to answer `403` when a check fails, and `{ cookie: true }` to read the auth cookie:
 
 ```ts
 @Get("/admin/logs")
-@JWTAuthorizeDec(APP_SECRET, async payload => payload.role === "admin")
-logs(req: DRequest, res: DResponse) {
-  SuccessResponse({ res, body: { ok: true } });
+@UseMiddleware(jwtAuth(APP_SECRET, { authorize: async payload => payload.role === "admin" }))
+logs() {
+  return { ok: true };
 }
 ```
 
@@ -233,7 +220,7 @@ logs(req: DRequest, res: DResponse) {
 Current auth code checks:
 
 - `authorization` (HMAC path)
-- `x-auth-token` (RSA path)
+- `x-auth-token` (RSA, with `{ algorithm: 'RS256' }`)
 
 The existing sample sends raw JWT in `Authorization` without the `Bearer` prefix.
 
@@ -249,21 +236,9 @@ class ListUsersQueryDto {
 }
 
 @Get("/")
-list(@DQuery(ListUsersQueryDto) query: ListUsersQueryDto, @DRes() res: DResponse) {
-  SuccessResponse({ res, body: { role: query?.role ?? null } });
+list(@DQuery(ListUsersQueryDto) query: ListUsersQueryDto) {
+  return { role: query?.role ?? null };
 }
-```
-
-Use Joi middleware when schema-based request validation is preferred:
-
-```ts
-this.router.post(
-  "/echo",
-  reqValidatorMiddleware({
-    body: Joi.object({ message: Joi.string().required() })
-  }),
-  this.controller.echo
-);
 ```
 
 ## File upload system
@@ -281,8 +256,8 @@ Use `useFileUploader` for endpoint middleware and `fileUploader` for lower-level
     storage: diskStorage({ destination: "./tmp-uploads" })
   })
 )
-uploadSingle(req: DRequest, res: DResponse) {
-  SuccessResponse({ res, body: { file: req.file } });
+uploadSingle(req: DRequest) {
+  return { file: req.file };
 }
 ```
 
@@ -322,7 +297,7 @@ Socket setup requires:
 Example service:
 
 ```ts
-export class ChatSocketService extends DolphSocketServiceHandler<Dolph> {
+export class ChatSocketService extends DolphSocketServiceHandler {
   constructor() {
     super();
     const io = this.socketService.getSocket();
@@ -334,23 +309,19 @@ export class ChatSocketService extends DolphSocketServiceHandler<Dolph> {
 }
 ```
 
-## Response and exception helpers
+## Responses and exceptions
 
-Use:
+Return data from a `@Route` controller to send it, and throw to send an error:
 
-- `SuccessResponse({ res, body?, msg?, status? })`
-- `ErrorResponse(...)`
-- `HttpStatus`
 - Exceptions from `common/api/exceptions`
+- `HttpStatus`
 
-`SuccessResponse` standardizes JSON content type and status handling.
+Use `res.status(201)` with `@DRes()` for a status other than 200, then return as usual.
 
 ## Middleware patterns
 
 Core helpers:
 
-- `TryCatchAsyncFn`
-- `TryCatchFn`
 - `DolphAsyncMiddleware`
 - `DolphMiddleware`
 - `DolphAsyncMiddlewareDec`
@@ -368,8 +339,7 @@ Supported keys include:
 - `middlewares.cors`
 - `database.mongo`
 - `database.typeorm` (auto-initializes a TypeORM DataSource)
-- `database.sequelize` (auto-initializes a Sequelize instance)
-- `globalExceptionFilter`
+- `views`
 
 Example:
 

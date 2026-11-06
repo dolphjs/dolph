@@ -16,7 +16,7 @@
 - `decorators/`: metadata-based API (`@Route`, HTTP decorators, parameter decorators, component/socket decorators).
 - `classes/`: base controller/service/router/auth/socket abstractions.
 - `common/`: request/response interfaces, exceptions, middleware utilities, framework types.
-- `packages/`: integration modules (uploader, sockets, mongoose, sequelize, events).
+- `packages/`: integration modules (uploader, sockets, mongoose, typeorm, events).
 - `utilities/`: auth/token helpers, logger, validators, normalizers.
 
 ## TypeScript environment
@@ -29,7 +29,7 @@
 ## Dependency injection (controllers & services)
 
 - Register services on `@Component({ services: [...] })`. The component decorator wires instances onto controllers that declare matching constructor parameters (via `design:paramtypes`) or can attach services as named properties for zero-arg controllers.
-- For **auth-heavy** handlers, prefer `@UseMiddleware(JwtAuthMiddleware(...))` or `cookieAuthVerify(...)` over `@JWTAuthVerifyDec` / `@JWTAuthorizeDec` when you see `this` or `req` undefined at runtime—those decorators replace the method and can break instance or argument binding.
+- For auth, use `jwtAuth()` with `@Shield` or `@UseMiddleware`.
 - For **shared service access** without constructor injection, the codebase uses an `InjectServiceHandler` + small “services bag” class pattern (see mega-rest-api admin/auth controllers); that is a supported style for decorator-wrapped routes.
 - Do not mix fragile patterns: avoid `this.myService` on the same method stack as decorators that wrap with a plain function unless you have verified `apply`/`bind` behavior.
 
@@ -37,7 +37,7 @@
 
 - `DolphAsyncMiddleware` / `DolphAsyncMiddlewareDec` resolve the inner async function and **return** the resulting Promise so callers can `await` correctly; errors are passed to `next(err)`.
 - `DolphMiddleware` wraps sync handlers and forwards sync throws to `next(err)`.
-- `validationMiddlewareOne` in `global_validation_middleware.middlewares.ts` is legacy/experimental for route-attached DTO metadata; prefer per-route `transformAndValidateDto` via `@DBody` / `@DQuery` / `@DParam` or explicit `validateBodyMiddleware`.
+- For DTO validation, use `@DBody` / `@DQuery` / `@DParam`.
 
 ## Sample Conventions
 

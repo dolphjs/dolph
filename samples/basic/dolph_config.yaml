@@ -1,0 +1,8 @@
+port: 3030
+jsonLimit: 5mb
+routing:
+  base: '/v1'
+views:
+  engine: ejs
+  dir: views
+  assets: public

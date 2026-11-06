@@ -9,13 +9,15 @@ sidebar:
 
 Handling file uploads in DolphJS is extremely straightforward because the framework ships with its own robust, internal file uploading utility `useFileUploader` provided by `@dolphjs/packages`. You don't need to manually install `multer` or any external dependencies!
 
+For images, use [`imageUpload()`](/techniques/image-upload) instead. It adds dimension limits and removes metadata such as GPS location.
+
 ## Creating the Middleware
 
 You can configure `useFileUploader` with storage destinations, file filters, and extension restrictions. DolphJS provides both `diskStorage` and `memoryStorage` helpers to manage where your files go.
 
 ```typescript
 // src/utils/uploader.config.ts
-import { useFileUploader, diskStorage } from '@dolphjs/dolph/packages';
+import { useFileUploader, diskStorage } from '@dolphjs/dolph';
 import path from 'path';
 
 // Configure storage
@@ -40,36 +42,40 @@ export const uploadMedia = useFileUploader({
 });
 ```
 
+Requests are rejected rather than silently trimmed:
+
+- A file type that isn't allowed returns `415`.
+- A file whose contents don't match its extension returns `415`. A `.png` has to really be a PNG. Types with no signature, like `.txt`, are checked by name only. Set `verifyContent: false` to turn this off.
+- More than `maxFields` text fields, 100 by default, returns `400`.
+- A file on an unexpected field, or beyond `maxCount`, returns `400`.
+- `.html`, `.xml` and `.xhtml` aren't allowed by default, because serving them back could run scripts in a visitor's browser. Add them to `extensions` if you need them.
+- Files sent as a browser `Blob` arrive named `blob`, so they're checked by their declared type.
+- An upload that takes longer than `timeout` (30 seconds by default) returns `408`, and anything already written to disk for that request is removed.
+
 ## Applying to Controllers
 
 Use the `@UseMiddleware` decorator to apply the newly created `uploadMedia` middleware to your route. When the request reaches your handler, the file data will be securely populated in `req.file` (or `req.files` if uploading an array).
 
 ```typescript
 // src/upload/upload.controller.ts
-import { DolphControllerHandler } from '@dolphjs/dolph/classes';
-import { Dolph } from '@dolphjs/dolph/common';
-import { Route, Post, DReq, DRes, UseMiddleware } from '@dolphjs/dolph/decorators';
-import { SuccessResponse, ErrorResponse, DRequest, DResponse } from '@dolphjs/dolph/common';
+import { Route, Post, DReq, UseMiddleware, BadRequestException, DRequest } from '@dolphjs/dolph';
 import { uploadMedia } from '../utils/uploader.config';
 
 @Route('files')
-export class UploadController extends DolphControllerHandler<Dolph> {
+export class UploadController {
 
   @Post('single')
   @UseMiddleware(uploadMedia)
-  async uploadSingleFile(@DReq() req: DRequest, @DRes() res: DResponse) {
+  async uploadSingleFile(@DReq() req: DRequest) {
     if (!req.file) {
-      return ErrorResponse({ res, body: 'No file uploaded or invalid format', status: 400 });
+      throw new BadRequestException('No file uploaded or invalid format');
     }
 
     // Pass file data to a service, or return the path
-    SuccessResponse({
-      res,
-      body: {
-        message: 'File uploaded successfully',
-        filePath: req.file.path,
-      },
-    });
+    return {
+      message: 'File uploaded successfully',
+      filePath: req.file.path,
+    };
   }
 }
 ```

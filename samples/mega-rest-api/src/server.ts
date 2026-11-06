@@ -1,9 +1,8 @@
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import morgan from 'morgan';
-import { GlobalInjector, DolphFactory, middlewareRegistry } from '../../../core';
+import { GlobalInjector, DolphFactory } from '../../../core';
 import { EventEmitterService } from '../../../packages/events/events_module.packages';
-import { SocketService } from '../../../packages';
 import { AuthComponent } from './components/auth/auth.component';
 import { UserComponent } from './components/users/user.component';
 import { FileComponent } from './components/files/file.component';
@@ -14,14 +13,16 @@ import { RealtimeComponent } from './sockets/realtime.component';
 
 new GlobalInjector([{ service: EventEmitterService.name, value: new EventEmitterService() }]);
 
-middlewareRegistry.registerMany([helmet(), cookieParser(), morgan('dev')]);
-
 const dolph = new DolphFactory(
     [HealthComponent, AuthComponent, UserComponent, FileComponent, AdminComponent, new PublicRoutes()],
     {
-        options: { cors: { origin: '*' } },
-        socketService: SocketService,
-        component: new RealtimeComponent(),
+        middlewares: [helmet(), cookieParser(), morgan('dev')],
+        sockets: {
+            // Open on purpose so the sample runs without tokens. Use socketJwtAuth(secret) in a real app.
+            auth: false,
+            options: { cors: { origin: '*' } },
+            component: new RealtimeComponent(),
+        },
     },
 );
 

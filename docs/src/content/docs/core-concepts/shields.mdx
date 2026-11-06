@@ -16,10 +16,7 @@ To apply a shield, use the `@Shield()` class-level decorator. It accepts standar
 A common use case is requiring authentication for every route in a controller.
 
 ```typescript
-import { DolphControllerHandler } from '@dolphjs/dolph/classes';
-import { Dolph } from '@dolphjs/dolph/common';
-import { Route, Get, Shield, DReq, DRes } from '@dolphjs/dolph/decorators';
-import { DRequest, DResponse, DNextFunc, SuccessResponse } from '@dolphjs/dolph/common';
+import { Route, Get, Shield, DRequest, DResponse, DNextFunc } from '@dolphjs/dolph';
 
 // A basic Express middleware
 const requireAuth = (req: DRequest, res: DResponse, next: DNextFunc) => {
@@ -31,47 +28,77 @@ const requireAuth = (req: DRequest, res: DResponse, next: DNextFunc) => {
 
 @Shield(requireAuth)
 @Route('admin')
-export class AdminController extends DolphControllerHandler<Dolph> {
+export class AdminController {
     @Get('dashboard')
-    async getDashboard(@DReq() req: DRequest, @DRes() res: DResponse) {
+    async getDashboard() {
         // This route is protected by requireAuth
-        SuccessResponse({ res, body: 'Welcome to the admin dashboard' });
+        return 'Welcome to the admin dashboard';
     }
 
     @Get('users')
-    async getUsers(@DReq() req: DRequest, @DRes() res: DResponse) {
+    async getUsers() {
         // This route is ALSO protected by requireAuth
-        SuccessResponse({ res, body: 'Admin Users List' });
+        return 'Admin Users List';
     }
 }
 ```
+
+## JWT Authentication
+
+`jwtAuth()` is the built-in shield for JWTs. It verifies the token and puts its payload on `req.payload`, which `@DPayload()` reads.
+
+```typescript
+import { Route, Get, Shield, DPayload, jwtAuth } from '@dolphjs/dolph';
+
+@Shield(jwtAuth(process.env.JWT_SECRET))
+@Route('profile')
+export class ProfileController {
+    @Get()
+    me(@DPayload() payload: IPayload) {
+        return payload;
+    }
+}
+```
+
+| Use | Reads the token from |
+|---|---|
+| `jwtAuth(secret)` | The `authorization` header |
+| `jwtAuth(publicKeyPath, { algorithm: 'RS256' })` | The `x-auth-token` header |
+| `jwtAuth(secret, { cookie: true })` | The cookie set by `newAuthCookie()` |
+
+To check permissions too, add `authorize`. Returning false answers `403`:
+
+```typescript
+jwtAuth(secret, { authorize: (payload) => payload.info?.role === 'admin' });
+```
+
+It works anywhere middleware does, so use `@UseMiddleware(jwtAuth(secret))` to protect one route.
 
 ## UnShielding Specific Routes
 
 Sometimes you want an entire controller protected, except for one or two specific public routes (like a login endpoint). You can achieve this using the `@UnShield()` method-level decorator.
 
 ```typescript
-import { Route, Get, Post, Shield, UnShield, DReq, DRes } from '@dolphjs/dolph/decorators';
-import { SuccessResponse } from '@dolphjs/dolph/common';
+import { Route, Get, Post, Shield, UnShield } from '@dolphjs/dolph';
 import { requireAuth } from './auth.middleware';
 
 @Shield(requireAuth)
 @Route('auth')
-export class AuthController extends DolphControllerHandler<Dolph> {
+export class AuthController {
     @Post('login')
     @UnShield() // Bypasses the requireAuth shield!
-    async login(@DReq() req: DRequest, @DRes() res: DResponse) {
-        SuccessResponse({ res, body: 'Public login route' });
+    async login() {
+        return 'Public login route';
     }
 
     @Get('profile')
-    async profile(@DReq() req: DRequest, @DRes() res: DResponse) {
+    async profile() {
         // Still protected by requireAuth
-        SuccessResponse({ res, body: 'Private profile route' });
+        return 'Private profile route';
     }
 }
 ```
 
 :::note
-If you pass specific middlewares to `@UnShield(authMiddleware1, authMiddleware2)`, it will only bypass those specific shields, leaving other applied shields intact.
+If you pass specific middlewares to `@UnShield(authMiddleware1, authMiddleware2)`, it will only bypass those, leaving any other shields active. Pass the same function reference you gave to `@Shield`. A function that's built again won't match, even with identical code: for `@Shield(requireRole('admin'))`, store the result in a variable and use that in both places. If nothing matches, the route stays protected and a warning is logged at startup.
 :::

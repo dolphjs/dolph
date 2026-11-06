@@ -28,13 +28,10 @@ import { DolphFactory } from '@dolphjs/dolph';
 import { AppComponent } from './app.component';
 import session from 'express-session';
 
-async function bootstrap() {
-    const dolph = new DolphFactory([AppComponent]);
-
-    // Access the underlying Express engine to apply global middleware
-    dolph.engine().use(
+const dolph = new DolphFactory([AppComponent], {
+    middlewares: [
         session({
-            secret: 'my-super-secret-key', // Use env variables in production
+            secret: process.env.SESSION_SECRET,
             resave: false,
             saveUninitialized: false,
             cookie: {
@@ -42,13 +39,13 @@ async function bootstrap() {
                 maxAge: 1000 * 60 * 60 * 24, // 1 day
             },
         }),
-    );
+    ],
+});
 
-    dolph.start();
-}
-
-bootstrap();
+dolph.start();
 ```
+
+Don't use `dolph.engine().use(...)` for this. Routes are already mounted by the time you can call it, so the middleware would run after them and `req.session` would be undefined in your controllers.
 
 ## Using Sessions in Controllers
 
@@ -75,52 +72,43 @@ Now you can build your controller with full type support:
 
 ```typescript
 // src/auth/auth.controller.ts
-import { DolphControllerHandler } from '@dolphjs/dolph/classes';
-import { Dolph } from '@dolphjs/dolph/common';
-import { Route, Post, Get, DReq, DRes, DBody } from '@dolphjs/dolph/decorators';
-import { DRequest, DResponse, SuccessResponse, ErrorResponse } from '@dolphjs/dolph/common';
+import { Route, Post, Get, DReq, DRes, DBody, DRequest, DResponse, UnauthorizedException } from '@dolphjs/dolph';
 
 @Route('auth')
-export class AuthController extends DolphControllerHandler<Dolph> {
+export class AuthController {
     @Post('login')
-    async login(
-        @DBody() body: { username: string; password?: string }, 
-        @DReq() req: DRequest, 
-        @DRes() res: DResponse
-    ) {
+    async login(@DBody() body: { username: string; password?: string }, @DReq() req: DRequest) {
         const { username, password } = body;
 
         // Dummy validation
-        if (username === 'admin' && password === 'password') {
-            // Properly typed now! No 'any' cast needed.
-            req.session.user = { username, role: 'admin' };
-
-            return SuccessResponse({ res, body: 'Logged in successfully' });
+        if (username !== 'admin' || password !== 'password') {
+            throw new UnauthorizedException('Invalid credentials');
         }
 
-        return ErrorResponse({ res, body: 'Invalid credentials', status: 401 });
+        // Properly typed now! No 'any' cast needed.
+        req.session.user = { username, role: 'admin' };
+
+        return 'Logged in successfully';
     }
 
     @Get('profile')
-    async profile(@DReq() req: DRequest, @DRes() res: DResponse) {
-        const user = req.session.user;
-
-        if (!user) {
-            return ErrorResponse({ res, body: 'Not logged in', status: 401 });
+    async profile(@DReq() req: DRequest) {
+        if (!req.session.user) {
+            throw new UnauthorizedException('Not logged in');
         }
 
-        return SuccessResponse({ res, body: user });
+        return req.session.user;
     }
 
     @Post('logout')
     async logout(@DReq() req: DRequest, @DRes() res: DResponse) {
-        req.session.destroy((err) => {
-            if (err) {
-                return ErrorResponse({ res, body: 'Could not log out', status: 500 });
-            }
-            res.clearCookie('connect.sid');
-            return SuccessResponse({ res, body: 'Logged out' });
+        await new Promise<void>((resolve, reject) => {
+            req.session.destroy((err) => (err ? reject(err) : resolve()));
         });
+
+        res.clearCookie('connect.sid');
+
+        return 'Logged out';
     }
 }
 ```

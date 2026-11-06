@@ -11,28 +11,23 @@ In DolphJS, standard Express middlewares can be seamlessly integrated into your 
 
 ## Route-Level Middlewares
 
-To apply a middleware to a specific route, use the `@UseMiddleware()` decorator. This is useful for data validation, logging, or specific route authentication.
+To apply a middleware to a specific route, use the `@UseMiddleware()` decorator. This is useful for logging, rate limiting, or authenticating one route. Validate input with DTOs through `@DBody`, `@DParam` and `@DQuery`.
 
 ```typescript
-import { DolphControllerHandler } from '@dolphjs/dolph/classes';
-import { Dolph } from '@dolphjs/dolph/common';
-import { Route, Post, DBody, DRes, UseMiddleware, DRequest } from '@dolphjs/dolph/decorators';
-import { DRequest, DResponse, DNextFunc, SuccessResponse } from '@dolphjs/dolph/common';
+import { Route, Post, DBody, UseMiddleware, DRequest, DResponse, DNextFunc } from '@dolphjs/dolph';
 
-// Example custom validation middleware
-const validatePayload = (req: DRequest, res: DResponse, next: DNextFunc) => {
-    if (!req.body.username) {
-        return res.status(400).json({ error: 'Username is required' });
-    }
+// Example custom middleware
+const logRequest = (req: DRequest, res: DResponse, next: DNextFunc) => {
+    console.log(req.method, req.url);
     next();
 };
 
 @Route('users')
-export class UserController extends DolphControllerHandler<Dolph> {
+export class UserController {
     @Post('create')
-    @UseMiddleware(validatePayload) // Executed before the route handler
-    async createUser(@DBody() body: any, @DRes() res: DRequest) {
-        SuccessResponse({ res, message: 'User created successfully', data: { user: body } });
+    @UseMiddleware(logRequest) // Executed before the route handler
+    async createUser(@DBody() body: CreateUserDto) {
+        return { user: body };
     }
 }
 ```
@@ -43,21 +38,20 @@ DolphJS automatically provides and configures several global middlewares if they
 
 - **CORS**: Handles Cross-Origin Resource Sharing.
 - **Helmet**: Adds security headers.
-- **JSON Parser**: Parses incoming requests with JSON payloads (`express.json()`).
-- **URL Encoded**: Parses URL-encoded bodies (`express.urlencoded()`).
+- **JSON Parser**: Parses incoming requests with JSON payloads.
+- **URL Encoded**: Parses URL-encoded bodies.
 
 These middlewares run globally before the request ever reaches your Controller logic.
 
 ## Chaining Middlewares
 
-You can chain multiple middlewares on a single route by passing them as a sequence to `@UseMiddleware()`, or by using the decorator multiple times.
+Pass several functions to one `@UseMiddleware()`. They run left to right.
 
 ```typescript
-import { UseMiddleware, Post } from '@dolphjs/dolph/decorators';
+import { UseMiddleware, Post } from '@dolphjs/dolph';
 
 @Post('upload')
-@UseMiddleware(checkRateLimit)
-@UseMiddleware(validateFileFormat)
+@UseMiddleware(checkRateLimit, validateFileFormat)
 async uploadFile() {
   // Logic executes only if both middlewares call next()
 }

@@ -55,7 +55,8 @@ dolph generate [OPTIONS]
 | `-s` | `--service <NAME>` | Generates a DolphJS service file |
 | `-t` | `--test <NAME>` | Generates controller and service test spec files |
 | `-v` | `--resolver <NAME>` | Generates a DolphJS resolver file |
-| `-y` | `--component <NAME>` | Generates a DolphJS spring component file |
+| `-y` | `--component <NAME>` | Generates a component with its controller and service wired in, and adds it to `src/server.ts` |
+| `-f` | `--force` | Replaces files that already exist, instead of skipping them |
 
 
 #### Generating a Full Feature
@@ -67,7 +68,9 @@ dolph generate --all users
 # or
 dolph generate -a users
 ```
-This typically generates a bundled controller, service, model, dto, test specs, and component file for that specific domain depending on your architectural choice.
+This typically generates a bundled controller, service, model, dto, test specs, and component file for that specific domain depending on your architectural choice. The component is wired up and added to `src/server.ts`, so its routes work straight away.
+
+Generated files are yours once they exist, so `dolph generate` skips any that are already there. That makes `--all` safe to rerun: it fills in what's missing and leaves your code alone. Add `--force` to replace them, which discards your changes to those files.
 
 #### Generating Tests
 
@@ -133,5 +136,5 @@ dolph start
 ```
 
 :::tip
-Always use the CLI to generate components. It ensures your classes inherit from the correct base classes (e.g., `DolphControllerHandler`, `DolphServiceHandler`) and applies the necessary decorators automatically!
+Always use the CLI to generate components. It applies the necessary decorators automatically and keeps your project structure consistent.
 :::

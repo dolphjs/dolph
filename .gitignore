@@ -26,3 +26,6 @@ tests/uploader/uploads
 # Docs (Astro)
 .astro/
 coverage/
+
+# Design reference exports for the website
+docs/dolphjs.com — */

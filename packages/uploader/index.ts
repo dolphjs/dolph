@@ -1,9 +1,38 @@
 export { DolphFIleUploaderError as DFileUploaderError } from './errors/error_messages';
 import { extname } from 'path';
-import { DRequest, DResponse } from '../../common';
+import { Readable } from 'stream';
+import mime from 'mime-types';
+import { DRequest, DResponse, UnSupportedMediaException } from '../../common';
 import { FileInfo, UploadOptions } from '../../common/types/dolph_uploader.type';
 import { defaultFileExtensions } from '../../utilities/media/file_extensions.utilities';
-import { diskStorage, fileUploader, memoryStorage } from './file_uploader';
+import { cloudStorage, diskStorage, fileUploader, memoryStorage } from './file_uploader';
+import { detectFileType, EXTENSION_TYPES, IMAGE_MIME_TYPES, SIGNATURE_BYTES } from './file_signature';
+import { HeaderGuard, pipeInto } from './header_guard';
+
+const DEFAULT_MAX_FIELDS = 100;
+
+// Browsers name a FormData Blob 'blob', so its declared type is all there is to check.
+const fileExtension = (file: FileInfo) =>
+    file.originalname === 'blob' ? `.${mime.extension(file.mimetype)}` : extname(file.originalname).toLowerCase();
+
+const verifyContent = (file: FileInfo, source: Readable): Readable => {
+    const expected = EXTENSION_TYPES[fileExtension(file)];
+
+    if (!expected) return source;
+
+    return pipeInto(
+        source,
+        new HeaderGuard(SIGNATURE_BYTES, (header) => {
+            const detected = detectFileType(header);
+
+            if (!detected || !expected.includes(detected)) {
+                throw new UnSupportedMediaException('File contents do not match its type');
+            }
+
+            file.mimetype = IMAGE_MIME_TYPES[detected] ?? file.mimetype;
+        }),
+    );
+};
 
 /**
  * diskStorage({
@@ -21,7 +50,19 @@ import { diskStorage, fileUploader, memoryStorage } from './file_uploader';
  *
  */
 export const useFileUploader =
-    ({ storage, fileFilter, extensions, type, fieldname, fields, limit, maxCount }: UploadOptions) =>
+    ({
+        storage,
+        fileFilter,
+        extensions,
+        type,
+        fieldname,
+        fields,
+        limit,
+        maxCount,
+        timeout,
+        verifyContent: shouldVerifyContent = true,
+        maxFields = DEFAULT_MAX_FIELDS,
+    }: UploadOptions) =>
     (req, res: DResponse, next) => {
         let _filter = fileFilter;
 
@@ -29,31 +70,31 @@ export const useFileUploader =
             const _extensions = extensions?.length ? extensions : defaultFileExtensions;
 
             _filter = (req: DRequest, file: FileInfo, callback) => {
-                const extensionCheck = _extensions.includes(extname(file.originalname).toLowerCase());
-
-                if (!extensionCheck && file.originalname !== 'blob') {
-                    return callback(new Error('Unsupported media file'), false);
+                if (!_extensions.includes(fileExtension(file))) {
+                    return callback(new UnSupportedMediaException('Unsupported media file'), false);
                 }
 
                 return callback(null, true);
             };
         }
 
-        // The bug is here at the fieldname upload 
-
         const uploadMiddleware = fileUploader({
             storage: storage || memoryStorage(),
             limits: {
                 fileSize: limit || 5 * 1024 * 1024, // 5MB
+                fields: maxFields,
             },
             fieldname: fieldname || 'upload',
             fileFilter: _filter,
             type,
             maxCount,
             fields,
+            timeout,
+            transformFile: shouldVerifyContent ? verifyContent : undefined,
         });
 
         uploadMiddleware(req, res, next);
     };
 
-export { fileUploader, diskStorage, memoryStorage };
+export { fileUploader, diskStorage, memoryStorage, cloudStorage };
+export { imageUpload } from './image_upload';

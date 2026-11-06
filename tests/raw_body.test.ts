@@ -1,10 +1,10 @@
 import request from 'supertest';
 import { createServer } from 'http';
-import { DolphFactory } from '/Users/utee/Documents/dolph/dolph/core';
-import { Component, Post, Route } from '/Users/utee/Documents/dolph/dolph/decorators';
-import { DolphControllerHandler } from '/Users/utee/Documents/dolph/dolph/classes';
-import { Dolph, DRequest } from '/Users/utee/Documents/dolph/dolph/common';
-import { DReq } from '/Users/utee/Documents/dolph/dolph/decorators';
+import { DolphFactory } from '../core';
+import { Component, Post, Route } from '../decorators';
+import { DolphControllerHandler } from '../classes';
+import { Dolph, DRequest } from '../common';
+import { DReq } from '../decorators';
 
 @Route('/test')
 class RawBodyController extends DolphControllerHandler<Dolph> {

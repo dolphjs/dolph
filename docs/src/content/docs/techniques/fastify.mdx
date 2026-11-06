@@ -1,0 +1,73 @@
+---
+title: Fastify
+description: Running DolphJS on Fastify for higher throughput
+editUrl: https://github.com/dolphjs/dolph/edit/main/docs/content/docs/techniques/fastify.mdx
+sidebar:
+    label: Fastify
+    order: 6
+---
+
+DolphJS runs on Express by default, and on Fastify with one line of config. Your controllers, services, shields and middleware stay the same.
+
+## Switching to Fastify
+
+Install Fastify and its middleware plugin:
+
+```bash
+npm install fastify @fastify/middie
+```
+
+Then set the adapter in `dolph_config.yaml`:
+
+```yaml
+adapter: fastify
+```
+
+That's the whole change. If you use `dolph new`, the CLI can set this up for you.
+
+You can also set `DOLPH_ADAPTER=fastify` as an environment variable, which takes priority over the config file. This is useful for testing an app on both adapters.
+
+## How much faster is it?
+
+Requests per second on the same machine, for a route returning JSON through DolphJS:
+
+| Route | Express | Fastify | Gain |
+|---|---|---|---|
+| GET | 5,941 | 18,436 | 3.1x |
+| GET with a shield | 5,993 | 17,125 | 2.9x |
+| POST with DTO validation | 4,368 | 9,568 | 2.2x |
+
+With `helmet` and `cookie-parser` also running on every request, the gain is 2.2x to 2.7x. Your numbers will vary. Run `npm run bench` to measure your own machine.
+
+## Express middleware
+
+Packages written for Express work through [`@fastify/middie`](https://github.com/fastify/middie), so the `middlewares` option and the `helmet` and `cors` settings keep working:
+
+```typescript
+new DolphFactory([AppComponent], { middlewares: [cookieParser(), session({ secret })] });
+```
+
+Your own middleware works too, including `res.status(401).json(...)`, and anything it sets on `req.payload`, `req.user`, `req.session` or `req.cookies` reaches your handlers.
+
+Middleware runs after the body is parsed, as it does on Express. `helmet` and `cors` run first, so a malformed request still gets their headers.
+
+## What's different
+
+- **Express routers:** `DolphRouteHandler` and `express.Router()` need `adapter: express`. The app stops at startup with a clear error. Use `@Route` controllers instead.
+- **Custom properties:** on Fastify, anything other than `payload`, `user`, `session`, `cookies`, `file` and `files` that middleware adds to `req` won't reach your handler. Use `res.locals`, which is shared on both adapters.
+- **Express-only methods:** `DRequest` and `DResponse` only include what works on both adapters. Use `req.raw` and `res.raw` for the underlying Node objects.
+- **Views:** `@Render` needs `@fastify/view` and `@fastify/static`, plus your template engine.
+
+## Using Fastify directly
+
+`dolph.engine()` gives you the Fastify instance, so its plugins and API are available:
+
+```typescript
+const dolph = new DolphFactory([AppComponent]);
+
+dolph.engine().register(myFastifyPlugin);
+
+dolph.start();
+```
+
+It also works as a request handler, so `createServer(dolph.engine())` and `@dolphjs/testing` behave the same on both adapters.

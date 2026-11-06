@@ -2,12 +2,17 @@ name: ci
 
 on:
   push:
-    branches: [main]
+    branches: [main, dev]
   pull_request:
 
 jobs:
   verify:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [20, 22, 24]
+        adapter: [express, fastify]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -15,7 +20,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: ${{ matrix.node-version }}
           cache: npm
 
       - name: Install
@@ -28,3 +33,5 @@ jobs:
         run: npx eslint "**/*.ts"
       - name: Test
         run: npm test -- --runInBand
+        env:
+          DOLPH_ADAPTER: ${{ matrix.adapter }}

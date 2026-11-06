@@ -1,5 +1,4 @@
 export * from './response.type';
-export * from './validators.types';
 export * from './dolph_env.type';
 export * from './dolph_port.type';
 export * from './dolph_middleware.type';
@@ -10,3 +9,4 @@ export * from './dolph.types';
 export * from './auth.type';
 export * from './spring.types';
 export * from './events.type';
+export * from './dolph_uploader.type';

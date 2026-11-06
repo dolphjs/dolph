@@ -40,15 +40,16 @@ async function bootstrap() {
   });
 
   // Initialize DolphJS with the GraphQL adapter config
-  const dolph = new DolphFactory({
-    graphql: true, // Enables the Apollo Server integration
-    schema,
-    context: ({ req, res }) => {
-      // Return whatever you want to be accessible in your resolvers' context
-      return { 
-        headers: req.headers, 
-        user: req.user 
-      };
+  const dolph = new DolphFactory([], {
+    graphql: {
+      schema,
+      context: ({ req, res }) => {
+        // Return whatever you want to be accessible in your resolvers' context
+        return {
+          headers: req.headers,
+          user: req.user,
+        };
+      },
     },
   });
 
@@ -60,4 +61,4 @@ bootstrap();
 
 ### How It Works
 
-When you pass `{ graphql: true }` into the `DolphFactory` configuration, DolphJS automatically dynamically loads the `@dolphjs/graphql` package, spins up an Apollo Server instance using your schema and context, and applies it directly as middleware to the underlying Express engine. This means you don't have to manually bootstrap Apollo Server—DolphJS handles the heavy lifting for you while still giving you full access to the Apollo context!
+When you pass the `graphql` option to `DolphFactory`, DolphJS loads the `@dolphjs/graphql` package, spins up an Apollo Server instance using your schema and context, and serves it at `/graphql`. Controllers keep working next to it, so pass your components as the first argument if you have any.

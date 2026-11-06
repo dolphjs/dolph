@@ -7,7 +7,7 @@ sidebar:
   order: 4
 ---
 
-DolphJS offers a highly structured, scalable architecture. It builds upon the Express.js ecosystem but introduces paradigms commonly found in robust enterprise frameworks like Spring Boot and NestJS.
+DolphJS offers a highly structured, scalable architecture. It builds upon the Express and Fastify ecosystems but introduces paradigms commonly found in robust enterprise frameworks like Spring Boot and NestJS.
 
 ## Two Paradigms
 
@@ -24,7 +24,7 @@ In this pattern:
 4. **DolphFactory** reads the components, resolves dependencies, and boots the application.
 
 ```typescript
-import { Component } from '@dolphjs/dolph/decorators';
+import { Component } from '@dolphjs/dolph';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 
@@ -35,11 +35,10 @@ export class AuthComponent {}
 
 ### 2. Traditional Express Router Pattern
 
-For developers migrating legacy Express applications or those who prefer manual routing, DolphJS offers the `DolphRouteHandler`. 
+Works on the Express adapter only. For developers migrating legacy Express applications or those who prefer manual routing, DolphJS offers the `DolphRouteHandler`. 
 
 ```typescript
-import { DolphRouteHandler } from '@dolphjs/dolph/classes';
-import { Dolph } from '@dolphjs/dolph/common';
+import { DolphRouteHandler, Dolph } from '@dolphjs/dolph';
 import { Router } from 'express';
 
 export class AuthRouter extends DolphRouteHandler<Dolph> {
@@ -67,12 +66,13 @@ While the Router Pattern is supported, it lacks the automated Dependency Injecti
 
 Understanding how DolphJS boots up is crucial for debugging and advanced configuration.
 
-1. **Configuration Loading**: The `DolphFactory` reads `dolph_config.yaml`.
-2. **Middleware Binding**: Global middlewares (CORS, Helmet, Body Parsers) are attached to the underlying Express instance.
-3. **Database Connection**: If configured, DolphJS establishes connections to MongoDB or MySQL.
-4. **Dependency Injection**: The framework scans all registered `@Component` classes. It instantiates Services as singletons and injects them into Controllers.
-5. **Route Registration**: The framework scans Controller decorators (`@Route`, `@Get`, etc.) and maps them to Express routes, wrapping them in asynchronous try-catch blocks automatically.
-6. **Server Start**: The HTTP server begins listening on the configured port.
+1. **Dependency Injection**: Each `@Component` runs when its module is imported. It instantiates Services as singletons, before `DolphFactory` is created.
+2. **Wiring**: `DolphFactory` reads `dolph_config.yaml`, creates the Express or Fastify server, and attaches CORS, Helmet, body parsers and your `middlewares`.
+3. **Route Registration**: The framework scans Controller decorators (`@Route`, `@Get`, etc.) and registers the routes, passing anything they throw to the error handler.
+4. **Connecting**: Databases, GraphQL and sockets connect. A required database that can't connect stops the app here.
+5. **Server Start**: The HTTP server begins listening on the configured port.
+
+`engine()` stops after route registration, `ready()` after connecting, and `start()` runs everything. See [The Application](/core-concepts/application/).
 
 ## Dependency Injection (DI)
 
@@ -84,10 +84,8 @@ A controller can receive that instance one of two ways:
 // Constructor injection (recommended) — DolphJS resolves the parameter
 // type and passes the singleton in automatically.
 @Route('users')
-export class UserController extends DolphControllerHandler<Dolph> {
-  constructor(private readonly userService: UserService) {
-    super();
-  }
+export class UserController {
+  constructor(private readonly userService: UserService) {}
 }
 ```
 
@@ -96,7 +94,7 @@ export class UserController extends DolphControllerHandler<Dolph> {
 // parameters. DolphJS assigns the instance to a property named after the
 // service's class itself, i.e. `instance.UserService`, not `instance.userService`.
 @Route('users')
-export class UserController extends DolphControllerHandler<Dolph> {
+export class UserController {
   private UserService!: UserService;
 }
 ```

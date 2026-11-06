@@ -1,0 +1,93 @@
+import request from 'supertest';
+import { createServer, Server } from 'http';
+import { DolphFactory } from '../core';
+import { Component, Get, Post, Route } from '../decorators';
+import { DolphControllerHandler } from '../classes';
+import { Dolph, DNextFunc, DRequest, DResponse } from '../common';
+import { useConfig } from './utils/isolated_config';
+
+@Route('/late')
+class LateController extends DolphControllerHandler<Dolph> {
+    @Get('/ping')
+    ping() {
+        return { pong: true };
+    }
+
+    @Get('/locals')
+    locals(_req: DRequest, res: DResponse) {
+        return { seenBy: res.locals.seenBy ?? null };
+    }
+
+    @Post('/echo')
+    echo(req: DRequest) {
+        return req.body;
+    }
+}
+
+@Component({ controllers: [LateController], services: [] })
+class LateComponent {}
+
+const markRequest = (_req: DRequest, res: DResponse, next: DNextFunc) => {
+    res.locals.seenBy = 'late-middleware';
+    next();
+};
+
+describe('Security and global middleware', () => {
+    let server: Server;
+
+    beforeAll(() => {
+        const restoreConfig = useConfig({
+            middlewares: { helmet: true, cors: { activate: true, origin: 'https://example.com' } },
+        });
+
+        const dolph = new DolphFactory([LateComponent], { middlewares: [markRequest] });
+        server = createServer(dolph.engine()).listen(0);
+        restoreConfig();
+    });
+
+    afterAll((done) => {
+        server.close(done);
+    });
+
+    it('should apply helmet headers to controller routes', async () => {
+        const res = await request(server).get('/v1/late/ping');
+
+        expect(res.status).toBe(200);
+        expect(res.headers['content-security-policy']).toBeDefined();
+    });
+
+    it('should apply cors headers to controller routes', async () => {
+        const res = await request(server).get('/v1/late/ping').set('Origin', 'https://example.com');
+
+        expect(res.headers['access-control-allow-origin']).toBe('https://example.com');
+    });
+
+    it('should run the middlewares option before the route handler', async () => {
+        const res = await request(server).get('/v1/late/locals');
+
+        expect(res.body.data).toEqual({ seenBy: 'late-middleware' });
+    });
+
+    it('should give the middlewares option access to the parsed body', async () => {
+        const res = await request(server).post('/v1/late/echo').send({ name: 'dolph' });
+
+        expect(res.body.data).toEqual({ name: 'dolph' });
+    });
+
+    it('should apply helmet headers when the request body is malformed', async () => {
+        const res = await request(server)
+            .post('/v1/late/echo')
+            .set('Content-Type', 'application/json')
+            .send('{ not json');
+
+        expect(res.status).toBe(400);
+        expect(res.headers['content-security-policy']).toBeDefined();
+    });
+
+    it('should apply helmet headers to the 404 fallback', async () => {
+        const res = await request(server).get('/v1/late/missing');
+
+        expect(res.status).toBe(404);
+        expect(res.headers['content-security-policy']).toBeDefined();
+    });
+});

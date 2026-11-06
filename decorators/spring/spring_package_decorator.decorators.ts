@@ -1,7 +1,6 @@
 import 'reflect-metadata';
 import { normalizePath } from '../../utilities/normalize_path.utilities';
 import { ComponentParams, Dolph, Middleware } from '../../common';
-import { DolphControllerHandler } from '../../classes';
 import clc from 'cli-color';
 import { logger } from '../../utilities';
 import { SHIELD_METADATA_KEY, UN_SHIELD_METADATA_KEY } from './meta_data_keys.decorators';
@@ -21,18 +20,23 @@ export const Shield = (middlewares: Middleware | Middleware[]): ClassDecorator =
     };
 };
 
-export const UnShield = (middlewares: Middleware | Middleware[]): MethodDecorator => {
+/**
+ * Removes class-level shields from a route. With no arguments every shield is
+ * removed; otherwise only the ones passed, matched by function reference.
+ */
+export const UnShield = (...middlewares: Array<Middleware | Middleware[]>): MethodDecorator => {
     return (target: any, propertyKey: string, descriptor: PropertyDescriptor) => {
-        const middlewareList: Middleware[] = Array.isArray(middlewares) ? middlewares : [middlewares];
-
-        Reflect.defineMetadata(UN_SHIELD_METADATA_KEY, middlewareList, descriptor.value);
+        Reflect.defineMetadata(UN_SHIELD_METADATA_KEY, middlewares.flat(), descriptor.value);
     };
 };
 
-export const UseMiddleware = (middleware: Middleware): MethodDecorator => {
+/**
+ * Runs middleware before this route, left to right: `@UseMiddleware(authenticate, authorize)`.
+ */
+export const UseMiddleware = (...middlewares: Middleware[]): MethodDecorator => {
     return (target: any, propertyKey: string, descriptor: PropertyDescriptor) => {
         const existingMiddleware: Middleware[] = Reflect.getMetadata('middleware', descriptor.value) || [];
-        existingMiddleware.push(middleware);
+        existingMiddleware.push(...middlewares);
         Reflect.defineMetadata('middleware', existingMiddleware, descriptor.value);
     };
 };
@@ -76,20 +80,17 @@ export const Component = <T extends Dolph>({ controllers, services }: ComponentP
     if (
         !(
             Array.isArray(controllers) &&
-            controllers.every((item) => typeof item === 'function' && item.prototype instanceof DolphControllerHandler)
+            // Arrow functions have no prototype, so they're refused along with non-functions.
+            controllers.every((item) => typeof item === 'function' && Boolean(item.prototype))
         )
     ) {
-        logger.error(
-            clc.red(
-                'Component decorator: Invalid `controllers` array. Each item must be a class extending DolphControllerHandler.',
-            ),
+        throw new Error(
+            'Component decorator: Invalid `controllers` array. Each item must be a class.',
         );
-        return (target: any) => target; // No-op decorator
     }
     const resolvedServices = services || [];
     if (!(Array.isArray(resolvedServices) && resolvedServices.every((item) => typeof item === 'function'))) {
-        logger.error(clc.red('Component decorator: Invalid `services` array. Each item must be a class.'));
-        return (target: any) => target; // No-op decorator
+        throw new Error('Component decorator: Invalid `services` array. Each item must be a class.');
     }
 
     return (target: any) => {
@@ -208,7 +209,9 @@ export const Component = <T extends Dolph>({ controllers, services }: ComponentP
                 }
             });
         } catch (error: any) {
-            logger.error(clc.red(`[${target.name}] Failed to Initialise services: ${error.message}`));
+            // Fail at boot: continuing would hand controllers undefined services
+            // that only surface later as a 500 on the first request to use them.
+            throw new Error(`[${target.name}] Failed to Initialise services: ${error.message}`, { cause: error });
         }
 
         // Modify controllers to inject resolved service instances
@@ -258,13 +261,6 @@ export const Component = <T extends Dolph>({ controllers, services }: ComponentP
     };
 };
 
-// Todo: implement later in future version
-export const UseDto = (dto: any): MethodDecorator => {
-    return (target: Object, propertyKey: string | symbol, _descriptor: PropertyDescriptor) => {
-        Reflect.defineMetadata('dto', dto, target, propertyKey);
-    };
-};
-
 /**
  *  Renders template for MVC
  *
@@ -279,12 +275,12 @@ export function Render(template: string): MethodDecorator {
 // Unique symbol for metadata key
 export const ROUTE_ARGS_METADATA = Symbol('dolph:route_args_metadata');
 
-export const routeParamsArr = ['req', 'res', 'next', 'body', 'query', 'param', 'file', 'payload', 'headers', 'cookies', 'auth'];
+export const routeParamsArr = ['req', 'res', 'next', 'body', 'query', 'param', 'file', 'files', 'payload', 'headers', 'cookies', 'auth'];
 
 export interface RouteParamMetadata {
     // Parameter index
     index: number;
-    type: 'req' | 'res' | 'next' | 'body' | 'query' | 'param' | 'file' | 'payload' | 'headers' | 'cookies' | 'auth';
+    type: 'req' | 'res' | 'next' | 'body' | 'query' | 'param' | 'file' | 'files' | 'payload' | 'headers' | 'cookies' | 'auth';
     // For DTO type, specific param name, etc.
     data?: any;
 }
@@ -344,6 +340,18 @@ export function DNext(): ParameterDecorator {
 export function DPayload(): ParameterDecorator {
     return (target: Object, propertyKey: string | symbol, parameterIndex: number) => {
         addParameterMetadata(target, propertyKey, parameterIndex, 'payload');
+    };
+}
+
+export function DFile(): ParameterDecorator {
+    return (target: Object, propertyKey: string | symbol, parameterIndex: number) => {
+        addParameterMetadata(target, propertyKey, parameterIndex, 'file');
+    };
+}
+
+export function DFiles(): ParameterDecorator {
+    return (target: Object, propertyKey: string | symbol, parameterIndex: number) => {
+        addParameterMetadata(target, propertyKey, parameterIndex, 'files');
     };
 }
 

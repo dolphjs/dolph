@@ -1,0 +1,138 @@
+---
+title: Configuration
+description: Configuring your DolphJS application with dolph_config.yaml
+editUrl: false
+sidebar:
+  label: Config
+  order: 2
+pagefind: false
+banner:
+  content: |
+    You're reading the docs for DolphJS v2. <a href="/config/">See the latest version</a>.
+---
+
+DolphJS uses a central configuration file named `dolph_config.yaml`. This file sits at the root of your project and dictates how the `DolphFactory` initializes the server, databases, and middleware.
+
+## Basic Configuration
+
+A standard `dolph_config.yaml` looks like this:
+
+```yaml
+database:
+  mongo:
+    url: mongodb://localhost:27017/dolph_db
+    options:
+      useNewUrlParser: true
+      useUnifiedTopology: true
+  typeorm:
+    options:
+      type: postgres
+      host: localhost
+      port: 5432
+      username: root
+      password: password
+      database: dolph_db
+      synchronize: true
+      entities:
+        - "src/models/*.ts"
+  sequelize:
+    dialect: mysql
+    database: dolph_db
+    user: root
+    pass: password
+    host: localhost
+    options:
+      logging: false
+      pool:
+        max: 5
+        min: 0
+
+server:
+  port: 3300
+  host: localhost
+  env: development
+
+middlewares:
+  cors:
+    origin: "*"
+    credentials: true
+  helmet: true
+  jsonParser: true
+  urlEncoded: true
+```
+
+## Environment Variables
+
+DolphJS automatically merges your `.env` files with your configuration. You can reference environment variables within your application using standard `process.env` properties, or you can rely on the factory to inject these values directly.
+
+## Configuration Sections
+
+### Server
+
+Controls the core HTTP server bindings.
+
+- **port**: The port your application will listen on. Defaults to `3000`.
+- **host**: The host to bind to.
+- **env**: The running environment (e.g., `development`, `production`). In `production`, DolphJS disables certain verbose logging mechanisms to boost performance.
+
+### Database
+
+DolphJS provides out-of-the-box auto-initialization for **MongoDB**, **TypeORM**, and **Sequelize**.
+
+:::tip
+When you define the `mongo`, `typeorm`, or `sequelize` keys in your configuration, the `DolphFactory` will automatically attempt to connect to these databases before starting the HTTP server. This saves you from writing manual connection boilerplate!
+:::
+
+**Strictly Typed Configuration:**
+Under the hood, the `dolph_config.yaml` values map directly to the official configuration interfaces provided by the underlying ORMs. For TypeORM, the `options` block maps perfectly to `DataSourceOptions`. For Sequelize, the `options` block maps to Sequelize's native `Options` interface. This ensures full auto-completion and seamless support for advanced database configurations right out of the box!
+
+**Retrieving Database Instances:**
+Once auto-initialized, you can instantly grab your database clients anywhere in your application:
+
+```typescript
+import { getDataSource } from '@dolphjs/dolph/packages/typeorm';
+import { getSequelize } from '@dolphjs/dolph/packages/sequelize';
+
+// Retrieve TypeORM DataSource
+const dataSource = getDataSource();
+const userRepo = dataSource.getRepository(User);
+
+// Retrieve Sequelize Instance
+const sequelize = getSequelize();
+```
+
+:::note
+**Sensitive Credentials:** When initializing a database, if the value `"sensitive"` is passed to specific fields in your `dolph_config.yaml`, the framework automatically checks your `.env` file for corresponding keys to use instead. This keeps your credentials securely out of source control.
+- **MongoDB**: Passing `"sensitive"` to `url` pulls from `MONGO_URL`.
+- **TypeORM & Sequelize**: Passing `"sensitive"` to `username`/`user`, `password`/`pass`, `host`, or `url` pulls from `SQL_USER`, `SQL_PASSWORD`, `SQL_HOST`, and `SQL_URL` respectively.
+:::
+
+### Middlewares
+
+DolphJS bundles commonly used Express middlewares. You can toggle them in your config:
+
+- **cors**: Configures Cross-Origin Resource Sharing.
+- **helmet**: Secures your Express apps by setting various HTTP headers.
+- **jsonParser**: Automatically parses incoming requests with JSON payloads (uses `express.json()`).
+- **urlEncoded**: Parses URL-encoded bodies (uses `express.urlencoded()`).
+
+### Routing
+
+Controls route-level and application-level routing behaviors.
+
+- **globalFilter**: A boolean flag (`true` or `false`). When enabled, you can provide a custom global exception handler for your entire application by calling `dolph.setGlobalExceptionHandler()` before starting the server. If set to `true` but no handler is provided, DolphJS falls back to its default error handler.
+
+## Accessing Configuration in Code
+
+While `dolph_config.yaml` drives the framework's bootstrap phase, you can also access configuration values dynamically in your components using standard environment variables if you have mapped them.
+
+```typescript
+import { DolphFactory } from '@dolphjs/dolph';
+import { AppComponent } from './app.component';
+
+const dolph = new DolphFactory([AppComponent]);
+
+// You can override configuration programmatically before starting
+// However, using dolph_config.yaml is the recommended approach.
+dolph.start();
+```

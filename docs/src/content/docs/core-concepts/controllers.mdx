@@ -11,29 +11,22 @@ Controllers are responsible for handling incoming HTTP requests and returning re
 
 ## Basic Controller
 
-To create a controller, you must extend the `DolphControllerHandler` class and use the `@Route` decorator to define the base path.
+To create a controller, write a class and use the `@Route` decorator to define the base path.
 
 ```typescript
-import { DolphControllerHandler } from '@dolphjs/dolph/classes';
-import { Dolph } from '@dolphjs/dolph/common';
-import { Route, Get, DRes, DRequest } from '@dolphjs/dolph/decorators';
-import { SuccessResponse } from '@dolphjs/dolph/common';
+import { Route, Get } from '@dolphjs/dolph';
 
 @Route('cats')
-export class CatsController extends DolphControllerHandler<Dolph> {
+export class CatsController {
     @Get()
-    async findAll(@DRes() res: DRequest) {
-        SuccessResponse({ res, body: 'This action returns all cats' });
+    async findAll() {
+        return 'This action returns all cats';
     }
 }
 ```
 
 :::note
-The `@DRes()` decorator injects the underlying Express response object into your method signature, allowing you to use Dolph's legacy `SuccessResponse` utility.
-
-However, **using `SuccessResponse` is not necessary!** Just like in NestJS, you can simply `return` your data directly from the controller method, and the framework will automatically send it back to the client.
-
-By default, Dolph wraps all auto-returned controller values in a standardized JSON envelope:
+Return data to send a response, and throw an exception to send an error. Dolph wraps all auto-returned controller values in a standardized JSON envelope:
 ```json
 {
   "success": true,
@@ -56,13 +49,11 @@ If you prefer a different response envelope, you can override this behavior glob
 
 ```typescript
 // server.ts
-const dolph = new DolphFactory([AppComponent]);
-
-dolph.setResponseInterceptor((data, req, res) => {
-    return {
+const dolph = new DolphFactory([AppComponent], {
+    onResponse: (data, req, res) => ({
         myCustomSuccess: true,
-        payload: data
-    };
+        payload: data,
+    }),
 });
 
 dolph.start();
@@ -77,8 +68,8 @@ You can also pass path parameters to these decorators.
 
 ```typescript
 @Get(':id')
-async findOne(@DParam('id') id: string, @DRes() res: DRequest) {
-  SuccessResponse({ res, body: `This action returns cat #${id}` });
+async findOne(@DParam() params: { id: string }) {
+  return `This action returns cat #${params.id}`;
 }
 ```
 
@@ -86,16 +77,18 @@ async findOne(@DParam('id') id: string, @DRes() res: DRequest) {
 
 DolphJS provides decorators to extract payloads from the incoming request cleanly.
 
-- `@DBody()`: Extracts the `req.body`.
-- `@DParam('name')`: Extracts a specific route parameter `req.params.name`.
-- `@DQuery('name')`: Extracts a query parameter `req.query.name`.
+- `@DBody()`: Extracts `req.body`.
+- `@DParam()`: Extracts `req.params`.
+- `@DQuery()`: Extracts `req.query`.
+
+Pass a DTO class to validate what comes in, as in `@DBody(CreateCatDto)`. Invalid input returns `400`.
 
 ### Example with DTOs
 
 If you integrate a validation library like `class-validator`, you can type your `@DBody()` to automatically enforce payload structures (handled in conjunction with middlewares).
 
 ```typescript
-import { Post, DBody, DRes, DRequest } from '@dolphjs/dolph/decorators';
+import { Post, DBody } from '@dolphjs/dolph';
 
 class CreateCatDto {
   name: string;
@@ -103,12 +96,25 @@ class CreateCatDto {
 }
 
 @Post()
-async create(@DBody() createCatDto: CreateCatDto, @DRes() res: DRequest) {
+async create(@DBody() createCatDto: CreateCatDto) {
   // Pass the DTO to a service
-  const newCat = await this.catsService.create(createCatDto);
-  SuccessResponse({ res, body: newCat });
+  return this.catsService.create(createCatDto);
 }
 ```
+
+## Status Codes
+
+Responses are `200` unless you choose otherwise. Take the response with `@DRes()` to set a status, set cookies or headers, and still return your data:
+
+```typescript
+@Post()
+async create(@DBody() dto: CreateCatDto, @DRes() res: DResponse) {
+  res.status(201);
+  return this.catsService.create(dto);
+}
+```
+
+To answer with an error, throw one of Dolph's exceptions, like `NotFoundException`.
 
 ## Dependency Injection
 
@@ -120,15 +126,12 @@ Declare the service as a constructor parameter, and `@Component` resolves and pa
 
 ```typescript
 @Route('cats')
-export class CatsController extends DolphControllerHandler<Dolph> {
-    constructor(private readonly catsService: CatsService) {
-        super();
-    }
+export class CatsController {
+    constructor(private readonly catsService: CatsService) {}
 
     @Get()
-    async findAll(@DRes() res: DRequest) {
-        const cats = await this.catsService.findAll();
-        SuccessResponse({ res, body: cats });
+    async findAll() {
+        return this.catsService.findAll();
     }
 }
 ```
@@ -141,15 +144,14 @@ If the controller has no constructor parameters, `@Component` instead defines a 
 
 ```typescript
 @Route('cats')
-export class CatsController extends DolphControllerHandler<Dolph> {
+export class CatsController {
     // The property name must match the class name exactly — DolphJS assigns
     // it as `instance.CatsService`, not `instance.catsService`.
     private CatsService!: CatsService;
 
     @Get()
-    async findAll(@DRes() res: DRequest) {
-        const cats = await this.CatsService.findAll();
-        SuccessResponse({ res, body: cats });
+    async findAll() {
+        return this.CatsService.findAll();
     }
 }
 ```

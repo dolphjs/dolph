@@ -1,6 +1,7 @@
 import JWT from 'jsonwebtoken';
 import { IPayload } from '../../common';
 import { readFileSync } from 'fs';
+import { ErrorException, HttpStatus } from '../../common';
 
 /**
  *
@@ -21,7 +22,7 @@ const generateJWTwithHMAC = ({ payload, secret }: { payload: IPayload; secret: s
  */
 const verifyJWTwithHMAC = ({ token, secret }: { token: string | string[]; secret: string }): string | JWT.JwtPayload => {
     // @ts-expect-error legacy typing compatibility
-    const payload = JWT.verify(token, secret);
+    const payload = JWT.verify(token, secret, { algorithms: ['HS256'] });
     return payload;
 };
 
@@ -60,4 +61,22 @@ const verifyJWTwithRSA = ({
     }
 };
 
-export { generateJWTwithHMAC, verifyJWTwithHMAC, verifyJWTwithRSA, generateJWTwithRSA };
+/**
+ * Runs a token check and turns a bad token into a 401, instead of the 500 an
+ * unrecognised error would become. Anything else, like an unreadable key file,
+ * is a server fault and is rethrown as it is.
+ *
+ * @version 1.0.0
+ */
+const rejectInvalidToken = <T>(verify: () => T): T => {
+    try {
+        return verify();
+    } catch (error) {
+        if (error instanceof JWT.JsonWebTokenError) {
+            throw new ErrorException('invalid or expired token', HttpStatus.UNAUTHORIZED);
+        }
+        throw error;
+    }
+};
+
+export { generateJWTwithHMAC, verifyJWTwithHMAC, verifyJWTwithRSA, generateJWTwithRSA, rejectInvalidToken };

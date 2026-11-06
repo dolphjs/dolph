@@ -31,7 +31,7 @@ Write specs at the cheapest tier that can prove the behavior. In a healthy Dolph
 
 ### Tier 1 — Service unit tests
 
-A service is a plain class. `DolphServiceHandler` adds nothing but a `name` field, and no decoration is required to construct one directly — `@Component` only matters once a service needs to be *resolved through the registry*, which a unit test never needs to do. Just `new` it with mocked collaborators.
+A service is a plain class, and no decoration is required to construct one directly — `@Component` only matters once a service needs to be *resolved through the registry*, which a unit test never needs to do. Just `new` it with mocked collaborators.
 
 ```typescript
 // cats.service.spec.ts
@@ -53,7 +53,7 @@ describe('CatsService', () => {
 ```
 
 :::tip
-Services that take their dependencies as **constructor parameters** rather than `@InjectMongo`/`@InjectMySQL`-populated fields are even easier to test — just pass the mock straight into `new CatsService(mockRepository)`, no reaching past the type system required.
+Services that take their dependencies as **constructor parameters** rather than `@InjectMongo`-populated fields are even easier to test — just pass the mock straight into `new CatsService(mockRepository)`, no reaching past the type system required.
 :::
 
 No `@dolphjs/testing` import, no Express, no registry. This is the fastest tier — sub-millisecond per test — and where the bulk of your business-logic coverage should live.
@@ -64,7 +64,7 @@ No `@dolphjs/testing` import, no Express, no registry. This is the fastest tier 
 
 ```typescript
 // works at runtime via @Component, but awkward to unit test directly
-export class CatsController extends DolphControllerHandler<Dolph> {
+export class CatsController {
   private CatsService!: CatsService; // property name must match the class name exactly
 }
 ```
@@ -74,10 +74,8 @@ Constructor injection sidesteps this entirely:
 ```typescript
 // cats.controller.ts
 @Route('cats')
-export class CatsController extends DolphControllerHandler<Dolph> {
-  constructor(private readonly catsService: CatsService) {
-    super();
-  }
+export class CatsController {
+  constructor(private readonly catsService: CatsService) {}
 
   @Get()
   async findAll() {
@@ -188,7 +186,7 @@ interface TestingApp {
 
 ### Database helpers
 
-Each helper lazily `require()`s its driver, so an app that only uses Mongoose never resolves `typeorm`/`sequelize`, and vice versa — install only what your app actually uses.
+Each helper lazily `require()`s its driver, so an app that only uses Mongoose never resolves `typeorm`, and vice versa — install only what your app actually uses.
 
 **`createSqliteTestDataSource({ entities, synchronize? })`** — an in-memory, `better-sqlite3`-backed TypeORM `DataSource`. Entity classes are passed directly (no glob strings, no `dolph_config.yaml` involved):
 
@@ -200,9 +198,7 @@ const dataSource = await createSqliteTestDataSource({ entities: [Cat] });
 const repo = dataSource.getRepository(Cat);
 ```
 
-**`createSqliteTestSequelize()`** — an in-memory, `sqlite3`-backed Sequelize instance. Hands back a bare, connected instance; call `Model.init({...}, { sequelize })` against it in your test setup, since Sequelize models bind to an instance at `init` time rather than being re-attachable afterward.
-
-**`createMongoMemoryTestServer()`** — spins up a real, ephemeral MongoDB instance via `mongodb-memory-server`. Returns `{ uri, stop }` — pass `uri` to `mongoose.connect()` (or `autoInitMongo({ url: uri })`), and call `stop()` in teardown.
+**`createMongoMemoryTestServer()`** — spins up a real, ephemeral MongoDB instance via `mongodb-memory-server`. Returns `{ uri, stop }` — pass `uri` to `mongoose.connect()` and call `stop()` in teardown.
 
 ```typescript
 import { createMongoMemoryTestServer } from '@dolphjs/testing';
@@ -244,9 +240,11 @@ module.exports = {
 
 ## Why `createTestingApp` never calls `.start()`
 
-`DolphFactory#start()` does two things beyond wiring the Express app: it binds a real OS port, and it installs process-level `SIGTERM`/`uncaughtException`/`unhandledRejection` handlers. The first is fine to repeat; the second isn't — registering those handlers once per spec file, inside the same Jest worker, is exactly why a `.start()`-based suite typically needs `jest --forceExit --detectOpenHandles` to exit cleanly.
+`DolphFactory#start()` does more than wire the app: it connects databases, binds a real OS port, and it installs process-level `SIGTERM`/`uncaughtException`/`unhandledRejection` handlers. The first is fine to repeat; the second isn't — registering those handlers once per spec file, inside the same Jest worker, is exactly why a `.start()`-based suite typically needs `jest --forceExit --detectOpenHandles` to exit cleanly.
 
-`createTestingApp` calls `DolphFactory#engine()` instead, which returns the app with routing, middleware, the 404 fallback, and any custom `setGlobalExceptionHandler()` fully wired — everything `start()` does short of the process-level handlers — then binds one ephemeral port itself via `http.createServer(engine).listen(0)`, closed by `app.close()`. A suite built entirely on Tier 1–3 as described above should exit on its own, with neither Jest flag.
+`createTestingApp` calls `DolphFactory#engine()` instead, which returns the app with routing, middleware, the 404 fallback, and any `onError` handler fully wired, with no database connection or process-level handlers, then binds one ephemeral port itself via `http.createServer(engine).listen(0)`, closed by `app.close()`. A suite built entirely on Tier 1–3 as described above should exit on its own, with neither Jest flag.
+
+`createTestingApp` doesn't connect the databases in `dolph_config.yaml`. To use them in a test, pass `connect: true`, and `app.close()` closes them again.
 
 ## Generating tests with the CLI
 

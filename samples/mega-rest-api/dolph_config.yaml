@@ -1,3 +1,4 @@
+env: development
 port: 3040
 env: development
 jsonLimit: 20mb

@@ -6,4 +6,5 @@ export type cookieContent = {
     expires: Date;
     httpOnly: boolean;
     secure: boolean;
+    sameSite: 'lax' | 'strict' | 'none';
 };

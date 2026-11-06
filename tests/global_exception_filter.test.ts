@@ -1,9 +1,9 @@
 import request from 'supertest';
 import { createServer } from 'http';
-import { DolphFactory } from '/Users/utee/Documents/dolph/dolph/core';
-import { Component, Get, Route } from '/Users/utee/Documents/dolph/dolph/decorators';
-import { DolphControllerHandler } from '/Users/utee/Documents/dolph/dolph/classes';
-import { Dolph } from '/Users/utee/Documents/dolph/dolph/common';
+import { DolphFactory } from '../core';
+import { Component, Get, Route } from '../decorators';
+import { DolphControllerHandler } from '../classes';
+import { Dolph } from '../common';
 
 @Route('/error')
 class ErrorController extends DolphControllerHandler<Dolph> {
@@ -20,14 +20,13 @@ describe('Global Exception Filter', () => {
     let server: any;
 
     beforeAll(() => {
-        const dolph = new DolphFactory([ErrorComponent]);
-        
-        // Register custom exception handler
-        dolph.setGlobalExceptionHandler((err, req, res, next) => {
-            if (err.message === 'Test Error') {
-                return res.status(503).json({ success: false, msg: 'Caught by global filter' });
-            }
-            next(err);
+        const dolph = new DolphFactory([ErrorComponent], {
+            onError: (err, req, res, next) => {
+                if (err.message === 'Test Error') {
+                    return res.status(503).json({ success: false, msg: 'Caught by global filter' });
+                }
+                next(err);
+            },
         });
 
         // One real ephemeral listener per file — see auto_send.test.ts for why.

@@ -1,0 +1,40 @@
+---
+title: DolphJS
+description: The New-Age, developer-friendly Node.js framework for building scalable enterprise applications.
+template: splash
+hero:
+  tagline: Architectural elegance without sacrificing the ecosystem. Build fast, scalable, and beautifully structured Node.js apps.
+  image:
+    file: ../../../assets/dolph_mascot.png
+  actions:
+    - text: Get Started
+      link: /v2/getting-started/
+      icon: right-arrow
+    - text: View on GitHub
+      link: https://github.com/dolphjs/dolph
+      icon: external
+      variant: minimal
+pagefind: false
+banner:
+  content: |
+    You're reading the docs for DolphJS v2. <a href="/">See the latest version</a>.
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+## Why DolphJS?
+
+<CardGrid stagger>
+	<Card title="Zero-Config DI" icon="setting">
+		No more manual wiring! Services and Controllers are seamlessly injected and managed for you via advanced TypeScript Decorators.
+	</Card>
+	<Card title="Uncompromised Flexibility" icon="rocket">
+		Unlike other enterprise frameworks, DolphJS gives you full access to the Express engine. If it works in Express, it works in Dolph.
+	</Card>
+	<Card title="Batteries Included" icon="puzzle">
+		Native wrappers for GraphQL (Apollo), WebSockets (Socket.io), and deep Auto-wiring for MongoDB and MySQL out of the box.
+	</Card>
+	<Card title="Rust-Powered CLI" icon="laptop">
+		Scaffold apps, generate controllers, and manage components lightning-fast with the brand new Rust-powered CLI.
+	</Card>
+</CardGrid>

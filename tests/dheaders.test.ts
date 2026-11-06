@@ -1,9 +1,9 @@
 import request from 'supertest';
 import { createServer } from 'http';
-import { DolphFactory } from '/Users/utee/Documents/dolph/dolph/core';
-import { Component, DHeaders, DCookies, DAuth, Get, Route } from '/Users/utee/Documents/dolph/dolph/decorators';
-import { DolphControllerHandler } from '/Users/utee/Documents/dolph/dolph/classes';
-import { Dolph } from '/Users/utee/Documents/dolph/dolph/common';
+import { DolphFactory } from '../core';
+import { Component, DHeaders, DCookies, DAuth, Get, Route } from '../decorators';
+import { DolphControllerHandler } from '../classes';
+import { Dolph } from '../common';
 import cookieParser from 'cookie-parser';
 
 @Route('/test')
@@ -30,8 +30,7 @@ class TestComponent {}
 describe('DHeaders, DCookies, and DAuth', () => {
     let server: any;
     beforeAll(() => {
-        const dolph = new DolphFactory([TestComponent]);
-        dolph.middlewares([cookieParser()]);
+        const dolph = new DolphFactory([TestComponent], { middlewares: [cookieParser()] });
         // One real ephemeral listener per file — see auto_send.test.ts for why.
         server = createServer(dolph.engine()).listen(0);
     });
@@ -42,9 +41,9 @@ describe('DHeaders, DCookies, and DAuth', () => {
         expect(res.body.message).toBe('dolph');
     });
 
-    it('should inject cookies (fallback to empty object if unparsed)', async () => {
+    it('should inject cookies parsed by middleware added through the middlewares option', async () => {
         const res = await request(server).get('/v1/test/cookies').set('Cookie', 'custom_cookie=cookie-value');
-        expect(res.body.data).toEqual({});
+        expect(res.body.data).toEqual({ custom_cookie: 'cookie-value' });
     });
 
     it('should inject authorization header', async () => {

@@ -1,11 +1,9 @@
-import { DolphControllerHandler, DolphServiceHandler, JWTAuthVerifyDec, JWTAuthorizeDec } from '../../classes';
-import { TryCatchAsyncDec, TryCatchAsyncFn, TryCatchFn } from '../../common/middlewares';
+import { DolphControllerHandler } from '../../classes';
 import { AppService } from './app.service';
-import { BadRequestException, DNextFunc, DRequest, DResponse, Dolph, SuccessResponse } from '../../common';
+import { BadRequestException, DolphAsyncMiddleware, DolphMiddleware, DRequest, DResponse, Dolph } from '../../common';
 import { generateJWTwithHMAC, newAuthCookie } from '../../utilities';
 import moment from 'moment';
-import { CookieAuthVerifyDec, InjectServiceHandler } from '../../decorators';
-import { authFunc } from './app.auth_function';
+import { InjectServiceHandler } from '../../decorators';
 
 @InjectServiceHandler([{ serviceHandler: AppService, serviceName: 'appservice' }])
 class ControllerService {
@@ -13,31 +11,23 @@ class ControllerService {
 }
 
 const controllerServices = new ControllerService();
-class AppController extends DolphControllerHandler<Dolph> {
-    constructor() {
-        super();
-        this.createUser = this.createUser.bind(this);
-    }
 
-    public readonly sendGreeting = TryCatchFn((req: DRequest, res: DResponse) => {
-        const { body } = req;
-        const response = controllerServices.appservice.greeting(body);
-        SuccessResponse({ res, msg: response });
+// Handlers on an Express router don't get @Route's return values or error handling,
+// so these send their own responses and use the Dolph middleware wrappers.
+class AppController extends DolphControllerHandler<Dolph> {
+    public readonly sendGreeting = DolphMiddleware((req: DRequest, res: DResponse) => {
+        res.json({ message: controllerServices.appservice.greeting(req.body) });
     });
 
-    @TryCatchAsyncDec
-    @JWTAuthVerifyDec('random_secret')
-    // @JWTAuthorizeDec('random_secret', authFunc)
-    public async createUser(req: DRequest, res: DResponse) {
+    public readonly createUser = DolphAsyncMiddleware(async (req: DRequest, res: DResponse) => {
         const { body, file } = req;
         if (body.height < 1.7) throw new BadRequestException('sorry, you are too short for this program');
         const data = await controllerServices.appservice.createUser(body);
-        SuccessResponse({ res, body: { data, file: file, payload: req.payload } });
-    }
+        res.json({ data, file, payload: req.payload });
+    });
 
-    public readonly register = TryCatchAsyncFn(async (req: DRequest, res: DResponse, next: DNextFunc) => {
+    public readonly register = DolphAsyncMiddleware(async (req: DRequest, res: DResponse) => {
         const { username } = req.body;
-        console.log(req.file);
         const token = generateJWTwithHMAC({
             payload: {
                 exp: moment().add(30000, 'seconds').unix(),
@@ -46,36 +36,24 @@ class AppController extends DolphControllerHandler<Dolph> {
             },
             secret: 'random_secret',
         });
-        SuccessResponse({ res, body: token });
+        res.json({ token });
     });
 
-    @TryCatchAsyncDec
-    public async testMysql(req: DRequest, res: DResponse) {
-        const { username, age } = req.body;
-        console.log(username, age);
-        const result = await controllerServices.appservice.createSQLUser({ username, age });
-        SuccessResponse({ res, body: result });
-    }
-
-    @TryCatchAsyncDec
-    public async testCookieFn(req: DRequest, res: DResponse) {
-        const cookieValue = newAuthCookie('user_id_00', 100000, 'random_secret', { info: 'yeah' });
+    public readonly testCookieFn = DolphAsyncMiddleware(async (_req: DRequest, res: DResponse) => {
+        const cookieValue = newAuthCookie('user_id_00', new Date(Date.now() + 100000), 'random_secret', { info: 'yeah' });
         res.cookie(cookieValue.name, cookieValue.value, {
             expires: cookieValue.expires,
             secure: cookieValue.secure,
             httpOnly: cookieValue.httpOnly,
+            sameSite: cookieValue.sameSite,
         });
 
         res.send('done');
-    }
+    });
 
-    @TryCatchAsyncDec
-    @CookieAuthVerifyDec('random_secret')
-    public async testCookieVerify(req: DRequest, res: DResponse) {
-        const payload = req.payload;
-
-        res.json(payload);
-    }
+    public readonly testCookieVerify = DolphAsyncMiddleware(async (req: DRequest, res: DResponse) => {
+        res.json(req.payload);
+    });
 }
-// const appController = new AppController();
+
 export { AppController };
