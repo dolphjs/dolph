@@ -1,7 +1,11 @@
 import { MongooseConfig } from '../../common';
-import mongoose from 'mongoose';
+import type { Mongoose } from 'mongoose';
 import { logger } from '../../utilities';
 import clc from 'cli-color';
+
+// Loaded on first use so apps that don't use this driver never pay to import it.
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const loadMongoose = (): Mongoose => require('mongoose');
 
 /**
  *
@@ -10,7 +14,8 @@ import clc from 'cli-color';
  *
  * @version 1.0.0
  */
-const initMongo = (config: MongooseConfig): Promise<typeof mongoose> => {
+const initMongo = (config: MongooseConfig): Promise<Mongoose> => {
+    const mongoose = loadMongoose();
     mongoose.set('strictQuery', false);
     return mongoose.connect(config.url, config.options);
 };
