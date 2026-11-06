@@ -35,7 +35,7 @@ export class ExpressAdapter implements HttpAdapter {
                 // needed for byte-exact HMAC webhook signature verification,
                 // which JSON.stringify(req.body) can't reliably reproduce.
                 verify: (req, _res, buf) => {
-                    (req as DRequest).rawBody = buf;
+                    (req as unknown as DRequest).rawBody = buf;
                 },
             }),
         );

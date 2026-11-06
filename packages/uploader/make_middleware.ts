@@ -10,7 +10,7 @@ import { Counter } from './counter';
 import { DolphFIleUploaderError } from './errors/error_messages';
 import { removeUploadedFiles } from './remove_uploaded_files';
 
-export function isMultipart(req: IncomingMessage): boolean {
+export function isMultipart(req: { headers: IncomingMessage['headers'] }): boolean {
     const contentType = req.headers['content-type'] || '';
     return contentType.startsWith('multipart/');
 }
@@ -35,6 +35,9 @@ export function makeMiddleware(getOptions: () => UploadConfig & { fields?: Array
         if (!isMultipart(req)) {
             return next();
         }
+
+        // Express requests are the Node stream. Fastify keeps it on req.raw.
+        const nodeRequest = (req.raw ?? req) as unknown as IncomingMessage;
 
         let options: ReturnType<typeof getOptions>;
 
@@ -76,7 +79,7 @@ export function makeMiddleware(getOptions: () => UploadConfig & { fields?: Array
             // clear all  pending timeout
             if (uploadTimeOut) clearTimeout(uploadTimeOut);
 
-            const reqStream = req as NodeJS.ReadableStream & { unpipe?: (dest: unknown) => void };
+            const reqStream = nodeRequest as NodeJS.ReadableStream & { unpipe?: (dest: unknown) => void };
             if (typeof reqStream.unpipe === 'function') {
                 reqStream.unpipe(busboy);
             }
@@ -333,6 +336,6 @@ export function makeMiddleware(getOptions: () => UploadConfig & { fields?: Array
             // indicateDone();
         });
 
-        req.pipe(busboy);
+        nodeRequest.pipe(busboy);
     };
 }
