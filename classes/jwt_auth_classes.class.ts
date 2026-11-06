@@ -1,6 +1,7 @@
 import { AuthorizationFunction, DNextFunc, DRequest, DResponse, ErrorException, HttpStatus, IPayload } from '../common';
 import { rejectInvalidToken, verifyJWTwithHMAC, verifyJWTwithRSA } from '../utilities';
 import { config } from 'dotenv';
+import { existsSync } from 'fs';
 config();
 
 export type JwtVerifyOptions = {
@@ -33,6 +34,20 @@ const verifyRequestToken = (req: DRequest, tokenSecret: string, { algorithm = 'H
 };
 
 /**
+ * Stops an RSA setup that forgot `{ algorithm: 'RS256' }` from running as HMAC with its
+ * key path as the secret. Real tokens would fail, but anyone who knows the path could
+ * forge one, so this has to stop the app at boot. The value stays out of the message
+ * because it could be a real secret.
+ */
+const assertKeyMatchesAlgorithm = (tokenSecret: string, { algorithm = 'HS256' }: JwtVerifyOptions = {}) => {
+    if (algorithm === 'HS256' && existsSync(tokenSecret)) {
+        throw new Error(
+            "JWT secret is a path to a file. For RSA, pass { algorithm: 'RS256' }. For HMAC, use a secret that isn't a file path.",
+        );
+    }
+};
+
+/**
  * Takes the token secret, or the path to a public key with `{ algorithm: 'RS256' }`.
  *
  * The Verify method resolves with the token payload and rejects if it is missing or invalid.
@@ -41,7 +56,9 @@ class JwtBasicAuth {
     constructor(
         public tokenSecret: string,
         public options: JwtVerifyOptions = {},
-    ) {}
+    ) {
+        assertKeyMatchesAlgorithm(tokenSecret, options);
+    }
 
     Verify = async (req: DRequest): Promise<IPayload> => verifyRequestToken(req, this.tokenSecret, this.options);
 }
@@ -53,6 +70,8 @@ class JwtBasicAuth {
  * @version 2.0.0
  */
 const JWTAuthVerifyDec = (tokenSecret: string, options?: JwtVerifyOptions) => {
+    assertKeyMatchesAlgorithm(tokenSecret, options);
+
     return (_target: any, _propertyKey: string, descriptor?: TypedPropertyDescriptor<any>) => {
         const originalMethod = descriptor.value;
 
@@ -70,6 +89,8 @@ const JWTAuthVerifyDec = (tokenSecret: string, options?: JwtVerifyOptions) => {
 };
 
 const JWTAuthorizeDec = (tokenSecret: string, authorize?: AuthorizationFunction, options?: JwtVerifyOptions) => {
+    assertKeyMatchesAlgorithm(tokenSecret, options);
+
     return (_target: any, _propertyKey: string, descriptor?: TypedPropertyDescriptor<any>) => {
         const originalMethod = descriptor.value;
 

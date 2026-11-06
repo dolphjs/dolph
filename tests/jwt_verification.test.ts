@@ -210,6 +210,25 @@ describe('JWT verification', () => {
         });
     });
 
+    describe('RSA apps that forget the algorithm option', () => {
+        const message = "pass { algorithm: 'RS256' }";
+
+        it('should refuse to start with a key path as the HMAC secret', () => {
+            expect(() => new JwtBasicAuth(PUBLIC_KEY_PATH)).toThrow(message);
+            expect(() => JWTAuthVerifyDec(PUBLIC_KEY_PATH)).toThrow(message);
+            expect(() => JWTAuthorizeDec(PUBLIC_KEY_PATH)).toThrow(message);
+        });
+
+        it('should not put the value in the error', () => {
+            expect(() => new JwtBasicAuth(PUBLIC_KEY_PATH)).not.toThrow(PUBLIC_KEY_PATH);
+        });
+
+        it('should still accept normal secrets', () => {
+            expect(() => new JwtBasicAuth(SECRET)).not.toThrow();
+            expect(() => new JwtBasicAuth('a'.repeat(5000))).not.toThrow();
+        });
+    });
+
     it('should only respond once to a rejected request', async () => {
         const errors: Error[] = [];
         const onError = (error: Error) => errors.push(error);
