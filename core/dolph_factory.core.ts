@@ -841,7 +841,7 @@ class DolphFactoryClass {
         }
 
         const SocketServiceCtor = socketInit.socketService;
-        this.socketService = new SocketServiceCtor({ server, options: socketInit.options ?? {} });
+        this.socketService = new SocketServiceCtor({ server, options: socketInit.options ?? {}, auth: socketInit.auth });
 
         GlobalInjection(SocketServiceCtor.name, this.socketService);
 

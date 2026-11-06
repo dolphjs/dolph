@@ -1,4 +1,13 @@
-import { AuthorizationFunction, DNextFunc, DRequest, DResponse, ErrorException, HttpStatus, IPayload } from '../common';
+import {
+    AuthorizationFunction,
+    DNextFunc,
+    DRequest,
+    DResponse,
+    ErrorException,
+    HttpStatus,
+    IPayload,
+    SocketMiddleware,
+} from '../common';
 import { rejectInvalidToken, verifyJWTwithHMAC, verifyJWTwithRSA } from '../utilities';
 import { config } from 'dotenv';
 import { existsSync } from 'fs';
@@ -18,9 +27,15 @@ export type JwtVerifyOptions = {
  * Letting the header choose meant a key path could be used as an HMAC secret to
  * forge tokens, and a secret could be read as a file path and leak in the error.
  */
-const verifyRequestToken = (req: DRequest, tokenSecret: string, { algorithm = 'HS256' }: JwtVerifyOptions = {}) => {
+const tokenHeader = ({ algorithm = 'HS256' }: JwtVerifyOptions = {}) =>
+    algorithm === 'RS256' ? 'x-auth-token' : 'authorization';
+
+const verifyToken = (
+    authToken: string | string[] | undefined,
+    tokenSecret: string,
+    { algorithm = 'HS256' }: JwtVerifyOptions = {},
+) => {
     const isRsa = algorithm === 'RS256';
-    const authToken = req.headers[isRsa ? 'x-auth-token' : 'authorization'];
 
     if (!authToken?.length) {
         throw new ErrorException('provide a valid token header', HttpStatus.UNAUTHORIZED);
@@ -32,6 +47,9 @@ const verifyRequestToken = (req: DRequest, tokenSecret: string, { algorithm = 'H
             : verifyJWTwithHMAC({ token: authToken, secret: tokenSecret }),
     ) as IPayload;
 };
+
+const verifyRequestToken = (req: DRequest, tokenSecret: string, options?: JwtVerifyOptions) =>
+    verifyToken(req.headers[tokenHeader(options)], tokenSecret, options);
 
 /**
  * Stops an RSA setup that forgot `{ algorithm: 'RS256' }` from running as HMAC with its
@@ -111,4 +129,30 @@ const JWTAuthorizeDec = (tokenSecret: string, authorize?: AuthorizationFunction,
     };
 };
 
-export { JwtBasicAuth, JWTAuthVerifyDec, JWTAuthorizeDec };
+/**
+ * Socket.IO middleware that verifies a JWT when a client connects, using the same
+ * rules as HTTP. Clients send the token as `io(url, { auth: { token } })`, or in the
+ * header that matches the algorithm. The payload is available as `socket.data.payload`.
+ *
+ * Pass it as `auth` in the DolphFactory socket config so it covers every namespace.
+ *
+ * @version 1.0.0
+ */
+const socketJwtAuth = (tokenSecret: string, options?: JwtVerifyOptions): SocketMiddleware => {
+    assertKeyMatchesAlgorithm(tokenSecret, options);
+
+    return (socket, next) => {
+        const { auth, headers } = socket.handshake;
+
+        try {
+            socket.data.payload = verifyToken(auth?.token ?? headers[tokenHeader(options)], tokenSecret, options);
+        } catch {
+            // One message for every failure, so a client learns nothing about why.
+            return next(new Error('unauthorized'));
+        }
+
+        next();
+    };
+};
+
+export { JwtBasicAuth, JWTAuthVerifyDec, JWTAuthorizeDec, socketJwtAuth };

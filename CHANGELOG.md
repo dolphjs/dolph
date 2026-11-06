@@ -59,6 +59,13 @@
 
 - **`validatePassword` is removed.** Its rules were too weak to rely on. Use a Joi or `class-validator` rule that matches your own password policy.
 
+#### Sockets
+
+- **Browser clients on another origin need `cors.origin`.** Browsers don't apply CORS to WebSockets, so DolphJS now checks it on the connection. With none set, only the same origin can connect. Non-browser clients aren't affected.
+- **Add `auth` to your socket config.** Sockets have no authentication by default. Use `socketJwtAuth(secret)` or your own middleware. Without it, the app logs a warning at startup, and `auth: false` silences that for sockets that are public on purpose.
+- **`@Socket` services are now shared.** They use the same instance as `@Component`, so sockets and controllers see the same state. A service with constructor dependencies must be listed on a `@Component`.
+- **Invalid `socketServices` stop the app** at startup.
+
 #### File uploads
 
 - `maxCount` and field names are enforced. Extra or unexpected files return `400`.
@@ -75,6 +82,7 @@
 
 ### Added
 
+- `socketJwtAuth(secret, options)` and the `auth` socket option, which covers every namespace.
 - `enableHelmet()`, the correctly spelled `enableHemet()`, which still works but logs a deprecation warning.
 - `compareHashedStringAsync`, a non-blocking password check. Prefer it on login routes.
 - `generateVerificationCode(digits)`.
@@ -91,6 +99,8 @@
 
 ### Fixed
 
+- A socket handler that throws or rejects no longer shuts down the server.
+- `this.socket` works straight away in socket services, so the documented example no longer crashes at startup.
 - Non-`async` handlers that return a Promise are awaited.
 - GraphQL mode starts.
 - `SuccessResponse` and `ErrorResponse` no longer send twice when given both `body` and `msg`.
