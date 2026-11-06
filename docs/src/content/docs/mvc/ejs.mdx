@@ -58,7 +58,7 @@ Create a `views` directory in your project root, and add an `index.ejs` file.
 
 ## Rendering the View in a Controller
 
-To render a view, use the `@Render()` decorator. Instead of using `SuccessResponse` to send JSON, you simply return an object from your method. The `@Render` decorator intercepts the returned object and passes it to the specified view.
+To render a view, use the `@Render()` decorator. Return an object from your method as usual. The `@Render` decorator intercepts the returned object and passes it to the specified view.
 
 ```typescript
 // src/page/page.controller.ts
