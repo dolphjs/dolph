@@ -11,9 +11,7 @@ import { DNextFunc, DRequest, DResponse } from '../interfaces';
  */
 function JwtAuthMiddleware(jwtBasicAuthInstance: JwtBasicAuth) {
     return TryCatchAsyncFn(async (req: DRequest, res: DResponse, next: DNextFunc) => {
-        const payload = await jwtBasicAuthInstance.Verify(req, res, next);
-        // @ts-expect-error legacy typing compatibility
-        req.payload = payload;
+        req.payload = await jwtBasicAuthInstance.Verify(req);
         next();
     });
 }

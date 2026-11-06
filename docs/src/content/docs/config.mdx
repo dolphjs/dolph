@@ -69,8 +69,22 @@ DolphJS automatically merges your `.env` files with your configuration. You can 
 These keys sit at the top level of the file.
 
 - **port**: The port your application will listen on. Overrides the `PORT` environment variable. Defaults to `3030`.
-- **env**: The running environment (e.g., `development`, `production`). Overrides `NODE_ENV`.
+- **env**: The running environment (e.g., `development`, `production`). See [Environment and error details](#environment-and-error-details).
 - **jsonLimit**: The maximum JSON body size. Defaults to `5mb`.
+
+#### Environment and error details
+
+DolphJS runs in production mode unless you ask for development. It uses development mode only when `NODE_ENV` or `env` is `development` and neither is set to anything else.
+
+| `NODE_ENV` | `env` in config | Mode |
+|---|---|---|
+| not set | not set | `production` |
+| `development` | not set or `development` | `development` |
+| not set | `development` | `development` |
+| `production` | `development` | `production` |
+| `development` | `production` | `production` |
+
+Stack traces and the messages of unexpected errors are only sent to clients in development mode. Set `NODE_ENV=development` on your machine to see them.
 
 ### Database
 

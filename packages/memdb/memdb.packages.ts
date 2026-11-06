@@ -1,16 +1,13 @@
 export class MemDB<T> {
-    data: Record<string, T>;
-
-    constructor() {
-        this.data = {};
-    }
+    // No prototype, so keys like `constructor` or `__proto__` are just keys.
+    data: Record<string, T> = Object.create(null);
 
     /**
      * Adds a new key-value pair to the database.
      * If the key is not a string, it will be converted to a string using JSON.stringify.
      */
     add(key: string, value: T) {
-        if (this.get(key)) throw new Error('cannot add new value because `key` already exists. ');
+        if (this.has(key)) throw new Error('cannot add new value because `key` already exists. ');
         this.data[key] = value;
     }
 
@@ -58,6 +55,6 @@ export class MemDB<T> {
      * Clears the database.
      */
     empty() {
-        this.data = {};
+        this.data = Object.create(null);
     }
 }

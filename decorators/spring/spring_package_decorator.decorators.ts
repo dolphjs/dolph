@@ -258,13 +258,6 @@ export const Component = <T extends Dolph>({ controllers, services }: ComponentP
     };
 };
 
-// Todo: implement later in future version
-export const UseDto = (dto: any): MethodDecorator => {
-    return (target: Object, propertyKey: string | symbol, _descriptor: PropertyDescriptor) => {
-        Reflect.defineMetadata('dto', dto, target, propertyKey);
-    };
-};
-
 /**
  *  Renders template for MVC
  *

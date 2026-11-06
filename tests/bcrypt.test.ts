@@ -1,4 +1,4 @@
-import { hashWithBcrypt, hashString, compareWithBcryptHash, compareHashedString } from '../utilities/encryptions/bcrypt_encryption.utilities';
+import { hashWithBcrypt, hashString, compareWithBcryptHash, compareHashedString, compareHashedStringAsync } from '../utilities/encryptions/bcrypt_encryption.utilities';
 
 describe('Bcrypt Encryption Utilities', () => {
     const rawPassword = 'mySuperSecretPassword123!';
@@ -59,5 +59,35 @@ describe('Bcrypt Encryption Utilities', () => {
             const result = compareHashedString('wrongPassword', hash);
             expect(result).toBe(false);
         });
+    });
+});
+
+describe('Non-blocking password checks', () => {
+    it('should resolve true for the right password', async () => {
+        const hashed = await hashString('correct horse', 4);
+
+        await expect(compareHashedStringAsync('correct horse', hashed)).resolves.toBe(true);
+    });
+
+    it('should resolve false for the wrong password', async () => {
+        const hashed = await hashString('correct horse', 4);
+
+        await expect(compareHashedStringAsync('wrong', hashed)).resolves.toBe(false);
+    });
+
+    it('should keep compareHashedString returning a real boolean', async () => {
+        const hashed = await hashString('correct horse', 4);
+
+        expect(compareHashedString('wrong', hashed)).toBe(false);
+    });
+
+    it('should not block the event loop while hashing', async () => {
+        let ticks = 0;
+        const timer = setInterval(() => (ticks += 1), 1);
+
+        await hashString('correct horse', 10);
+        clearInterval(timer);
+
+        expect(ticks).toBeGreaterThan(0);
     });
 });

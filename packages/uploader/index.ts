@@ -1,6 +1,7 @@
 export { DolphFIleUploaderError as DFileUploaderError } from './errors/error_messages';
 import { extname } from 'path';
-import { DRequest, DResponse } from '../../common';
+import mime from 'mime-types';
+import { DRequest, DResponse, UnSupportedMediaException } from '../../common';
 import { FileInfo, UploadOptions } from '../../common/types/dolph_uploader.type';
 import { defaultFileExtensions } from '../../utilities/media/file_extensions.utilities';
 import { diskStorage, fileUploader, memoryStorage } from './file_uploader';
@@ -29,10 +30,14 @@ export const useFileUploader =
             const _extensions = extensions?.length ? extensions : defaultFileExtensions;
 
             _filter = (req: DRequest, file: FileInfo, callback) => {
-                const extensionCheck = _extensions.includes(extname(file.originalname).toLowerCase());
+                // Browsers name a FormData Blob 'blob', so its declared type is all there is to check.
+                const extension =
+                    file.originalname === 'blob'
+                        ? `.${mime.extension(file.mimetype)}`
+                        : extname(file.originalname).toLowerCase();
 
-                if (!extensionCheck && file.originalname !== 'blob') {
-                    return callback(new Error('Unsupported media file'), false);
+                if (!_extensions.includes(extension)) {
+                    return callback(new UnSupportedMediaException('Unsupported media file'), false);
                 }
 
                 return callback(null, true);

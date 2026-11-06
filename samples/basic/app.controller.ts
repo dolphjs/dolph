@@ -59,11 +59,12 @@ class AppController extends DolphControllerHandler<Dolph> {
 
     @TryCatchAsyncDec
     public async testCookieFn(req: DRequest, res: DResponse) {
-        const cookieValue = newAuthCookie('user_id_00', 100000, 'random_secret', { info: 'yeah' });
+        const cookieValue = newAuthCookie('user_id_00', new Date(Date.now() + 100000), 'random_secret', { info: 'yeah' });
         res.cookie(cookieValue.name, cookieValue.value, {
             expires: cookieValue.expires,
             secure: cookieValue.secure,
             httpOnly: cookieValue.httpOnly,
+            sameSite: cookieValue.sameSite,
         });
 
         res.send('done');

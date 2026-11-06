@@ -1,11 +1,10 @@
 import { initSql } from '../../packages';
 
 const mysql = initSql({
-    dialect: 'mysql',
+    // In-memory so the sample runs without a database server or extra driver.
+    dialect: 'sqlite',
     database: 'dolph',
-    user: 'root',
-    pass: 'password',
-    host: 'localhost',
+    options: { storage: ':memory:' },
 });
 
 export { mysql };

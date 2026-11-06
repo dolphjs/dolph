@@ -24,6 +24,7 @@ export class AuthController extends DolphControllerHandler<Dolph> {
             expires: cookie.expires,
             secure: cookie.secure,
             httpOnly: cookie.httpOnly,
+            sameSite: cookie.sameSite,
         });
 
         SuccessResponse({

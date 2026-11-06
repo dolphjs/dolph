@@ -37,7 +37,7 @@
 
 - `DolphAsyncMiddleware` / `DolphAsyncMiddlewareDec` resolve the inner async function and **return** the resulting Promise so callers can `await` correctly; errors are passed to `next(err)`.
 - `DolphMiddleware` wraps sync handlers and forwards sync throws to `next(err)`.
-- `validationMiddlewareOne` in `global_validation_middleware.middlewares.ts` is legacy/experimental for route-attached DTO metadata; prefer per-route `transformAndValidateDto` via `@DBody` / `@DQuery` / `@DParam` or explicit `validateBodyMiddleware`.
+- For DTO validation, use `@DBody` / `@DQuery` / `@DParam`, or `validateBodyMiddleware` / `validateQueryMiddleware` / `validateParamMiddleware`.
 
 ## Sample Conventions
 

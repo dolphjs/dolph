@@ -1,3 +1,5 @@
+import { DefaultException } from '../../../common/api/exceptions/default_exception.api';
+
 const errorMessages = {
     LIMIT_PART_COUNT: 'Too many parts',
     LIMIT_FILE_SIZE: 'File too large',
@@ -9,13 +11,12 @@ const errorMessages = {
     MISSING_FIELD_NAME: 'Field name missing',
 };
 
-export class DolphFIleUploaderError extends Error {
-    readonly statusCode: number = 400;
+export class DolphFIleUploaderError extends DefaultException {
     private code: string;
     private field: string;
 
     constructor(code: string, field: string) {
-        super(errorMessages[code]);
+        super(errorMessages[code], 400);
 
         this.name = 'UploaderError';
 

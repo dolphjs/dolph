@@ -4,6 +4,18 @@ import Joi = require('joi');
 import { DNextFunc, DRequest, DResponse } from '../interfaces';
 
 /**
+ * Validates the `params`, `body` and `query` parts of a request against a Joi schema.
+ * `param` is accepted as an alias for `params`.
+ */
+const validateRequestAgainstSchema = (schema: any, req: object) => {
+    const { param, params = param, ...rest } = schema;
+    const acceptedSchema = pick({ ...rest, ...(params && { params }) }, ['params', 'body', 'query']);
+    const object = pick(req, Object.keys(acceptedSchema));
+
+    return Joi.compile(acceptedSchema).prefs({ errors: { label: 'key' }, abortEarly: false }).validate(object);
+};
+
+/**
  *
  *  dolphjs middleware used to validate a request object form the client
  *
@@ -16,11 +28,7 @@ import { DNextFunc, DRequest, DResponse } from '../interfaces';
  */
 const validateRequestMiddleware =
     (schema: any) => (req: Request | DRequest, res: Response | DResponse, next: NextFunction | DNextFunc) => {
-        const acceptedSchema = pick(schema, ['param', 'body', 'query']);
-        const object = pick(req, Object.keys(acceptedSchema));
-        const { value, error } = Joi.compile(acceptedSchema)
-            .prefs({ errors: { label: 'key' }, abortEarly: false })
-            .validate(object);
+        const { value, error } = validateRequestAgainstSchema(schema, req);
 
         if (error) {
             const errorMessage = error.details.map((details) => details.message).join(', ');
@@ -31,4 +39,4 @@ const validateRequestMiddleware =
         return next();
     };
 
-export { validateRequestMiddleware as reqValidatorMiddleware };
+export { validateRequestMiddleware as reqValidatorMiddleware, validateRequestAgainstSchema };

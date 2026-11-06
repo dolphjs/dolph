@@ -1,6 +1,6 @@
 import { configs } from '../../core/config.core';
 import { DNextFunc, DRequest, DResponse, ErrorException, HttpStatus, IPayload, cookieContent, sub } from '../../common';
-import { generateJWTwithHMAC, verifyJWTwithHMAC } from './JWT_generator.utilities';
+import { generateJWTwithHMAC, rejectInvalidToken, verifyJWTwithHMAC } from './JWT_generator.utilities';
 
 /**
  *
@@ -20,23 +20,14 @@ export const newAuthCookie = (sub: sub, exp: Date, secret: string, info?: string
     };
     const token = generateJWTwithHMAC({ payload, secret });
 
-    const options = {
-        expires: new Date(exp.getTime()),
-        httpOnly: false,
-        secure: false,
-    };
-
-    if (configs.NODE_ENV !== 'development') {
-        options.httpOnly = true;
-        options.secure = true;
-    }
-
     return {
         name: 'xAuthToken',
         value: token,
-        expires: options.expires,
-        httpOnly: options.httpOnly,
-        secure: options.secure,
+        expires: new Date(exp.getTime()),
+        httpOnly: true,
+        // Only relaxed in development, where the app is usually on plain http.
+        secure: configs.NODE_ENV !== 'development',
+        sameSite: 'lax',
     };
 };
 
@@ -54,9 +45,13 @@ export const cookieAuthVerify = (tokenSecret: string) => (req: DRequest, _res: D
 
     if (!xAuthToken) return next(new ErrorException('user not authorized, login and try again', HttpStatus.UNAUTHORIZED));
 
-    // @ts-expect-error legacy typing compatibility
-    const payload: IPayload = verifyJWTwithHMAC({ token: xAuthToken, secret: tokenSecret });
+    try {
+        req.payload = rejectInvalidToken(() =>
+            verifyJWTwithHMAC({ token: xAuthToken, secret: tokenSecret }),
+        ) as IPayload;
+    } catch (error) {
+        return next(error);
+    }
 
-    req.payload = payload;
     next();
 };

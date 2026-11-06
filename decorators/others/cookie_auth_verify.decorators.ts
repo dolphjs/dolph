@@ -1,5 +1,5 @@
 import { DNextFunc, DRequest, DResponse, ErrorException, HttpStatus, IPayload } from '../../common';
-import { verifyJWTwithHMAC } from '../../utilities';
+import { rejectInvalidToken, verifyJWTwithHMAC } from '../../utilities';
 
 /**
  *
@@ -14,24 +14,21 @@ export const CookieAuthVerifyDec = (tokenSecret: string) => {
         // convert to normal func
 
         descriptor.value = function (req: DRequest, res: DResponse, next: DNextFunc) {
-            try {
-                if (!req.cookies)
-                    return next(new ErrorException('user not authorized, login and try again', HttpStatus.UNAUTHORIZED));
+            const xAuthToken = req.cookies?.xAuthToken;
 
-                const { xAuthToken } = req.cookies;
-
-                if (!xAuthToken)
-                    return next(new ErrorException('user not authorized, login and try again', HttpStatus.UNAUTHORIZED));
-
-                // @ts-expect-error legacy typing compatibility
-                const payload: IPayload = verifyJWTwithHMAC({ token: xAuthToken, secret: tokenSecret });
-
-                req.payload = payload;
-
-                return originalMethod.apply(this, [req, res, next]);
-            } catch (e) {
-                throw e;
+            if (!xAuthToken) {
+                return next(new ErrorException('user not authorized, login and try again', HttpStatus.UNAUTHORIZED));
             }
+
+            try {
+                req.payload = rejectInvalidToken(() =>
+                    verifyJWTwithHMAC({ token: xAuthToken, secret: tokenSecret }),
+                ) as IPayload;
+            } catch (error) {
+                return next(error);
+            }
+
+            return originalMethod.apply(this, [req, res, next]);
         };
     };
 };

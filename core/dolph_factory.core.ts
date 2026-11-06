@@ -56,7 +56,8 @@ const isPromiseLike = (value: unknown): value is PromiseLike<unknown> =>
  * Sends a controller method's return value as an HTTP response.
  * - `undefined`    → no-op (user handled the response manually)
  * - `null`         → 204 No Content
- * - `string`       → 200 text/plain (or text/html if it looks like HTML)
+ * - `string`       → 200 JSON, as `message`. Never sniffed as HTML: a string often holds
+ *                    user input, so that would be reflected XSS. Use `res.send()` for HTML.
  * - `Buffer`       → 200 binary send
  * - `object/array` → 200 application/json
  * - anything else  → 200 JSON (numbers, booleans, etc.)
@@ -75,12 +76,6 @@ const sendControllerResult = (req: DRequest, res: DResponse, result: unknown, in
     }
 
     if (typeof result === 'string') {
-        const isHtml = result.trimStart().startsWith('<');
-        if (isHtml) {
-            res.status(200).contentType('text/html').send(result);
-            return;
-        }
-
         if (interceptor) {
             const customData = interceptor(result, req, res);
             if (customData !== undefined && !res.headersSent) res.status(200).json(customData);
@@ -481,8 +476,8 @@ const initNotFoundError = (engine: import("express").Express) => {
 };
 
 // loads configs from env
-const InitialiseConfigLoader = () => {
-    configLoader();
+const InitialiseConfigLoader = (configEnv?: string) => {
+    configLoader(configEnv);
 };
 
 // Initialises error handlers and converters
@@ -548,7 +543,7 @@ class DolphFactoryClass {
     private readonly lateMiddlewares = Router();
 
     port: dolphPort = process.env.PORT || 3030;
-    env = process.env.NODE_ENV || 'development';
+    env = configs.NODE_ENV;
     configs: DolphConfig = {};
     externalMiddlewares: RequestHandler[] = [];
     jsonLimit = '5mb';
@@ -681,10 +676,6 @@ class DolphFactoryClass {
                 }
             }
 
-            if (config.env?.length) {
-                this.env = config.env;
-            }
-
             if (config.routing?.base?.length) {
                 this.routingBase = config.routing.base;
             }
@@ -782,7 +773,8 @@ class DolphFactoryClass {
 
     private intiDolphEngine(startTime: [number, number]) {
 
-        InitialiseConfigLoader();
+        InitialiseConfigLoader(this.configs?.env);
+        this.env = configs.NODE_ENV;
         incrementHandlers();
         // Ahead of the body parsers so a malformed-body 400 still gets security headers
         this.dolph.use(this.securityMiddlewares);

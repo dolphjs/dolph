@@ -1,4 +1,4 @@
-import { genSalt, hashSync, compareSync } from 'bcryptjs';
+import { compare, compareSync, genSalt, hash } from 'bcryptjs';
 import { bcryptCompareParam, bcryptHashParam } from '../../common';
 
 /**
@@ -10,7 +10,7 @@ import { bcryptCompareParam, bcryptHashParam } from '../../common';
  * @deprecated use `hashString` instead
  */
 const hashWithBcrypt = async ({ pureString, salt }: bcryptHashParam): Promise<string> => {
-    return hashSync(pureString, salt ? salt : await genSalt(11));
+    return hash(pureString, salt ? salt : await genSalt(11));
 };
 
 /**
@@ -22,7 +22,7 @@ const hashWithBcrypt = async ({ pureString, salt }: bcryptHashParam): Promise<st
  * @version 2.0
  */
 const hashString = async (pureString: string, salt = 11): Promise<string> => {
-    return hashSync(pureString, await genSalt(salt));
+    return hash(pureString, await genSalt(salt));
 };
 
 /**
@@ -50,4 +50,20 @@ const compareHashedString = (pureString: string, hashString: string): boolean =>
     return compareSync(pureString, hashString);
 };
 
-export { compareWithBcryptHash, hashWithBcrypt, compareHashedString, hashString };
+/**
+ * Non-blocking version of `compareHashedString`. Prefer this on request paths like
+ * login: the synchronous version stalls every other request while it runs.
+ *
+ * Kept as a separate function on purpose. Making `compareHashedString` async would
+ * leave `if (compareHashedString(...))` testing a Promise, which is always truthy,
+ * so any password would pass.
+ *
+ * @returns {Promise<boolean>}
+ *
+ * @version 1.0.0
+ */
+const compareHashedStringAsync = (pureString: string, hashString: string): Promise<boolean> => {
+    return compare(pureString, hashString);
+};
+
+export { compareWithBcryptHash, hashWithBcrypt, compareHashedString, compareHashedStringAsync, hashString };
