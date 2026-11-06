@@ -36,9 +36,13 @@ export const errorHandler = (err: any, req: DRequest, res: DResponse, _next: DNe
     let statusCode = err.statusCode || httpStatus.INTERNAL_SERVER_ERROR;
     let message = err.message || 'An unexpected server error occurred';
 
-    if (configs.NODE_ENV === 'production' && !err.isOperational) {
-        statusCode = httpStatus.INTERNAL_SERVER_ERROR;
-        message = 'Internal Server Error';
+    const isDevelopment = configs.NODE_ENV === 'development';
+
+    if (!isDevelopment && !err.isOperational) {
+        // Client errors keep their status, like a 400 for malformed JSON, but an
+        // unrecognised error's message could still expose internals.
+        statusCode = statusCode >= httpStatus.INTERNAL_SERVER_ERROR ? httpStatus.INTERNAL_SERVER_ERROR : statusCode;
+        message = httpStatus[statusCode];
     }
 
     res.locals.errorMessage = message;
@@ -57,7 +61,7 @@ export const errorHandler = (err: any, req: DRequest, res: DResponse, _next: DNe
         code: statusCode,
         message,
         ...(errors?.length && { errors }),
-        ...(configs.NODE_ENV === 'development' && { stack: err.stack }),
+        ...(isDevelopment && { stack: err.stack }),
     };
 
     if (configs.NODE_ENV === 'test') {

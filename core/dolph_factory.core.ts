@@ -481,8 +481,8 @@ const initNotFoundError = (engine: import("express").Express) => {
 };
 
 // loads configs from env
-const InitialiseConfigLoader = () => {
-    configLoader();
+const InitialiseConfigLoader = (configEnv?: string) => {
+    configLoader(configEnv);
 };
 
 // Initialises error handlers and converters
@@ -548,7 +548,7 @@ class DolphFactoryClass {
     private readonly lateMiddlewares = Router();
 
     port: dolphPort = process.env.PORT || 3030;
-    env = process.env.NODE_ENV || 'development';
+    env = configs.NODE_ENV;
     configs: DolphConfig = {};
     externalMiddlewares: RequestHandler[] = [];
     jsonLimit = '5mb';
@@ -681,10 +681,6 @@ class DolphFactoryClass {
                 }
             }
 
-            if (config.env?.length) {
-                this.env = config.env;
-            }
-
             if (config.routing?.base?.length) {
                 this.routingBase = config.routing.base;
             }
@@ -782,7 +778,8 @@ class DolphFactoryClass {
 
     private intiDolphEngine(startTime: [number, number]) {
 
-        InitialiseConfigLoader();
+        InitialiseConfigLoader(this.configs?.env);
+        this.env = configs.NODE_ENV;
         incrementHandlers();
         // Ahead of the body parsers so a malformed-body 400 still gets security headers
         this.dolph.use(this.securityMiddlewares);
