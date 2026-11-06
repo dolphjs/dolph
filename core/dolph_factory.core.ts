@@ -728,7 +728,7 @@ class DolphFactoryClass {
 
             if (config.middlewares) {
                 if (config.middlewares.cors?.activate) {
-                    const { activate, origin, ...corsOptions } = config.middlewares.cors;
+                    const { activate: _activate, origin, ...corsOptions } = config.middlewares.cors;
 
                     if (!origin) {
                         inAppLogger.warn(

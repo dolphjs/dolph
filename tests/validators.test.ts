@@ -1,5 +1,4 @@
 import { objectId } from '../utilities/validators/objectId_validator.validator';
-import { DolphErrors } from '../common/constants';
 
 describe('Validator Utilities', () => {
     describe('objectId_validator', () => {
