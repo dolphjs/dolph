@@ -16,8 +16,8 @@ export interface DolphConfig {
     jsonLimit?: string;
     /** Server-rendered pages. All three keys are needed. */
     views?: DolphConfigViews;
-    /** The HTTP server to run on. Defaults to `express`. */
-    adapter?: 'express' | 'fastify';
+    /** The HTTP server to run on. Defaults to `express`. `dolph` is DolphJS's own engine. */
+    adapter?: 'express' | 'fastify' | 'dolph';
 }
 
 export interface DolphConfigDbOption {
