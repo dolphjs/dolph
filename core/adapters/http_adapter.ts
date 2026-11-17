@@ -1,7 +1,7 @@
 import type { Server } from 'http';
 import type { MVCEngine } from '../../common';
 
-export type AdapterName = 'express' | 'fastify';
+export type AdapterName = 'express' | 'fastify' | 'dolph';
 export type HttpMethod = 'get' | 'post' | 'patch' | 'put' | 'delete';
 
 // Middleware is framework code and third-party packages written against either

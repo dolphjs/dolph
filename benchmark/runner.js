@@ -1,6 +1,6 @@
 'use strict';
 
-const { spawn } = require('child_process');
+const { spawn, execFileSync } = require('child_process');
 const http = require('http');
 const path = require('path');
 
@@ -29,6 +29,7 @@ const ROOT_TS_NODE = path.join(ROOT_DIR, 'node_modules', '.bin', 'ts-node');
 
 const ALL_FRAMEWORKS = [
     {
+        // The Dolph engine — DolphJS's own HTTP layer (`adapter: dolph`).
         name: 'dolph',
         port: 4001,
         // Run ts-node from the benchmark dir (so cwd = benchmark/) using the ROOT tsconfig
@@ -36,7 +37,16 @@ const ALL_FRAMEWORKS = [
         cmd: ROOT_TS_NODE,
         args: ['--project', path.join(ROOT_DIR, 'tsconfig.json'), path.join(BENCH_DIR, 'servers', 'dolph.ts')],
         cwd: BENCH_DIR,
-        env: { PORT: '4001' },
+        env: { PORT: '4001', DOLPH_ADAPTER: 'dolph' },
+    },
+    {
+        // Same app on Express (`adapter: express`) for engine-vs-engine comparison.
+        name: 'dolph-express',
+        port: 4008,
+        cmd: ROOT_TS_NODE,
+        args: ['--project', path.join(ROOT_DIR, 'tsconfig.json'), path.join(BENCH_DIR, 'servers', 'dolph.ts')],
+        cwd: BENCH_DIR,
+        env: { PORT: '4008', DOLPH_ADAPTER: 'express' },
     },
     {
         name: 'dolph-fastify',
@@ -78,9 +88,21 @@ const ALL_FRAMEWORKS = [
         cwd: BENCH_DIR,
         env: { PORT: '4005' },
     },
+    {
+        // Phase-1 spike: native Bun.serve ceiling (no Express/Fastify/Dolph).
+        name: 'bun-native',
+        port: 4007,
+        cmd: 'bun',
+        args: [path.join(BENCH_DIR, 'servers', 'bun-native.ts')],
+        cwd: BENCH_DIR,
+        env: { PORT: '4007' },
+    },
 ];
 
-const FRAMEWORKS = ONLY ? ALL_FRAMEWORKS.filter((f) => f.name === ONLY) : ALL_FRAMEWORKS;
+// `--only` accepts a single name or a comma-separated list (e.g. `--only bun-native,dolph-fastify`)
+// so A/B comparisons can run without the full matrix.
+const ONLY_NAMES = ONLY ? ONLY.split(',').map((s) => s.trim()) : null;
+const FRAMEWORKS = ONLY_NAMES ? ALL_FRAMEWORKS.filter((f) => ONLY_NAMES.includes(f.name)) : ALL_FRAMEWORKS;
 
 // Endpoints
 // Each entry may have an optional `connections` override (defaults to CONNECTIONS).
@@ -275,6 +297,20 @@ function killProcess(proc) {
     });
 }
 
+/**
+ * Resident set size of a process in bytes, or null when unreadable.
+ * `ps -o rss=` works on both macOS and Linux and needs no extra dependency.
+ */
+function sampleRss(pid) {
+    try {
+        const out = execFileSync('ps', ['-o', 'rss=', '-p', String(pid)], { encoding: 'utf8' }).trim();
+        const kb = Number.parseInt(out, 10);
+        return Number.isFinite(kb) && kb > 0 ? kb * 1024 : null;
+    } catch {
+        return null;
+    }
+}
+
 // Formatting
 function fmt(n, decimals = 0) {
     if (n === undefined || n === null) return 'N/A';
@@ -288,6 +324,12 @@ function fmtBytes(bytes) {
     if (!bytes) return 'N/A';
     if (bytes >= 1024 * 1024) return `${(bytes / 1024 / 1024).toFixed(1)} MB/s`;
     return `${(bytes / 1024).toFixed(1)} KB/s`;
+}
+
+function fmtMem(bytes) {
+    if (!bytes) return 'N/A';
+    if (bytes >= 1024 * 1024) return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+    return `${(bytes / 1024).toFixed(0)} KB`;
 }
 
 function printTable(endpointTitle, rows) {
@@ -331,9 +373,48 @@ function printTable(endpointTitle, rows) {
     console.log(`└${bot}┘`);
 }
 
-function printSummary(allResults) {
+function printSummary(allResults, allMemory) {
     const baselineIds = ['ping', 'param', 'post'];
     const asyncIds = ENDPOINTS.filter((e) => !baselineIds.includes(e.id)).map((e) => e.id);
+
+    if (allMemory && Object.keys(allMemory).length) {
+        console.log('\n══════════════════════════════════════════════════════');
+        console.log('  MEMORY — process RSS (idle after warm-up · peak under load)');
+        console.log('══════════════════════════════════════════════════════');
+
+        const memCols = [
+            { label: 'Framework', width: 16 },
+            { label: 'Idle', width: 12 },
+            { label: 'Peak', width: 12 },
+            { label: 'Growth', width: 12 },
+        ];
+        const sep = memCols.map((c) => '─'.repeat(c.width + 2)).join('┼');
+        const top = memCols.map((c) => '─'.repeat(c.width + 2)).join('┬');
+        const bot = memCols.map((c) => '─'.repeat(c.width + 2)).join('┴');
+        const pad = (s, w) => String(s).padStart(w);
+        const lpad = (s, w) => String(s).padEnd(w);
+
+        console.log(`┌${top}┐`);
+        console.log(`│ ${memCols.map((c) => lpad(c.label, c.width)).join(' │ ')} │`);
+        console.log(`├${sep}┤`);
+
+        const memRows = FRAMEWORKS.map((fw) => ({ name: fw.name, ...(allMemory[fw.name] || {}) })).sort(
+            (a, b) => (a.peak || Infinity) - (b.peak || Infinity),
+        );
+
+        for (const row of memRows) {
+            const growth = row.idle && row.peak ? row.peak - row.idle : null;
+            const cells = [
+                lpad(row.name, memCols[0].width),
+                pad(fmtMem(row.idle), memCols[1].width),
+                pad(fmtMem(row.peak), memCols[2].width),
+                pad(growth === null ? 'N/A' : `+${fmtMem(growth)}`, memCols[3].width),
+            ];
+            console.log(`│ ${cells.join(' │ ')} │`);
+        }
+
+        console.log(`└${bot}┘`);
+    }
 
     console.log('\n\n══════════════════════════════════════════════════════');
     console.log('  BENCHMARK SUMMARY — BASELINE (sync)');
@@ -395,6 +476,7 @@ async function main() {
     console.log('═══════════════════════════════════════════════════════════\n');
 
     const allResults = {};
+    const allMemory = {};
 
     for (const fw of FRAMEWORKS) {
         console.log(`▶ Starting ${fw.name} on :${fw.port}...`);
@@ -421,18 +503,35 @@ async function main() {
             await waitForServer(fw.port);
             console.log(`  ${fw.name} ready`);
 
+            // Idle RSS after the server is up but before load.
+            const idleRss = sampleRss(proc.pid);
+            let peakRss = idleRss;
+
+            // Sample RSS while autocannon hammers the server so the peak
+            // reflects memory under load, not just at rest.
+            const rssTimer = setInterval(() => {
+                const rss = sampleRss(proc.pid);
+                if (rss && (!peakRss || rss > peakRss)) peakRss = rss;
+            }, 250);
+
             allResults[fw.name] = {};
 
-            for (const ep of ENDPOINTS) {
-                process.stdout.write(`  ↳ ${ep.title.padEnd(22)} `);
-                const result = await runAutocannon(`http://127.0.0.1:${fw.port}${ep.path}`, {
-                    method: ep.method,
-                    body: ep.body,
-                    headers: ep.headers,
-                    connections: ep.connections,
-                });
-                allResults[fw.name][ep.id] = result;
-                console.log(`${fmt(result.requests.average).padStart(8)} req/s   p99 ${fmt(result.latency.p99, 1)}ms`);
+            try {
+                for (const ep of ENDPOINTS) {
+                    process.stdout.write(`  ↳ ${ep.title.padEnd(22)} `);
+                    const result = await runAutocannon(`http://127.0.0.1:${fw.port}${ep.path}`, {
+                        method: ep.method,
+                        body: ep.body,
+                        headers: ep.headers,
+                        connections: ep.connections,
+                    });
+                    allResults[fw.name][ep.id] = result;
+                    console.log(`${fmt(result.requests.average).padStart(8)} req/s   p99 ${fmt(result.latency.p99, 1)}ms`);
+                }
+            } finally {
+                clearInterval(rssTimer);
+                allMemory[fw.name] = { idle: idleRss, peak: peakRss };
+                console.log(`  ↳ RSS ${fmtMem(idleRss)} idle → ${fmtMem(peakRss)} peak`);
             }
         } catch (err) {
             console.error(`  ✗ ${fw.name} failed: ${err.message}`);
@@ -444,7 +543,7 @@ async function main() {
         }
     }
 
-    printSummary(allResults);
+    printSummary(allResults, allMemory);
 }
 
 main().catch((err) => {
