@@ -8,6 +8,8 @@ import numbers from '../../data/site-numbers.json';
 
 export const r = numbers.requests;
 export const n = (key) => r[key].toLocaleString('en-US');
+export const e = numbers.engines;
+export const nf = (value) => value.toLocaleString('en-US');
 
 These are the numbers on the homepage. Each one is median requests per second, and higher is better.
 
@@ -17,6 +19,86 @@ These are the numbers on the homepage. Each one is median requests per second, a
 | `GET` using `@DReq()` | | {n('Dolph on Express: GET with @DReq')} | {n('Dolph on Fastify: GET with @DReq')} |
 | `POST` echoing JSON | {n('Express: POST')} | {n('Dolph on Express: POST')} | {n('Dolph on Fastify: POST')} |
 | `POST` with a valid DTO | | {n('Dolph on Express: POST with a valid DTO')} | {n('Dolph on Fastify: POST with a valid DTO')} |
+
+## Three engines, one codebase
+
+DolphJS 3.1 ships three HTTP engines. The same application — same controllers, same DTO validation, same envelope — ran on each of them through `adapter: express`, `adapter: fastify` and the new `adapter: dolph`, DolphJS's own engine. Higher throughput and lower latency are better; lower memory is better.
+
+### Throughput (requests per second)
+
+<table>
+  <thead>
+    <tr><th>Route</th><th>Dolph engine</th><th>on Express</th><th>on Fastify</th></tr>
+  </thead>
+  <tbody>
+    {e.throughput.map((row) => (
+      <tr key={row.route}>
+        <td><code>{row.route}</code></td>
+        <td><strong>{nf(row.dolph)}</strong></td>
+        <td>{nf(row.express)}</td>
+        <td>{nf(row.fastify)}</td>
+      </tr>
+    ))}
+  </tbody>
+</table>
+
+The Dolph engine leads on three of the four routes — up to **3.8x** the requests of Express and **1.9x** Fastify on `POST /echo`. `GET /ping` is a statistical tie with Fastify (within about 3%).
+
+### Latency (milliseconds, average / p99)
+
+<table>
+  <thead>
+    <tr><th>Route</th><th>Dolph engine</th><th>on Express</th><th>on Fastify</th></tr>
+  </thead>
+  <tbody>
+    {e.latency.map((row) => (
+      <tr key={row.route}>
+        <td><code>{row.route}</code></td>
+        <td><strong>{row.dolph} / {row.dolphP99}</strong></td>
+        <td>{row.express} / {row.expressP99}</td>
+        <td>{row.fastify} / {row.fastifyP99}</td>
+      </tr>
+    ))}
+  </tbody>
+</table>
+
+The engine is the fastest or second-fastest on every route. The two routes it clearly wins — `GET /users/:id` and `POST /echo` — it also has the best tail (p99). `GET /ping`'s p99 was worse than the other two in this run; single rounds move around, so read the route, not the decimal.
+
+### Memory (process RSS, MB)
+
+<table>
+  <thead>
+    <tr><th>Engine</th><th>Idle</th><th>Peak under load</th><th>Growth</th></tr>
+  </thead>
+  <tbody>
+    {e.memory.map((row) => (
+      <tr key={row.engine}>
+        <td>{row.engine}</td>
+        <td>{row.idle}</td>
+        <td><strong>{row.peak}</strong></td>
+        <td><strong>+{row.growth}</strong></td>
+      </tr>
+    ))}
+  </tbody>
+</table>
+
+This is the clearest separation. The engine grew by **{e.memory[0].growth} MB** across the whole run, against {e.memory[2].growth} MB on Fastify and {e.memory[1].growth} MB on Express. Idle, it is also the lightest of the three.
+
+### How these three were measured
+
+- One app, one route table: [`benchmark/servers/dolph.ts`](https://github.com/dolphjs/dolph/blob/dev/benchmark/servers/dolph.ts), run three times with `DOLPH_ADAPTER` set to each engine.
+- `autocannon`, 100 connections, keep-alive, no pipelining, **one 15-second round per path**, production mode, Node 22.
+- Memory is the server process's resident set size, sampled every 250 ms: *idle* after warm-up and before load, *peak* across every path.
+- Load generator and servers on the same laptop, as with the table above — compare engines with each other, not against absolute numbers.
+- Zero errors on every path for all three engines.
+
+Reproduce it with:
+
+```bash
+git clone https://github.com/dolphjs/dolph
+cd dolph && npm install
+node benchmark/runner.js --only dolph,dolph-express,dolph-fastify
+```
 
 ## Method
 

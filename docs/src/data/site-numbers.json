@@ -16,5 +16,24 @@
 		"Dolph on Fastify: GET with @DReq": 15948,
 		"Dolph on Fastify: POST": 13993,
 		"Dolph on Fastify: POST with a valid DTO": 12346
+	},
+	"engines": {
+		"throughput": [
+			{ "route": "GET /ping", "dolph": 9758, "express": 5553, "fastify": 10084 },
+			{ "route": "GET /users/:id", "dolph": 16605, "express": 4619, "fastify": 9959 },
+			{ "route": "POST /echo", "dolph": 13581, "express": 4244, "fastify": 7080 },
+			{ "route": "GET /async/instant", "dolph": 15799, "express": 4150, "fastify": 8411 }
+		],
+		"latency": [
+			{ "route": "GET /ping", "dolph": 9.96, "express": 17.51, "fastify": 9.44, "dolphP99": 61, "expressP99": 31, "fastifyP99": 31 },
+			{ "route": "GET /users/:id", "dolph": 5.5, "express": 21.15, "fastify": 9.77, "dolphP99": 14, "expressP99": 56, "fastifyP99": 40 },
+			{ "route": "POST /echo", "dolph": 6.84, "express": 23.07, "fastify": 13.63, "dolphP99": 16, "expressP99": 63, "fastifyP99": 73 },
+			{ "route": "GET /async/instant", "dolph": 5.89, "express": 23.59, "fastify": 11.41, "dolphP99": 15, "expressP99": 66, "fastifyP99": 104 }
+		],
+		"memory": [
+			{ "engine": "Dolph", "idle": 377.3, "peak": 380.4, "growth": 3.1 },
+			{ "engine": "Dolph on Express", "idle": 403, "peak": 1197.3, "growth": 794.3 },
+			{ "engine": "Dolph on Fastify", "idle": 453.1, "peak": 528.2, "growth": 75.1 }
+		]
 	}
 }

@@ -3,7 +3,7 @@ import DolphMark from '../components/DolphMark.astro';
 import numbers from '../data/site-numbers.json';
 import '../styles/landing.css';
 
-const { tokens, requests } = numbers;
+const { tokens, requests, engines } = numbers;
 
 const percent = (value: number, base: number) => Math.round((value / base) * 100);
 const format = (value: number) => value.toLocaleString('en-US');
@@ -11,6 +11,8 @@ const format = (value: number) => value.toLocaleString('en-US');
 const getShare = percent(requests['Dolph on Express: GET'], requests['Express: GET']);
 const overhead = 100 - getShare;
 const fastifyGain = (requests['Dolph on Fastify: GET'] / requests['Dolph on Express: GET']).toFixed(1);
+// Plain-GET ratio for the Dolph engine, same route the chart above uses.
+const engineGain = (engines.throughput[0].dolph / engines.throughput[0].express).toFixed(1);
 const tokenSaving = 100 - percent(tokens.dolph, tokens.nest);
 const llmsTokens = format(Math.round(tokens.llms / 100) * 100);
 
@@ -90,15 +92,15 @@ const terminal = [
 	['  Dolph app running on port 3300 in DEVELOPMENT mode', 'live'],
 ];
 
-const engines = {
+const enginesList = {
 	express: 'Available now, and the default. Every Express middleware works as it is.',
 	fastify: `Available now. About ${fastifyGain}x the requests of Express in our benchmark, with the same controllers.`,
-	dolph: 'Coming soon. Our own engine, built for Dolph.',
+	dolph: `Available now. Our own engine — about ${engineGain}x the requests of Express in our benchmark, and the lightest memory of the three under load.`,
 };
 
 const title = 'DolphJS: structure without the bloat';
 const description =
-	'A TypeScript framework for Node.js, cheap for you and your coding agent to write. Decorators, dependency injection and validation on Express or Fastify.';
+	'A TypeScript framework for Node.js, cheap for you and your coding agent to write. Decorators, dependency injection and validation on Express, Fastify or its own engine.';
 ---
 
 <!doctype html>
@@ -381,7 +383,8 @@ new DolphFactory([OrdersComponent]).start();`}</pre>
 						<h2>The structure costs about {overhead}%.</h2>
 						<p class="lede">
 							A plain Dolph route serves about {getShare}% of what raw Express does, on GET and POST. Validating a DTO costs what
-							validation costs, and the chart shows it. Switch to Fastify for about {fastifyGain}x the requests.
+							validation costs, and the chart shows it. Switch to Fastify for about {fastifyGain}x the requests — or to the
+						Dolph engine for about {engineGain}x Express with the lightest memory of the three.
 						</p>
 						<p class="fine">
 							Measured locally with the load generator on the same machine, so compare paths rather than absolute speeds.{' '}
@@ -421,9 +424,9 @@ new DolphFactory([OrdersComponent]).start();`}</pre>
 						<div role="radiogroup" aria-label="Engine" class="engines">
 							<button type="button" role="radio" aria-checked="true" data-engine="express">Express</button>
 							<button type="button" role="radio" aria-checked="false" data-engine="fastify">Fastify</button>
-							<button type="button" role="radio" aria-checked="false" data-engine="dolph">Dolph engine, soon</button>
+							<button type="button" role="radio" aria-checked="false" data-engine="dolph">Dolph engine</button>
 						</div>
-						<p class="engine-note" data-engine-note>{engines.express}</p>
+						<p class="engine-note" data-engine-note>{enginesList.express}</p>
 					</div>
 					<div class="engine-stack">
 						<div class="engine-code">
@@ -452,7 +455,7 @@ new DolphFactory([OrdersComponent]).start();`}</pre>
 							<div><dt>WebSockets</dt><dd>Socket.io, as decorators, with JWT auth.</dd></div>
 							<div><dt>MongoDB and SQL</dt><dd>Mongoose and TypeORM, connected from one config file.</dd></div>
 							<div><dt>Image uploads</dt><dd>Checked by their real contents, with GPS data removed.</dd></div>
-							<div><dt>Your Express middleware</dt><dd>helmet, cookie-parser and the rest, on either engine.</dd></div>
+							<div><dt>Your Express middleware</dt><dd>helmet, cookie-parser and the rest, on all three engines.</dd></div>
 						</dl>
 					</div>
 					<div class="questions">
@@ -463,15 +466,15 @@ new DolphFactory([OrdersComponent]).start();`}</pre>
 						</details>
 						<details>
 							<summary>Will my Express middleware work?</summary>
-							<p>Yes, on both engines. On Fastify it runs through <code>@fastify/middie</code>. The <a href="/techniques/fastify/">Fastify guide</a> covers the differences.</p>
+							<p>Yes, on all three engines. On Fastify it runs through <code>@fastify/middie</code>; on the Dolph engine it runs natively. The <a href="/techniques/fastify/">Fastify guide</a> covers the differences.</p>
 						</details>
 						<details>
 							<summary>How fast is it?</summary>
-							<p>On Express, a plain route is within about {overhead}% of raw Express. On Fastify, it handles about {fastifyGain}x the requests. Every number and the method are on the <a href="/benchmarks/">benchmarks page</a>.</p>
+							<p>On Express, a plain route is within about {overhead}% of raw Express. On Fastify, it handles about {fastifyGain}x the requests; the Dolph engine handles about {engineGain}x Express with the lightest memory of the three. Every number and the method are on the <a href="/benchmarks/">benchmarks page</a>.</p>
 						</details>
 						<details>
 							<summary>Is it production ready?</summary>
-							<p>Yes. Dolph runs in production at Illumi8, Flair Technologies, DolphLabs and more. Version 3 is a new major release, with a test suite that runs on Node 20, 22 and 24 on both engines, and <a href="/examples/">DolphStore</a> is a full reference app built on it.</p>
+							<p>Yes. Dolph runs in production at Illumi8, Flair Technologies, DolphLabs and more. Version 3 is a new major release, with a test suite that runs on Node 20, 22 and 24 on all three engines, and <a href="/examples/">DolphStore</a> is a full reference app built on it.</p>
 						</details>
 					</div>
 				</div>
@@ -502,7 +505,7 @@ new DolphFactory([OrdersComponent]).start();`}</pre>
 			</footer>
 		</section>
 
-		<script is:inline type="application/json" id="landing-data" set:html={JSON.stringify({ verdicts, engines })} />
+		<script is:inline type="application/json" id="landing-data" set:html={JSON.stringify({ verdicts, engines: enginesList })} />
 		<script>
 			const data = JSON.parse(document.getElementById('landing-data')?.textContent ?? '{}');
 			const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
