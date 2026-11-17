@@ -7,7 +7,7 @@ sidebar:
   order: 4
 ---
 
-DolphJS offers a highly structured, scalable architecture. It builds upon the Express and Fastify ecosystems but introduces paradigms commonly found in robust enterprise frameworks like Spring Boot and NestJS.
+DolphJS offers a highly structured, scalable architecture. It builds upon the Express and Fastify ecosystems — or runs on DolphJS's own engine — but introduces paradigms commonly found in robust enterprise frameworks like Spring Boot and NestJS.
 
 ## Two Paradigms
 
@@ -67,7 +67,7 @@ While the Router Pattern is supported, it lacks the automated Dependency Injecti
 Understanding how DolphJS boots up is crucial for debugging and advanced configuration.
 
 1. **Dependency Injection**: Each `@Component` runs when its module is imported. It instantiates Services as singletons, before `DolphFactory` is created.
-2. **Wiring**: `DolphFactory` reads `dolph_config.yaml`, creates the Express or Fastify server, and attaches CORS, Helmet, body parsers and your `middlewares`.
+2. **Wiring**: `DolphFactory` reads `dolph_config.yaml`, creates the Express, Fastify or Dolph-engine server, and attaches CORS, Helmet, body parsers and your `middlewares`.
 3. **Route Registration**: The framework scans Controller decorators (`@Route`, `@Get`, etc.) and registers the routes, passing anything they throw to the error handler.
 4. **Connecting**: Databases, GraphQL and sockets connect. A required database that can't connect stops the app here.
 5. **Server Start**: The HTTP server begins listening on the configured port.

@@ -122,7 +122,7 @@ export class AccountController {
 
 - Every request: `new DolphFactory([App], { middlewares: [cookieParser()] })`
 - One route: `@UseMiddleware(a, b)`, left to right
-- `(req: DRequest, res: DResponse, next: DNextFunc)`, and Express middleware works on both adapters
+- `(req: DRequest, res: DResponse, next: DNextFunc)`, and Express middleware works on all three adapters
 - Async functions on an Express router: wrap in `DolphAsyncMiddleware`
 
 ## DolphFactory
@@ -145,7 +145,7 @@ The constructor only stores options. `engine()` wires the server, `ready()` also
 
 ```yaml
 port: 3300               # PORT in the environment wins
-adapter: fastify         # express is the default. fastify needs fastify and @fastify/middie
+adapter: fastify         # express is the default; also fastify, or dolph (DolphJS's own engine, no extra packages)
 env: development         # production is the default
 jsonLimit: 2mb
 routing:

@@ -1,0 +1,87 @@
+---
+title: Dolph Engine
+description: DolphJS's own HTTP engine — the fastest and lightest of the three adapters
+editUrl: https://github.com/dolphjs/dolph/edit/main/docs/src/content/docs/techniques/dolph.mdx
+sidebar:
+    label: Dolph Engine
+    order: 7
+---
+
+import numbers from '../../../data/site-numbers.json';
+
+export const e = numbers.engines;
+export const nf = (value) => value.toLocaleString('en-US');
+
+DolphJS 3.1 ships its own HTTP engine. It has no Express and no Fastify underneath — just a lean request pipeline on Node's `http` module — while keeping the promise the framework is built on: **Express middleware works as-is**.
+
+## Switching to the Dolph engine
+
+No packages to install. Set the adapter in `dolph_config.yaml`:
+
+```yaml
+adapter: dolph
+```
+
+That's the whole change. Your controllers, services, shields, DTO validation and middleware stay exactly as they are. You can also set `DOLPH_ADAPTER=dolph` as an environment variable, which takes priority over the config file — useful for running the same app on all three engines.
+
+If you use `dolph new`, the CLI asks which server to run on and offers `express`, `fastify` and `dolph`.
+
+## Why it exists
+
+The engine exists for the two numbers people actually feel: how fast the app answers, and how much memory it holds while doing it. The same application on all three adapters:
+
+<table>
+  <thead>
+    <tr><th>Route</th><th>Dolph engine</th><th>on Express</th><th>on Fastify</th></tr>
+  </thead>
+  <tbody>
+    {e.throughput.map((row) => (
+      <tr key={row.route}>
+        <td><code>{row.route}</code></td>
+        <td><strong>{nf(row.dolph)}</strong></td>
+        <td>{nf(row.express)}</td>
+        <td>{nf(row.fastify)}</td>
+      </tr>
+    ))}
+  </tbody>
+</table>
+
+<table>
+  <thead>
+    <tr><th>Engine</th><th>Idle RSS</th><th>Peak RSS</th><th>Growth</th></tr>
+  </thead>
+  <tbody>
+    {e.memory.map((row) => (
+      <tr key={row.engine}>
+        <td>{row.engine}</td>
+        <td>{row.idle} MB</td>
+        <td><strong>{row.peak} MB</strong></td>
+        <td><strong>+{row.growth} MB</strong></td>
+      </tr>
+    ))}
+  </tbody>
+</table>
+
+Leads or ties every route, and grew by {e.memory[0].growth} MB across a full benchmark run against {e.memory[2].growth} MB on Fastify. The full latency tables and method are on the [benchmarks page](/benchmarks/).
+
+## Express middleware
+
+Unlike the Fastify adapter, the Dolph engine doesn't need a bridge package — middleware runs against the real Node request and response with Express-compatible helpers, so `cors`, `helmet`, `cookie-parser`, `morgan`, `compression`, `response-time`, `method-override`, `hpp` and `express-rate-limit` all work unmodified:
+
+```typescript
+new DolphFactory([AppComponent], { middlewares: [cookieParser(), session({ secret })] });
+```
+
+Anything middleware sets on `req.payload`, `req.user`, `req.session` or `req.cookies` reaches your handlers, `res.locals` is shared, and `helmet` and `cors` from `dolph_config.yaml` still run first, before the body is parsed.
+
+The `piku` compatibility sample — a medium-sized app running the engine with seven Express packages wired in, one test per compatibility claim — exercises exactly this.
+
+## What's different
+
+- **Express routers:** `DolphRouteHandler` and `express.Router()` need `adapter: express`, exactly as on Fastify. The app stops at startup with a clear error. Use `@Route` controllers instead.
+- **Views:** `@Render` works with `ejs`, `pug` and `handlebars` called directly — install your template engine as usual, but no adapter plugin like `@fastify/view` is needed.
+- **Runtime:** the engine is built on the `http` module, which Bun implements, so the same adapter runs on Node and on Bun.
+
+## Running it on Bun
+
+Nothing in the adapter changes: install [Bun](https://bun.sh), then start the app with `bun run` instead of `node`. The engine picks up Bun's `http` implementation automatically; Express middleware keeps working the same way.

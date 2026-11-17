@@ -4,7 +4,10 @@
     "description": "New-Age, developer friendly node.js and bun framework",
     "main": "index.js",
     "types": "index.d.ts",
-    "repository": "https://github.com/dolphjs/dolph",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/dolphjs/dolph.git"
+    },
     "author": "Utee Akaninyene",
     "license": "MIT",
     "publishConfig": {

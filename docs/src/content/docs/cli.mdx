@@ -21,7 +21,7 @@ pnpm add -g @dolphjs/cli
 
 ### `dolph new <project-name>`
 
-Scaffolds a new DolphJS project. It sets up the directory structure, handles package manager integrations, and generates a base `dolph_config.yaml` and entry point based on interactive prompts.
+Scaffolds a new DolphJS project. It sets up the directory structure, handles package manager integrations, and generates a base `dolph_config.yaml` and entry point based on interactive prompts. When you pick spring routing, it asks which server to run on — `express`, `fastify` or `dolph` (see [the Dolph engine](/techniques/dolph)) — and writes `adapter:` into the config for you. Every scaffold depends on `@dolphjs/dolph` `^3.1.0` by default.
 
 ```bash
 dolph new my-app

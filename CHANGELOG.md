@@ -1,5 +1,36 @@
 # Changelog
 
+## 3.1.0
+
+3.1.0 adds the Dolph engine — DolphJS's own HTTP engine — as a third adapter. It has no Express or Fastify underneath, adds no dependencies, and runs Express middleware natively. The benchmark runner now measures memory alongside speed, and the docs and website cover all three engines.
+
+### The Dolph engine
+
+Set `adapter: dolph` in `dolph_config.yaml` (or `DOLPH_ADAPTER=dolph`) to run on DolphJS's own engine. Controllers, services, shields, DTO validation and the response envelope don't change, and Express middleware — `cookie-parser`, `morgan`, `compression`, `response-time`, `method-override`, `hpp`, `express-rate-limit` and the rest — runs unmodified against the real Node request and response. `helmet` and `cors` from the config still run first, before the body is parsed.
+
+Like Fastify, the engine refuses `express.Router()` and `DolphRouteHandler` at startup with a message pointing at `adapter: express`; use `@Route` controllers instead. Views (`@Render`) work with `ejs`, `pug` and `handlebars` directly, with no `@fastify/view` needed. The engine sits on the `http` module, which Bun implements, so the same adapter runs on Node and on Bun.
+
+In benchmarks on one laptop — 100 connections, 15-second rounds, production mode, the same app on all three adapters — the engine led or tied Fastify on every baseline route: 16,605 req/s against Fastify's 9,959 on `GET /users/:id`, 13,581 against 7,080 on `POST /echo`, and about 1.8x Express on a plain `GET`. It also stayed flat on memory: +3.1 MB of RSS across the whole run, against +75.1 MB on Fastify and +794.3 MB on Express. Throughput, latency and memory tables with the full method are on the benchmarks page.
+
+### Middleware compatibility
+
+The engine's contract is that Express middleware keeps working, so it is tested that way: a sample app wires seven Express packages — `cookie-parser`, `morgan`, `compression`, `response-time`, `method-override`, `hpp`, `express-rate-limit` — with a test per claim, covering middleware that mutates the request (`method-override` rewrites `req.method` before routing) and middleware that decorates the response (`compression` gzips JSON, `response-time` stamps headers through `on-headers`).
+
+### Benchmarks
+
+- The runner samples process RSS — idle after warm-up and peak under load — and prints a memory table next to throughput and latency.
+- `--only` takes a comma-separated list (`--only dolph,dolph-express,dolph-fastify`), and the matrix now includes `dolph`, `dolph-express` and `dolph-fastify` entries, plus a `bun-native` spike that measures the raw `Bun.serve` ceiling.
+
+### Docs and website
+
+- New Dolph Engine guide covering switching, middleware, what differs from the other adapters, and running on Bun.
+- The benchmarks page gained a three-engine section: throughput, latency and RAM for `adapter: dolph`, `express` and `fastify`.
+- Config, CLI, getting-started, architecture and `llms.txt` describe all three adapters, and the homepage engine switcher is live.
+
+### Dolph CLI
+
+CLI 3.1 asks which server to run on — `express`, `fastify` or `dolph` — during `dolph new`, and scaffolds depend on `@dolphjs/dolph` `^3.1.0`.
+
 ## 3.0.0 (unreleased)
 
 3.0.0 adds Fastify support and safe image uploads, gives every startup job one way to do it, closes several security holes and changes some defaults. Apps stay on 2.x until they upgrade. **If you use RSA JWTs, `@UnShield` or `validateBodyMiddleware`, read the upgrade steps first.**
